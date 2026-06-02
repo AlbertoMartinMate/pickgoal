@@ -1,0 +1,43 @@
+@use '../abstracts/variables' as v;
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+  font-weight: v.$fw-bold;
+  color: v.$text;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: v.$fs-2xl; }
+h2 { font-size: v.$fs-xl; }
+h3 { font-size: v.$fs-md; }
+h4 { font-size: v.$fs-base; font-weight: v.$fw-semi; }
+
+p {
+  color: v.$text-muted;
+  line-height: 1.7;
+}
+
+strong { color: v.$text; font-weight: v.$fw-semi; }
+
+small { font-size: v.$fs-xs; color: v.$text-muted; }
+
+code {
+  font-family: v.$font-mono;
+  font-size: 0.85em;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-sm;
+  padding: 2px 6px;
+  color: v.$accent;
+}
+
+.section-heading {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  color: v.$text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: v.$sp-3;
+  border-bottom: 1px solid v.$border;
+  margin-bottom: v.$sp-5;
+}

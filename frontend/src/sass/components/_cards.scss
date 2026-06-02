@@ -1,0 +1,226 @@
+@use '../abstracts/variables' as v;
+
+// ─── Match Card ──────────────────────────────────────────────────────────────
+.match-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-4;
+  transition: border-color v.$t-base, box-shadow v.$t-base;
+
+  &:hover { border-color: v.$border-light; }
+
+  &--locked {
+    opacity: 0.7;
+    &:hover { border-color: v.$border; }
+  }
+
+  &--live {
+    border-color: rgba(v.$accent, 0.4);
+    box-shadow: 0 0 0 1px rgba(v.$accent, 0.1), inset 0 0 20px rgba(v.$accent, 0.03);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: v.$sp-4;
+    flex-wrap: wrap;
+    gap: v.$sp-2;
+  }
+
+  &__status {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: v.$text-muted;
+
+    &--live {
+      color: v.$accent;
+      display: flex;
+      align-items: center;
+      gap: v.$sp-1;
+
+      &::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: v.$accent;
+        animation: pulse-dot 1.4s ease infinite;
+      }
+    }
+
+    &--finished { color: v.$text-dim; }
+  }
+
+  &__date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__teams {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr;
+    align-items: center;
+    gap: v.$sp-2;
+    margin-bottom: v.$sp-4;
+  }
+
+  &__score-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.team {
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  color: v.$text;
+  line-height: 1.3;
+
+  &--home { text-align: right; }
+  &--away { text-align: left; }
+}
+
+.score {
+  font-size: v.$fs-xl;
+  font-weight: v.$fw-black;
+  color: v.$text;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+
+  &--dash {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
+    color: v.$text-dim;
+    letter-spacing: 0.1em;
+  }
+
+  &--live { color: v.$accent; }
+}
+
+.pts-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: v.$accent-dim;
+  color: v.$accent;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-bold;
+  border: 1px solid rgba(v.$accent, 0.2);
+}
+
+.prediction-form {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-3;
+  justify-content: center;
+  padding-top: v.$sp-4;
+  border-top: 1px solid v.$border;
+  flex-wrap: wrap;
+
+  &__inputs {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    font-weight: v.$fw-bold;
+    color: v.$text-dim;
+    font-size: v.$fs-md;
+  }
+}
+
+.prediction-result {
+  text-align: center;
+  font-size: v.$fs-xs;
+  color: v.$text-muted;
+  padding-top: v.$sp-3;
+  border-top: 1px solid v.$border;
+
+  strong { color: v.$text; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.8); }
+}
+
+// ─── League Card ─────────────────────────────────────────────────────────────
+.league-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+  cursor: pointer;
+  transition: border-color v.$t-base, transform v.$t-base, box-shadow v.$t-base;
+
+  &:hover {
+    border-color: v.$accent;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(v.$accent, 0.08);
+  }
+
+  &__name {
+    font-weight: v.$fw-bold;
+    font-size: v.$fs-base;
+    color: v.$text;
+    margin-bottom: v.$sp-2;
+    line-height: 1.3;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-4;
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    margin-bottom: v.$sp-2;
+    flex-wrap: wrap;
+  }
+
+  &__creator {
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+// ─── Feature Card (Home) ─────────────────────────────────────────────────────
+.feature-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-6;
+  transition: border-color v.$t-base;
+
+  &:hover { border-color: v.$border-light; }
+
+  &__icon {
+    font-size: 2.2rem;
+    margin-bottom: v.$sp-4;
+    display: block;
+    line-height: 1;
+  }
+
+  h3 {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+    margin-bottom: v.$sp-2;
+  }
+
+  p {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    line-height: 1.6;
+  }
+}

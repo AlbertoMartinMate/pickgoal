@@ -1,0 +1,22 @@
+// ─── Base ────────────────────────────────────────────────────────────────────
+@use 'base/reset';
+@use 'base/typography';
+
+// ─── Components ──────────────────────────────────────────────────────────────
+@use 'components/navbar';
+@use 'components/buttons';
+@use 'components/forms';
+@use 'components/cards';
+@use 'components/loading';
+@use 'components/ranking';
+
+// ─── Pages ───────────────────────────────────────────────────────────────────
+@use 'pages/home';
+@use 'pages/auth';
+@use 'pages/quiniela';
+@use 'pages/tablon';
+@use 'pages/ligas';
+@use 'pages/perfil';
+@use 'pages/admin';
+@use 'pages/campeon';
+@use 'pages/footer';

@@ -1,0 +1,116 @@
+@use '../abstracts/variables' as v;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$sp-2;
+  padding: 10px 22px;
+  border-radius: v.$r-md;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  transition: all v.$t-fast;
+  cursor: pointer;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0);
+    transition: background v.$t-fast;
+  }
+
+  &:hover::before { background: rgba(255, 255, 255, 0.06); }
+  &:active::before { background: rgba(0, 0, 0, 0.15); }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid v.$accent;
+    outline-offset: 2px;
+  }
+
+  // ─── Variantes ───────────────────────────────────────────────────────────
+  &--primary {
+    background: v.$accent;
+    color: v.$bg;
+    border-color: v.$accent;
+    font-weight: v.$fw-bold;
+    box-shadow: 0 0 0 0 rgba(v.$accent, 0);
+    transition: all v.$t-fast, box-shadow v.$t-base;
+
+    &:hover:not(:disabled) {
+      background: v.$accent-dark;
+      border-color: v.$accent-dark;
+      box-shadow: 0 4px 20px rgba(v.$accent, 0.35);
+      opacity: 1;
+    }
+  }
+
+  &--secondary {
+    background: v.$bg-surface;
+    color: v.$text;
+    border-color: v.$border;
+
+    &:hover:not(:disabled) {
+      border-color: v.$border-light;
+      background: v.$bg-card;
+      opacity: 1;
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: v.$text-muted;
+    border-color: v.$border;
+
+    &:hover:not(:disabled) {
+      color: v.$text;
+      background: v.$bg-surface;
+      border-color: v.$border-light;
+      opacity: 1;
+    }
+  }
+
+  &--danger {
+    background: transparent;
+    color: v.$danger;
+    border-color: rgba(v.$danger, 0.4);
+
+    &:hover:not(:disabled) {
+      background: v.$danger-dim;
+      border-color: v.$danger;
+      opacity: 1;
+    }
+  }
+
+  &--accent-ghost {
+    background: v.$accent-dim;
+    color: v.$accent;
+    border-color: rgba(v.$accent, 0.2);
+
+    &:hover:not(:disabled) {
+      background: rgba(v.$accent, 0.2);
+      opacity: 1;
+    }
+  }
+
+  // ─── Tamaños ─────────────────────────────────────────────────────────────
+  &--lg { padding: 14px 30px; font-size: v.$fs-base; border-radius: v.$r-lg; }
+  &--sm { padding: 7px 14px; font-size: v.$fs-xs; border-radius: v.$r-sm; }
+  &--xs { padding: 4px 10px; font-size: v.$fs-xs; border-radius: v.$r-sm; }
+  &--full { width: 100%; }
+  &--icon { padding: 8px; border-radius: v.$r-sm; }
+}

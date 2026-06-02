@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="PickGoal — Quiniela del Mundial de Fútbol 2026" />
+  <title>PickGoal — Mundial 2026</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+  <div id="app">
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+      <div class="navbar__brand">
+        <a href="#/" class="navbar__logo">⚽ PickGoal</a>
+      </div>
+      <button class="navbar__toggle" id="navToggle" aria-label="Menú">☰</button>
+      <ul class="navbar__menu" id="navMenu">
+        <li><a href="#/quiniela" class="nav-link">Quiniela</a></li>
+        <li><a href="#/ranking" class="nav-link">Clasificación</a></li>
+        <li><a href="#/ligas" class="nav-link">Ligas</a></li>
+        <li><a href="#/tablon" class="nav-link">Tablón</a></li>
+        <li id="navAuthLinks">
+          <a href="#/login" class="nav-link">Entrar</a>
+        </li>
+        <li id="navUserLinks" class="hidden">
+          <a href="#/perfil" class="nav-link">Mi Perfil</a>
+          <button class="btn btn--ghost btn--sm" id="btnLogout">Salir</button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="main-content" id="mainContent">
+      <div class="loading" id="globalLoader">
+        <div class="loading__spinner"></div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>PickGoal &copy; 2026 — Mundial de Fútbol</p>
+    </footer>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+@use 'variables' as v;
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin container {
+  width: 100%;
+  max-width: v.$max-w;
+  margin: 0 auto;
+  padding: 0 v.$sp-4;
+}
+
+@mixin card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+}
+
+@mixin card-hover {
+  @include card;
+  transition: border-color v.$t-base, transform v.$t-base, box-shadow v.$t-base;
+  &:hover {
+    border-color: v.$accent;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 135, 0.1);
+  }
+}
+
+@mixin surface {
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+}
+
+@mixin accent-text {
+  color: v.$accent;
+}
+
+@mixin accent-glow {
+  box-shadow: v.$shadow-accent;
+}
+
+@mixin tag($color: v.$accent) {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  background: rgba($color, 0.1);
+  color: $color;
+  border: 1px solid rgba($color, 0.25);
+  letter-spacing: 0.03em;
+}
+
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin label-style {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  color: v.$text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+@mixin respond-to($bp) {
+  @if $bp == 'sm'  { @media (max-width: v.$bp-sm)  { @content; } }
+  @else if $bp == 'md' { @media (max-width: v.$bp-md)  { @content; } }
+  @else if $bp == 'lg' { @media (max-width: v.$bp-lg)  { @content; } }
+}
+
+@mixin section-title {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  color: v.$text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: v.$sp-3;
+  border-bottom: 1px solid v.$border;
+  margin-bottom: v.$sp-5;
+}
+
+@mixin scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: v.$border transparent;
+  &::-webkit-scrollbar { width: 4px; height: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb {
+    background: v.$border;
+    border-radius: v.$r-full;
+    &:hover { background: v.$border-light; }
+  }
+}

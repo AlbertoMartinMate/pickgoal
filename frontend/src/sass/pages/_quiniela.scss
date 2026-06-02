@@ -1,0 +1,72 @@
+@use '../abstracts/variables' as v;
+
+.phase-section {
+  margin-bottom: v.$sp-10;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: v.$text-muted;
+    padding-bottom: v.$sp-4;
+    margin-bottom: v.$sp-5;
+    border-bottom: 1px solid v.$border;
+    position: sticky;
+    top: v.$navbar-h;
+    background: v.$bg;
+    z-index: 10;
+    padding-top: v.$sp-3;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: v.$accent;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: v.$sp-4;
+
+  @media (max-width: v.$bp-sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// ─── Filtro de fases ─────────────────────────────────────────────────────────
+.phase-filter {
+  display: flex;
+  gap: v.$sp-2;
+  flex-wrap: wrap;
+  margin-bottom: v.$sp-8;
+
+  &__btn {
+    padding: 6px 14px;
+    border-radius: v.$r-full;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    background: v.$bg-card;
+    border: 1px solid v.$border;
+    cursor: pointer;
+    transition: all v.$t-fast;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+
+    &:hover, &--active {
+      color: v.$accent;
+      background: v.$accent-dim;
+      border-color: rgba(v.$accent, 0.3);
+    }
+  }
+}

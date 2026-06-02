@@ -1,0 +1,142 @@
+@use '../abstracts/variables' as v;
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-8;
+}
+
+.admin-stat-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+  display: flex;
+  align-items: center;
+  gap: v.$sp-4;
+
+  &__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: v.$r-md;
+    background: v.$accent-dim;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: v.$fs-lg;
+    flex-shrink: 0;
+  }
+
+  &__value {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: v.$text;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: v.$fw-semi;
+    margin-top: 2px;
+  }
+}
+
+.admin-section {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+  margin-bottom: v.$sp-5;
+
+  &__title {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding-bottom: v.$sp-4;
+    margin-bottom: v.$sp-5;
+    border-bottom: 1px solid v.$border;
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+  }
+
+  &__desc {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    margin-bottom: v.$sp-4;
+  }
+
+  #syncResult {
+    margin-top: v.$sp-3;
+    font-size: v.$fs-sm;
+    color: v.$accent;
+    min-height: 20px;
+  }
+}
+
+.admin-table-wrapper {
+  overflow-x: auto;
+  border-radius: v.$r-md;
+  border: 1px solid v.$border;
+  scrollbar-width: thin;
+  scrollbar-color: v.$border transparent;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$fs-sm;
+
+  th {
+    text-align: left;
+    padding: v.$sp-3 v.$sp-4;
+    color: v.$text-muted;
+    font-size: v.$fs-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: v.$bg-surface;
+    border-bottom: 1px solid v.$border;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: v.$sp-3 v.$sp-4;
+    border-bottom: 1px solid rgba(v.$border, 0.5);
+    color: v.$text;
+    white-space: nowrap;
+    vertical-align: middle;
+
+    &:last-child { text-align: right; }
+  }
+
+  tbody tr {
+    transition: background v.$t-fast;
+    &:last-child td { border-bottom: none; }
+    &:hover td { background: rgba(255, 255, 255, 0.02); }
+  }
+}
+
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  background: v.$bg-surface;
+  color: v.$text-muted;
+  border: 1px solid v.$border;
+
+  &--yes {
+    background: v.$accent-dim;
+    color: v.$accent;
+    border-color: rgba(v.$accent, 0.2);
+  }
+}

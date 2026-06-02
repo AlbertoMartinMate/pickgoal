@@ -1,0 +1,85 @@
+// ─── Colores base ────────────────────────────────────────────────────────────
+$bg:           #090912;
+$bg-card:      #12121e;
+$bg-surface:   #1c1c2e;
+$bg-input:     #16162a;
+$border:       #2d2d4a;
+$border-light: #3d3d5c;
+
+// ─── Acento principal: verde deportivo ───────────────────────────────────────
+$accent:       #00ff87;
+$accent-dark:  #00cc6a;
+$accent-dim:   rgba(0, 255, 135, 0.12);
+$accent-glow:  rgba(0, 255, 135, 0.25);
+
+// ─── Semánticos ──────────────────────────────────────────────────────────────
+$danger:       #ff3860;
+$danger-dim:   rgba(255, 56, 96, 0.12);
+$warning:      #ffb830;
+$warning-dim:  rgba(255, 184, 48, 0.12);
+$info:         #3d91ff;
+
+// ─── Texto ───────────────────────────────────────────────────────────────────
+$text:         #f2f2ff;
+$text-muted:   #6e6e9a;
+$text-dim:     #3a3a5c;
+$text-link:    $accent;
+
+// ─── Tipografía ──────────────────────────────────────────────────────────────
+$font:         'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-mono:    'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+$fs-xs:   11px;
+$fs-sm:   13px;
+$fs-base: 15px;
+$fs-md:   17px;
+$fs-lg:   20px;
+$fs-xl:   26px;
+$fs-2xl:  34px;
+$fs-3xl:  52px;
+
+$fw-normal: 400;
+$fw-medium: 500;
+$fw-semi:   600;
+$fw-bold:   700;
+$fw-black:  900;
+
+// ─── Espaciado ───────────────────────────────────────────────────────────────
+$sp-1:  4px;
+$sp-2:  8px;
+$sp-3:  12px;
+$sp-4:  16px;
+$sp-5:  20px;
+$sp-6:  24px;
+$sp-8:  32px;
+$sp-10: 40px;
+$sp-12: 48px;
+$sp-16: 64px;
+$sp-20: 80px;
+
+// ─── Border radius ───────────────────────────────────────────────────────────
+$r-sm:   6px;
+$r-md:   10px;
+$r-lg:   14px;
+$r-xl:   20px;
+$r-full: 9999px;
+
+// ─── Sombras ─────────────────────────────────────────────────────────────────
+$shadow-sm:    0 1px 4px rgba(0, 0, 0, 0.5);
+$shadow-md:    0 4px 16px rgba(0, 0, 0, 0.6);
+$shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.7);
+$shadow-accent: 0 0 20px rgba(0, 255, 135, 0.2);
+
+// ─── Transiciones ────────────────────────────────────────────────────────────
+$t-fast:   140ms ease;
+$t-base:   220ms ease;
+$t-slow:   360ms ease;
+
+// ─── Layout ──────────────────────────────────────────────────────────────────
+$max-w:       1180px;
+$navbar-h:    62px;
+
+// ─── Breakpoints ─────────────────────────────────────────────────────────────
+$bp-sm:  576px;
+$bp-md:  768px;
+$bp-lg:  1024px;

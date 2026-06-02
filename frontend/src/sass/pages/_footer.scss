@@ -1,0 +1,55 @@
+@use '../abstracts/variables' as v;
+
+.footer {
+  background: v.$bg-card;
+  border-top: 1px solid v.$border;
+  padding: v.$sp-6 v.$sp-4;
+  text-align: center;
+
+  p {
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+    letter-spacing: 0.03em;
+  }
+
+  a { color: v.$text-muted; &:hover { color: v.$accent; } }
+}
+
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: v.$sp-5;
+  min-height: calc(60vh - v.$navbar-h);
+  text-align: center;
+  padding: v.$sp-8 v.$sp-4;
+
+  h2 {
+    font-size: v.$fs-xl;
+    color: v.$text-muted;
+    font-weight: v.$fw-bold;
+  }
+
+  p { color: v.$text-dim; }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$sp-2;
+    padding: 10px 22px;
+    border-radius: v.$r-md;
+    background: v.$bg-card;
+    border: 1px solid v.$border;
+    color: v.$text;
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
+    transition: all v.$t-fast;
+
+    &:hover {
+      border-color: v.$accent;
+      color: v.$accent;
+      opacity: 1;
+    }
+  }
+}

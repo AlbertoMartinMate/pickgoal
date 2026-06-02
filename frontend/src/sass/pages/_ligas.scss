@@ -1,0 +1,65 @@
+@use '../abstracts/variables' as v;
+
+.leagues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: v.$sp-4;
+}
+
+.leagues-list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-1;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    padding: v.$sp-3 v.$sp-4;
+    border-radius: v.$r-md;
+    transition: background v.$t-fast;
+
+    &:hover { background: v.$bg-surface; }
+
+    a {
+      color: v.$text;
+      font-weight: v.$fw-medium;
+      font-size: v.$fs-sm;
+      &:hover { color: v.$accent; }
+    }
+  }
+}
+
+.league-header {
+  margin-bottom: v.$sp-6;
+
+  h1 { margin-bottom: v.$sp-3; }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-4;
+    flex-wrap: wrap;
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+  }
+}
+
+.invite-code {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$sp-2;
+  background: v.$bg-input;
+  padding: 4px 12px;
+  border-radius: v.$r-sm;
+  border: 1px solid v.$border;
+  font-family: v.$font-mono;
+  font-size: v.$fs-sm;
+  color: v.$accent;
+  cursor: pointer;
+  transition: background v.$t-fast;
+
+  &:hover { background: v.$bg-surface; }
+
+  strong { letter-spacing: 0.1em; }
+}

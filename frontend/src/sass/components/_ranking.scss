@@ -1,0 +1,74 @@
+@use '../abstracts/variables' as v;
+
+.ranking-table-wrapper {
+  overflow-x: auto;
+  border-radius: v.$r-lg;
+  border: 1px solid v.$border;
+  scrollbar-width: thin;
+  scrollbar-color: v.$border transparent;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: v.$fs-sm;
+
+  thead tr {
+    background: v.$bg-surface;
+  }
+
+  th {
+    padding: v.$sp-3 v.$sp-4;
+    text-align: left;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    border-bottom: 1px solid v.$border;
+  }
+
+  td {
+    padding: v.$sp-3 v.$sp-4;
+    color: v.$text;
+    border-bottom: 1px solid rgba(v.$border, 0.5);
+    white-space: nowrap;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  tbody tr {
+    transition: background v.$t-fast;
+    &:last-child td { border-bottom: none; }
+    &:hover td { background: rgba(255, 255, 255, 0.02); }
+  }
+
+  &__row--me td {
+    background: rgba(v.$accent, 0.04) !important;
+
+    .ranking-table__pos {
+      color: v.$accent;
+    }
+  }
+
+  &__pos {
+    font-weight: v.$fw-bold;
+    color: v.$text-muted;
+    width: 48px;
+    font-variant-numeric: tabular-nums;
+
+    // Top 3 medals
+    &[data-pos='1'] { color: #ffd700; }
+    &[data-pos='2'] { color: #c0c0c0; }
+    &[data-pos='3'] { color: #cd7f32; }
+  }
+
+  &__pts {
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: v.$fs-base;
+  }
+}

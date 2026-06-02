@@ -1,0 +1,67 @@
+@use '../abstracts/variables' as v;
+
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(90vh - v.$navbar-h);
+  padding: v.$sp-6 v.$sp-4;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(v.$accent, 0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+}
+
+.auth-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-xl;
+  padding: v.$sp-8;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+  box-shadow: v.$shadow-lg;
+
+  // Línea de acento superior
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: v.$sp-8;
+    right: v.$sp-8;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, v.$accent, transparent);
+    border-radius: v.$r-full;
+  }
+
+  &__title {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    letter-spacing: -0.03em;
+    margin-bottom: v.$sp-8;
+    text-align: center;
+    color: v.$text;
+
+    span { color: v.$accent; }
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    justify-content: center;
+    margin-top: v.$sp-5;
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    flex-wrap: wrap;
+
+    a { color: v.$accent; font-weight: v.$fw-medium; }
+    span { color: v.$text-dim; }
+  }
+}
