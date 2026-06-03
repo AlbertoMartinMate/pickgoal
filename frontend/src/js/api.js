@@ -1,4 +1,6 @@
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.PROD
+  ? 'https://pickgoal-backend.onrender.com/api'
+  : 'http://127.0.0.1:5000/api';
 
 function getToken() {
   return localStorage.getItem('token');
