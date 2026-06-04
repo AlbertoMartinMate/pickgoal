@@ -1,3 +1,4 @@
+import logoCompleto from '../../assets/logo-completo.jpg';
 import { auth } from '../auth.js';
 
 export function renderHome(el) {
@@ -5,8 +6,7 @@ export function renderHome(el) {
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
-        <h1 class="hero__title">⚽ PickGoal</h1>
-        <p class="hero__subtitle">La quiniela oficial del Mundial de Fútbol 2026</p>
+        <img src="${logoCompleto}" alt="PickGoal" class="hero__logo-img" />
         ${user
           ? `<div class="hero__cta">
                <a href="#/quiniela" class="btn btn--primary btn--lg">Ver Quiniela</a>

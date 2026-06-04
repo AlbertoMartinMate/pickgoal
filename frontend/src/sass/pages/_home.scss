@@ -81,6 +81,16 @@
     margin-inline: auto;
   }
 
+  &__logo-img {
+    max-width: 500px;
+    width: 100%;
+    margin-inline: auto;
+    margin-bottom: v.$sp-8;
+    display: block;
+
+    @media (max-width: v.$bp-sm) { max-width: 280px; }
+  }
+
   &__cta {
     display: flex;
     gap: v.$sp-3;
