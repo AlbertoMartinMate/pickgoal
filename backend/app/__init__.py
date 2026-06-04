@@ -38,8 +38,11 @@ def create_app():
     bcrypt.init_app(app)
     mail.init_app(app)
 
-    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
-    CORS(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}},
+    CORS(app, resources={r"/api/*": {"origins": [
+             "https://pickgoal.es",
+             "https://www.pickgoal.es",
+             "http://localhost:5173",
+         ]}},
          supports_credentials=True)
 
     from app.routes.auth import auth_bp
