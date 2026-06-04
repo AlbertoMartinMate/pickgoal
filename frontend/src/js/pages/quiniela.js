@@ -49,7 +49,7 @@ export async function renderQuiniela(el) {
 }
 
 function matchCard(match, prediction) {
-  const locked = match.status !== 'scheduled';
+  const locked = match.is_locked;
   const pts = prediction ? `<span class="pts-badge">${prediction.total_points} pts</span>` : '';
   const statusLabel = { scheduled: 'Programado', live: '🔴 En juego', finished: 'Finalizado' }[match.status];
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app import db
 
 
@@ -62,7 +62,12 @@ class Match(db.Model):
 
     predictions = db.relationship('Prediction', backref='match', lazy='dynamic', cascade='all, delete-orphan')
 
+    def is_locked(self):
+        dt_utc = self.match_datetime.replace(tzinfo=timezone.utc)
+        return self.status != 'scheduled' or datetime.now(timezone.utc) >= dt_utc - timedelta(minutes=30)
+
     def to_dict(self):
+        dt_iso = self.match_datetime.replace(tzinfo=timezone.utc).isoformat()
         return {
             'id': self.id,
             'api_id': self.api_id,
@@ -70,8 +75,9 @@ class Match(db.Model):
             'group_name': self.group_name,
             'home_team': self.home_team,
             'away_team': self.away_team,
-            'match_datetime': self.match_datetime.isoformat(),
+            'match_datetime': dt_iso,
             'status': self.status,
+            'is_locked': self.is_locked(),
             'home_score_90': self.home_score_90,
             'away_score_90': self.away_score_90,
             'home_score_final': self.home_score_final,

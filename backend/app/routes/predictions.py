@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
@@ -48,8 +48,9 @@ def save_prediction():
     if match.status != 'scheduled':
         return jsonify({'error': 'No se puede predecir un partido que ya ha comenzado'}), 403
 
-    if datetime.now(timezone.utc) >= match.match_datetime:
-        return jsonify({'error': 'El plazo para predecir este partido ha cerrado'}), 403
+    match_dt_utc = match.match_datetime.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) >= match_dt_utc - timedelta(minutes=30):
+        return jsonify({'error': 'El plazo para predecir este partido ha cerrado (cierra 30 min antes)'}), 403
 
     # Validar coherencia 1X2 con marcador
     home = int(predicted_home)
