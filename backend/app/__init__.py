@@ -41,6 +41,8 @@ def create_app():
     CORS(app, resources={r"/api/*": {"origins": [
              "https://pickgoal.es",
              "https://www.pickgoal.es",
+             "http://pickgoal.es",
+             "http://www.pickgoal.es",
              "http://localhost:5173",
          ]}},
          supports_credentials=True)
