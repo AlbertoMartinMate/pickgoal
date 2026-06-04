@@ -101,7 +101,7 @@
         <div id="quinielaContent"></div>
       </div>
     `;const n=document.getElementById("quinielaContent"),i=["group","r32","r16","quarters","semis","third","final"];a.forEach(o=>{const r=document.createElement("section");r.className="phase-section";const c=o.group_name?`${o.label} — Grupo ${o.group_name}`:o.label;r.innerHTML=`<h2 class="phase-section__title">${c}</h2>
-        <div class="matches-grid">${o.matches.map(d=>N(d,s[d.id])).join("")}</div>`,n.appendChild(r),p.isLoggedIn()&&r.querySelectorAll(".prediction-form").forEach(d=>{A(d,s)})})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error cargando los partidos: ${a.message}</p></div>`}}function N(e,a){const t=e.status!=="scheduled",s=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",n={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
+        <div class="matches-grid">${o.matches.map(d=>N(d,s[d.id])).join("")}</div>`,n.appendChild(r),p.isLoggedIn()&&r.querySelectorAll(".prediction-form").forEach(d=>{A(d,s)})})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error cargando los partidos: ${a.message}</p></div>`}}function N(e,a){const t=e.is_locked,s=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",n={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
     <div class="match-card ${t?"match-card--locked":""}" data-match-id="${e.id}">
       <div class="match-card__header">
         <span class="match-card__status">${n}</span>
