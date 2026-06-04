@@ -20,8 +20,8 @@ def sync_full_calendar(app):
                 stage = m.get('stage', 'GROUP_STAGE')
                 phase = map_api_phase(stage)
                 group_name = m.get('group')
-                home_team = m['homeTeam']['name']
-                away_team = m['awayTeam']['name']
+                home_team = m['homeTeam'].get('name') or 'TBD'
+                away_team = m['awayTeam'].get('name') or 'TBD'
                 dt = parse_match_datetime(m['utcDate'])
                 status = map_api_status(m['status'])
 
