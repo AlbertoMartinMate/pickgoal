@@ -16,40 +16,92 @@ export async function renderQuiniela(el) {
       predMap[p.match_id] = p;
     }
 
+    // Aplanar todos los partidos (ya vienen ordenados por fecha)
+    const allMatches = groups.flatMap(g => g.matches);
+
+    // Agrupar por fecha local
+    const byDay = new Map();
+    for (const m of allMatches) {
+      const key = localDateKey(m.match_datetime);
+      if (!byDay.has(key)) byDay.set(key, []);
+      byDay.get(key).push(m);
+    }
+    const days = [...byDay.keys()].sort();
+
+    // Día por defecto: el más próximo con partidos (hoy o futuro), si no el primero
+    const todayKey = localDateKey(new Date().toISOString());
+    const defaultDay = days.find(d => d >= todayKey) ?? days[0];
+
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Quiniela — Mundial 2026</h1>
+        <h1 class="page-title">Resultados — Mundial 2026</h1>
         ${!auth.isLoggedIn() ? '<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>' : ''}
-        <div id="quinielaContent"></div>
+        <nav class="date-nav" id="dateNav"></nav>
+        <div id="matchesContent"></div>
       </div>
     `;
 
-    const content = document.getElementById('quinielaContent');
-    const phaseOrder = ['group', 'r32', 'r16', 'quarters', 'semis', 'third', 'final'];
-
-    groups.forEach(group => {
-      const section = document.createElement('section');
-      section.className = 'phase-section';
-      const label = group.group_name ? `${group.label} — Grupo ${group.group_name}` : group.label;
-
-      section.innerHTML = `<h2 class="phase-section__title">${label}</h2>
-        <div class="matches-grid">${group.matches.map(m => matchCard(m, predMap[m.id])).join('')}</div>`;
-      content.appendChild(section);
-
-      if (auth.isLoggedIn()) {
-        section.querySelectorAll('.prediction-form').forEach(form => {
-          attachPredictionForm(form, predMap);
-        });
-      }
-    });
+    renderDateNav(days, defaultDay, byDay, predMap);
 
     if (auth.isLoggedIn()) {
-      saveDefaultPredictions(groups, predMap);
+      saveDefaultPredictions(allMatches, predMap);
     }
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando los partidos: ${err.message}</p></div>`;
   }
+}
+
+function renderDateNav(days, activeDay, byDay, predMap) {
+  const nav = document.getElementById('dateNav');
+  if (!nav) return;
+
+  nav.innerHTML = days.map(day => `
+    <button class="date-nav__btn ${day === activeDay ? 'date-nav__btn--active' : ''}" data-day="${day}">
+      ${formatDayLabel(day)}
+    </button>
+  `).join('');
+
+  // Hacer scroll al día activo
+  nav.querySelector('.date-nav__btn--active')?.scrollIntoView({ inline: 'center', behavior: 'instant', block: 'nearest' });
+
+  nav.querySelectorAll('.date-nav__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      nav.querySelectorAll('.date-nav__btn').forEach(b => b.classList.remove('date-nav__btn--active'));
+      btn.classList.add('date-nav__btn--active');
+      renderMatches(byDay.get(btn.dataset.day) ?? [], predMap);
+    });
+  });
+
+  renderMatches(byDay.get(activeDay) ?? [], predMap);
+}
+
+function renderMatches(matches, predMap) {
+  const content = document.getElementById('matchesContent');
+  if (!content) return;
+
+  if (matches.length === 0) {
+    content.innerHTML = '<p class="empty">Sin partidos este día.</p>';
+    return;
+  }
+
+  content.innerHTML = `<div class="matches-grid">${matches.map(m => matchCard(m, predMap[m.id])).join('')}</div>`;
+
+  if (auth.isLoggedIn()) {
+    content.querySelectorAll('.prediction-form').forEach(form => {
+      attachPredictionForm(form, predMap);
+    });
+  }
+}
+
+function localDateKey(isoString) {
+  const d = new Date(isoString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatDayLabel(dateKey) {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
 function matchCard(match, prediction) {
@@ -113,8 +165,8 @@ function predictionForm(match, prediction) {
   `;
 }
 
-async function saveDefaultPredictions(groups, predMap) {
-  const pending = groups.flatMap(g => g.matches).filter(m => !m.is_locked && !predMap[m.id]);
+async function saveDefaultPredictions(allMatches, predMap) {
+  const pending = allMatches.filter(m => !m.is_locked && !predMap[m.id]);
   for (const match of pending) {
     try {
       const { prediction } = await api.predictions.save({
