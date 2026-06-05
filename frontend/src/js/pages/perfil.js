@@ -29,6 +29,7 @@ export async function renderPerfil(el) {
               <p>${user.country || 'Sin país'}</p>
             </div>
           </div>
+          <button class="btn btn--danger" id="btnLogoutPerfil">Cerrar sesión</button>
           <div class="profile-card__stats">
             <div class="stat">
               <span class="stat__value">${totalPts}</span>
@@ -78,6 +79,11 @@ export async function renderPerfil(el) {
         </section>
       </div>
     `;
+    el.querySelector('#btnLogoutPerfil')?.addEventListener('click', () => {
+      auth.logout();
+      window.location.hash = '/';
+    });
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }

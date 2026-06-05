@@ -64,6 +64,16 @@
     flex-wrap: wrap;
     align-items: center;
   }
+
+  .btn--danger {
+    margin-left: auto;
+    align-self: flex-start;
+
+    @media (max-width: v.$bp-sm) {
+      width: 100%;
+      margin-left: 0;
+    }
+  }
 }
 
 .stat {

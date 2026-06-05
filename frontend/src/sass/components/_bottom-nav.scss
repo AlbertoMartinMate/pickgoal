@@ -1,0 +1,53 @@
+@use '../abstracts/variables' as v;
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  inset-inline: 0;
+  height: v.$bottom-nav-h;
+  z-index: 200;
+  display: flex;
+  align-items: stretch;
+  background: #000000;
+  border-top: 2px solid #39FF14;
+
+  &__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    color: v.$text-dim;
+    font-size: 10px;
+    font-weight: v.$fw-semi;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color v.$t-fast;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    &:hover { color: v.$text-muted; }
+
+    &--active {
+      color: #39FF14;
+    }
+  }
+}
+
+// Espacio extra en el contenido para que no quede oculto bajo el bottom nav
+.has-bottom-nav {
+  .main-content {
+    padding-bottom: calc(v.$bottom-nav-h + v.$sp-4);
+  }
+
+  .footer {
+    display: none;
+  }
+}

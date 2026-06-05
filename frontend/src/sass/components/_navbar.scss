@@ -17,74 +17,28 @@
   &__brand { flex-shrink: 0; }
 
   &__logo {
-    font-size: v.$fs-md;
-    font-weight: v.$fw-black;
-    color: v.$text;
+    display: flex;
+    align-items: center;
     text-decoration: none;
-    letter-spacing: -0.04em;
+    opacity: 0.95;
+    transition: opacity v.$t-fast;
+    &:hover { opacity: 1; }
+  }
+
+  &__right {
     display: flex;
     align-items: center;
-    gap: v.$sp-2;
-    transition: color v.$t-fast;
-
-    &:hover { color: v.$accent; opacity: 1; }
-
-    .logo-icon {
-      display: inline-block;
-      width: 28px;
-      height: 28px;
-      background: v.$accent;
-      border-radius: v.$r-sm;
-      color: v.$bg;
-      font-size: v.$fs-sm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: v.$fw-black;
-      flex-shrink: 0;
-    }
+    gap: v.$sp-3;
   }
 
-  &__menu {
-    display: flex;
-    align-items: center;
-    gap: v.$sp-1;
-
-    li { display: contents; }
-  }
-
-  &__toggle {
-    display: none;
-    width: 36px;
-    height: 36px;
-    border-radius: v.$r-sm;
-    color: v.$text;
-    font-size: v.$fs-lg;
-    transition: background v.$t-fast;
-    align-items: center;
-    justify-content: center;
-
-    &:hover { background: v.$bg-surface; }
-  }
-
-  @media (max-width: v.$bp-md) {
-    flex-wrap: wrap;
-    height: auto;
-    padding: v.$sp-3 v.$sp-4;
-
-    &__toggle { display: flex; }
-
-    &__menu {
-      display: none;
-      flex-direction: column;
-      align-items: stretch;
-      width: 100%;
-      padding: v.$sp-3 0 v.$sp-2;
-      gap: v.$sp-1;
-      border-top: 1px solid v.$border;
-
-      &--open { display: flex; }
-    }
+  &__username {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
   }
 }
 
@@ -109,11 +63,5 @@
   &--admin {
     color: v.$accent;
     &:hover { background: v.$accent-dim; }
-  }
-
-  @media (max-width: v.$bp-md) {
-    padding: v.$sp-3 v.$sp-4;
-    border-radius: v.$r-sm;
-    font-size: v.$fs-base;
   }
 }
