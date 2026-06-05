@@ -19,6 +19,8 @@ export async function renderRanking(el) {
                 <th>Usuario</th>
                 <th>País</th>
                 <th>Puntos</th>
+                <th title="Pronósticos 1X2 acertados">1X2</th>
+                <th title="Resultados exactos acertados">Exactos</th>
               </tr>
             </thead>
             <tbody>
@@ -28,6 +30,8 @@ export async function renderRanking(el) {
                   <td>${u.username}</td>
                   <td>${u.country || '—'}</td>
                   <td class="ranking-table__pts">${u.total_points}</td>
+                  <td class="ranking-table__stat">${u.correct_results}</td>
+                  <td class="ranking-table__stat">${u.exact_scores}</td>
                 </tr>
               `).join('')}
             </tbody>

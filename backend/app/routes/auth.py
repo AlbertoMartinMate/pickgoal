@@ -4,7 +4,8 @@ from flask_jwt_extended import (create_access_token, jwt_required,
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask import current_app
 from app import db, bcrypt
-from app.models import User
+from app.models import User, Prediction
+from sqlalchemy import func
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -120,9 +121,17 @@ def ranking():
     users = User.query.all()
     ranking_data = []
     for u in users:
+        correct_results = db.session.query(func.count(Prediction.id)).filter(
+            Prediction.user_id == u.id, Prediction.pts_result > 0
+        ).scalar() or 0
+        exact_scores = db.session.query(func.count(Prediction.id)).filter(
+            Prediction.user_id == u.id, Prediction.pts_score > 0
+        ).scalar() or 0
         ranking_data.append({
             **u.to_dict(),
             'total_points': u.total_points(),
+            'correct_results': correct_results,
+            'exact_scores': exact_scores,
         })
     ranking_data.sort(key=lambda x: x['total_points'], reverse=True)
     for i, entry in enumerate(ranking_data):
