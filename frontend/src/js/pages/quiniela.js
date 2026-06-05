@@ -43,6 +43,10 @@ export async function renderQuiniela(el) {
       }
     });
 
+    if (auth.isLoggedIn()) {
+      saveDefaultPredictions(groups, predMap);
+    }
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando los partidos: ${err.message}</p></div>`;
   }
@@ -84,9 +88,9 @@ function matchCard(match, prediction) {
 }
 
 function predictionForm(match, prediction) {
-  const home = prediction?.predicted_home ?? '';
-  const away = prediction?.predicted_away ?? '';
-  const result = prediction?.predicted_result ?? '';
+  const home = prediction?.predicted_home ?? 0;
+  const away = prediction?.predicted_away ?? 0;
+  const result = prediction?.predicted_result ?? 'X';
   return `
     <form class="prediction-form" data-match-id="${match.id}">
       <div class="result-selector">
@@ -107,6 +111,23 @@ function predictionForm(match, prediction) {
       <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
     </form>
   `;
+}
+
+async function saveDefaultPredictions(groups, predMap) {
+  const pending = groups.flatMap(g => g.matches).filter(m => !m.is_locked && !predMap[m.id]);
+  for (const match of pending) {
+    try {
+      const { prediction } = await api.predictions.save({
+        match_id: match.id,
+        predicted_result: 'X',
+        predicted_home: 0,
+        predicted_away: 0,
+      });
+      predMap[match.id] = prediction;
+    } catch (_) {
+      // silencioso — no bloquear el resto
+    }
+  }
 }
 
 function attachPredictionForm(form, predMap) {
