@@ -86,8 +86,17 @@ function matchCard(match, prediction) {
 function predictionForm(match, prediction) {
   const home = prediction?.predicted_home ?? '';
   const away = prediction?.predicted_away ?? '';
+  const result = prediction?.predicted_result ?? '';
   return `
     <form class="prediction-form" data-match-id="${match.id}">
+      <div class="result-selector">
+        ${['1', 'X', '2'].map(r => `
+          <label class="result-selector__option">
+            <input type="radio" name="predicted_result" value="${r}" ${result === r ? 'checked' : ''} required />
+            ${r}
+          </label>
+        `).join('')}
+      </div>
       <div class="prediction-form__inputs">
         <input type="number" name="predicted_home" class="score-input" min="0" max="30"
           value="${home}" placeholder="0" required />
@@ -106,12 +115,9 @@ function attachPredictionForm(form, predMap) {
     const matchId = parseInt(form.dataset.matchId);
     const home = parseInt(form.querySelector('[name=predicted_home]').value);
     const away = parseInt(form.querySelector('[name=predicted_away]').value);
+    const result = form.querySelector('[name=predicted_result]:checked')?.value;
 
-    if (isNaN(home) || isNaN(away)) return;
-
-    let result = '1';
-    if (home === away) result = 'X';
-    else if (away > home) result = '2';
+    if (isNaN(home) || isNaN(away) || !result) return;
 
     const btn = form.querySelector('button');
     btn.disabled = true;
