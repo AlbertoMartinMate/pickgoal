@@ -11,21 +11,8 @@
   justify-content: space-between;
   padding: 0 v.$sp-6;
   gap: v.$sp-4;
-  background: rgba(v.$bg-card, 0.92);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border-bottom: 1px solid v.$border;
-
-  // Línea de acento superior
-  &::after {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, v.$accent, transparent);
-    opacity: 0.5;
-  }
+  background: #000000;
+  border-bottom: 2px solid #39FF14;
 
   &__brand { flex-shrink: 0; }
 
