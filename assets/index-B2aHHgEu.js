@@ -1,4 +1,4 @@
-(function(){const a=document.createElement("link").relList;if(a&&a.supports&&a.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))s(i);new MutationObserver(i=>{for(const n of i)if(n.type==="childList")for(const o of n.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const n={};return i.integrity&&(n.integrity=i.integrity),i.referrerPolicy&&(n.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?n.credentials="include":i.crossOrigin==="anonymous"?n.credentials="omit":n.credentials="same-origin",n}function s(i){if(i.ep)return;i.ep=!0;const n=t(i);fetch(i.href,n)}})();const S="https://pickgoal-backend.onrender.com/api";function B(){return localStorage.getItem("token")}async function l(e,a={}){const t={"Content-Type":"application/json",...a.headers},s=B();s&&(t.Authorization=`Bearer ${s}`);const i=await fetch(`${S}${e}`,{...a,headers:t}),n=await i.json().catch(()=>({}));if(!i.ok)throw{status:i.status,message:n.error||"Error desconocido"};return n}const m={get:e=>l(e),post:(e,a)=>l(e,{method:"POST",body:JSON.stringify(a)}),patch:(e,a)=>l(e,{method:"PATCH",body:JSON.stringify(a)}),delete:e=>l(e,{method:"DELETE"}),auth:{register:e=>l("/auth/register",{method:"POST",body:JSON.stringify(e)}),login:e=>l("/auth/login",{method:"POST",body:JSON.stringify(e)}),me:()=>l("/auth/me"),forgotPassword:e=>l("/auth/forgot-password",{method:"POST",body:JSON.stringify({email:e})}),resetPassword:(e,a)=>l("/auth/reset-password",{method:"POST",body:JSON.stringify({token:e,password:a})}),ranking:()=>l("/auth/ranking"),users:()=>l("/auth/users"),toggleAdmin:e=>l(`/auth/users/${e}/toggle-admin`,{method:"PATCH"})},matches:{grouped:()=>l("/matches/grouped"),list:(e="")=>l(`/matches/${e}`),get:e=>l(`/matches/${e}`),sync:()=>l("/matches/sync",{method:"POST"})},predictions:{mine:()=>l("/predictions/"),forMatch:e=>l(`/predictions/match/${e}`),save:e=>l("/predictions/",{method:"POST",body:JSON.stringify(e)}),getChampion:()=>l("/predictions/champion"),saveChampion:e=>l("/predictions/champion",{method:"POST",body:JSON.stringify({team_name:e})}),awardChampion:e=>l("/predictions/champion/award",{method:"POST",body:JSON.stringify({team_name:e})})},leagues:{public:()=>l("/leagues/public"),my:()=>l("/leagues/my"),create:e=>l("/leagues/",{method:"POST",body:JSON.stringify(e)}),join:e=>l("/leagues/join",{method:"POST",body:JSON.stringify(e)}),get:e=>l(`/leagues/${e}`),leave:e=>l(`/leagues/${e}/leave`,{method:"DELETE"}),matchPredictions:(e,a)=>l(`/leagues/${e}/predictions/${a}`)},board:{messages:(e=1)=>l(`/board/?page=${e}`),post:e=>l("/board/",{method:"POST",body:JSON.stringify({message:e})}),delete:e=>l(`/board/${e}`,{method:"DELETE"})}};let h=null;const p={async init(){if(localStorage.getItem("token"))try{const{user:a}=await m.auth.me();h=a}catch{localStorage.removeItem("token")}},setUser(e,a){h=e,localStorage.setItem("token",a),document.dispatchEvent(new CustomEvent("auth:change",{detail:e}))},logout(){h=null,localStorage.removeItem("token"),document.dispatchEvent(new CustomEvent("auth:change",{detail:null}))},getUser(){return h},isLoggedIn(){return!!h},isAdmin(){return(h==null?void 0:h.is_admin)===!0}};function M(e){const a=p.getUser();e.innerHTML=`
+(function(){const a=document.createElement("link").relList;if(a&&a.supports&&a.supports("modulepreload"))return;for(const n of document.querySelectorAll('link[rel="modulepreload"]'))s(n);new MutationObserver(n=>{for(const i of n)if(i.type==="childList")for(const o of i.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(n){const i={};return n.integrity&&(i.integrity=n.integrity),n.referrerPolicy&&(i.referrerPolicy=n.referrerPolicy),n.crossOrigin==="use-credentials"?i.credentials="include":n.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function s(n){if(n.ep)return;n.ep=!0;const i=t(n);fetch(n.href,i)}})();const S="https://pickgoal-backend.onrender.com/api";function B(){return localStorage.getItem("token")}async function l(e,a={}){const t={"Content-Type":"application/json",...a.headers},s=B();s&&(t.Authorization=`Bearer ${s}`);const n=await fetch(`${S}${e}`,{...a,headers:t}),i=await n.json().catch(()=>({}));if(!n.ok)throw{status:n.status,message:i.error||"Error desconocido"};return i}const m={get:e=>l(e),post:(e,a)=>l(e,{method:"POST",body:JSON.stringify(a)}),patch:(e,a)=>l(e,{method:"PATCH",body:JSON.stringify(a)}),delete:e=>l(e,{method:"DELETE"}),auth:{register:e=>l("/auth/register",{method:"POST",body:JSON.stringify(e)}),login:e=>l("/auth/login",{method:"POST",body:JSON.stringify(e)}),me:()=>l("/auth/me"),forgotPassword:e=>l("/auth/forgot-password",{method:"POST",body:JSON.stringify({email:e})}),resetPassword:(e,a)=>l("/auth/reset-password",{method:"POST",body:JSON.stringify({token:e,password:a})}),ranking:()=>l("/auth/ranking"),users:()=>l("/auth/users"),toggleAdmin:e=>l(`/auth/users/${e}/toggle-admin`,{method:"PATCH"})},matches:{grouped:()=>l("/matches/grouped"),list:(e="")=>l(`/matches/${e}`),get:e=>l(`/matches/${e}`),sync:()=>l("/matches/sync",{method:"POST"})},predictions:{mine:()=>l("/predictions/"),forMatch:e=>l(`/predictions/match/${e}`),save:e=>l("/predictions/",{method:"POST",body:JSON.stringify(e)}),getChampion:()=>l("/predictions/champion"),saveChampion:e=>l("/predictions/champion",{method:"POST",body:JSON.stringify({team_name:e})}),awardChampion:e=>l("/predictions/champion/award",{method:"POST",body:JSON.stringify({team_name:e})})},leagues:{public:()=>l("/leagues/public"),my:()=>l("/leagues/my"),create:e=>l("/leagues/",{method:"POST",body:JSON.stringify(e)}),join:e=>l("/leagues/join",{method:"POST",body:JSON.stringify(e)}),get:e=>l(`/leagues/${e}`),leave:e=>l(`/leagues/${e}/leave`,{method:"DELETE"}),matchPredictions:(e,a)=>l(`/leagues/${e}/predictions/${a}`)},board:{messages:(e=1)=>l(`/board/?page=${e}`),post:e=>l("/board/",{method:"POST",body:JSON.stringify({message:e})}),delete:e=>l(`/board/${e}`,{method:"DELETE"})}};let h=null;const p={async init(){if(localStorage.getItem("token"))try{const{user:a}=await m.auth.me();h=a}catch{localStorage.removeItem("token")}},setUser(e,a){h=e,localStorage.setItem("token",a),document.dispatchEvent(new CustomEvent("auth:change",{detail:e}))},logout(){h=null,localStorage.removeItem("token"),document.dispatchEvent(new CustomEvent("auth:change",{detail:null}))},getUser(){return h},isLoggedIn(){return!!h},isAdmin(){return(h==null?void 0:h.is_admin)===!0}};function M(e){const a=p.getUser();e.innerHTML=`
     <section class="hero">
       <div class="hero__content">
         <img src="/assets/logo-completo.jpg" alt="PickGoal" class="hero__logo-img" />
@@ -61,7 +61,7 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("loginForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("loginBtn"),s=document.getElementById("loginError"),i=document.getElementById("identifier").value.trim(),n=document.getElementById("password").value;t.disabled=!0,t.textContent="Entrando…",s.classList.add("hidden");try{const{token:o,user:r}=await m.auth.login({identifier:i,password:n});p.setUser(r,o),u(`¡Bienvenido, ${r.username}!`),g.navigate("/quiniela")}catch(o){s.textContent=o.message||"Error al iniciar sesión",s.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Entrar"}})}function k(e){e.innerHTML=`
+  `,document.getElementById("loginForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("loginBtn"),s=document.getElementById("loginError"),n=document.getElementById("identifier").value.trim(),i=document.getElementById("password").value;t.disabled=!0,t.textContent="Entrando…",s.classList.add("hidden");try{const{token:o,user:r}=await m.auth.login({identifier:n,password:i});p.setUser(r,o),u(`¡Bienvenido, ${r.username}!`),g.navigate("/quiniela")}catch(o){s.textContent=o.message||"Error al iniciar sesión",s.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Entrar"}})}function k(e){e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Crear cuenta</h2>
@@ -94,17 +94,17 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("registerForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("registerBtn"),s=document.getElementById("registerError");t.disabled=!0,t.textContent="Creando cuenta…",s.classList.add("hidden");const i={username:document.getElementById("username").value.trim(),email:document.getElementById("email").value.trim(),country:document.getElementById("country").value.trim(),password:document.getElementById("password").value};try{const{token:n,user:o}=await m.auth.register(i);p.setUser(o,n),u("¡Cuenta creada! Bienvenido a PickGoal"),g.navigate("/campeon")}catch(n){s.textContent=n.message||"Error al registrarse",s.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Crear cuenta"}})}async function H(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[{groups:a},t]=await Promise.all([m.matches.grouped(),p.isLoggedIn()?m.predictions.mine():Promise.resolve({predictions:[]})]),s={};for(const o of t.predictions)s[o.match_id]=o;e.innerHTML=`
+  `,document.getElementById("registerForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("registerBtn"),s=document.getElementById("registerError");t.disabled=!0,t.textContent="Creando cuenta…",s.classList.add("hidden");const n={username:document.getElementById("username").value.trim(),email:document.getElementById("email").value.trim(),country:document.getElementById("country").value.trim(),password:document.getElementById("password").value};try{const{token:i,user:o}=await m.auth.register(n);p.setUser(o,i),u("¡Cuenta creada! Bienvenido a PickGoal"),g.navigate("/campeon")}catch(i){s.textContent=i.message||"Error al registrarse",s.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Crear cuenta"}})}async function H(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[{groups:a},t]=await Promise.all([m.matches.grouped(),p.isLoggedIn()?m.predictions.mine():Promise.resolve({predictions:[]})]),s={};for(const o of t.predictions)s[o.match_id]=o;e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Quiniela — Mundial 2026</h1>
         ${p.isLoggedIn()?"":'<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>'}
         <div id="quinielaContent"></div>
       </div>
-    `;const i=document.getElementById("quinielaContent"),n=["group","r32","r16","quarters","semis","third","final"];a.forEach(o=>{const r=document.createElement("section");r.className="phase-section";const c=o.group_name?`${o.label} — Grupo ${o.group_name}`:o.label;r.innerHTML=`<h2 class="phase-section__title">${c}</h2>
-        <div class="matches-grid">${o.matches.map(d=>N(d,s[d.id])).join("")}</div>`,i.appendChild(r),p.isLoggedIn()&&r.querySelectorAll(".prediction-form").forEach(d=>{A(d,s)})})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error cargando los partidos: ${a.message}</p></div>`}}function N(e,a){const t=e.is_locked,s=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",i={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
+    `;const n=document.getElementById("quinielaContent"),i=["group","r32","r16","quarters","semis","third","final"];a.forEach(o=>{const r=document.createElement("section");r.className="phase-section";const c=o.group_name?`${o.label} — Grupo ${o.group_name}`:o.label;r.innerHTML=`<h2 class="phase-section__title">${c}</h2>
+        <div class="matches-grid">${o.matches.map(d=>N(d,s[d.id])).join("")}</div>`,n.appendChild(r),p.isLoggedIn()&&r.querySelectorAll(".prediction-form").forEach(d=>{O(d,s)})}),p.isLoggedIn()&&A(a,s)}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error cargando los partidos: ${a.message}</p></div>`}}function N(e,a){const t=e.is_locked,s=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",n={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
     <div class="match-card ${t?"match-card--locked":""}" data-match-id="${e.id}">
       <div class="match-card__header">
-        <span class="match-card__status">${i}</span>
+        <span class="match-card__status">${n}</span>
         <span class="match-card__date">${C(e.match_datetime)}</span>
         ${s}
       </div>
@@ -120,13 +120,13 @@
                (${a.predicted_result}) · ${a.total_points} pts
              </div>`:""}
     </div>
-  `}function q(e,a){const t=(a==null?void 0:a.predicted_home)??"",s=(a==null?void 0:a.predicted_away)??"",i=(a==null?void 0:a.predicted_result)??"";return`
+  `}function q(e,a){const t=(a==null?void 0:a.predicted_home)??0,s=(a==null?void 0:a.predicted_away)??0,n=(a==null?void 0:a.predicted_result)??"X";return`
     <form class="prediction-form" data-match-id="${e.id}">
       <div class="result-selector">
-        ${["1","X","2"].map(n=>`
+        ${["1","X","2"].map(i=>`
           <label class="result-selector__option">
-            <input type="radio" name="predicted_result" value="${n}" ${i===n?"checked":""} required />
-            ${n}
+            <input type="radio" name="predicted_result" value="${i}" ${n===i?"checked":""} required />
+            ${i}
           </label>
         `).join("")}
       </div>
@@ -139,7 +139,7 @@
       </div>
       <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
     </form>
-  `}function A(e,a){e.addEventListener("submit",async t=>{var c;t.preventDefault();const s=parseInt(e.dataset.matchId),i=parseInt(e.querySelector("[name=predicted_home]").value),n=parseInt(e.querySelector("[name=predicted_away]").value),o=(c=e.querySelector("[name=predicted_result]:checked"))==null?void 0:c.value;if(isNaN(i)||isNaN(n)||!o)return;const r=e.querySelector("button");r.disabled=!0,r.textContent="…";try{const{prediction:d}=await m.predictions.save({match_id:s,predicted_result:o,predicted_home:i,predicted_away:n});a[s]=d,u("Predicción guardada"),r.textContent="✓ Guardado",setTimeout(()=>{r.disabled=!1,r.textContent="Guardar"},2e3)}catch(d){u(d.message||"Error al guardar","error"),r.disabled=!1,r.textContent="Guardar"}})}async function O(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{ranking:a}=await m.auth.ranking(),t=p.getUser();e.innerHTML=`
+  `}async function A(e,a){const t=e.flatMap(s=>s.matches).filter(s=>!s.is_locked&&!a[s.id]);for(const s of t)try{const{prediction:n}=await m.predictions.save({match_id:s.id,predicted_result:"X",predicted_home:0,predicted_away:0});a[s.id]=n}catch{}}function O(e,a){e.addEventListener("submit",async t=>{var c;t.preventDefault();const s=parseInt(e.dataset.matchId),n=parseInt(e.querySelector("[name=predicted_home]").value),i=parseInt(e.querySelector("[name=predicted_away]").value),o=(c=e.querySelector("[name=predicted_result]:checked"))==null?void 0:c.value;if(isNaN(n)||isNaN(i)||!o)return;const r=e.querySelector("button");r.disabled=!0,r.textContent="…";try{const{prediction:d}=await m.predictions.save({match_id:s,predicted_result:o,predicted_home:n,predicted_away:i});a[s]=d,u("Predicción guardada"),r.textContent="✓ Guardado",setTimeout(()=>{r.disabled=!1,r.textContent="Guardar"},2e3)}catch(d){u(d.message||"Error al guardar","error"),r.disabled=!1,r.textContent="Guardar"}})}async function j(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{ranking:a}=await m.auth.ranking(),t=p.getUser();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Clasificación General</h1>
         <div class="ranking-table-wrapper">
@@ -165,7 +165,7 @@
           </table>
         </div>
       </div>
-    `}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}async function j(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';let a=1,t=1;async function s(){const{messages:r,pages:c}=await m.board.messages(a);return t=c,r}try{const r=await s();i(r)}catch(r){e.innerHTML=`<div class="container"><p class="form__error">Error: ${r.message}</p></div>`}function i(r){var d,f,y;const c=p.getUser();e.innerHTML=`
+    `}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}async function U(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';let a=1,t=1;async function s(){const{messages:r,pages:c}=await m.board.messages(a);return t=c,r}try{const r=await s();n(r)}catch(r){e.innerHTML=`<div class="container"><p class="form__error">Error: ${r.message}</p></div>`}function n(r){var d,f,y;const c=p.getUser();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Tablón</h1>
         ${c?`<form class="board-form" id="boardForm">
@@ -174,7 +174,7 @@
                <button class="btn btn--primary" type="submit">Publicar</button>
              </form>`:'<p class="notice"><a href="#/login">Inicia sesión</a> para participar en el tablón.</p>'}
         <div class="board-messages" id="boardMessages">
-          ${n(r,c)}
+          ${i(r,c)}
         </div>
         ${t>1?`<div class="pagination">
                <button class="btn btn--ghost btn--sm" id="prevPage" ${a<=1?"disabled":""}>← Anterior</button>
@@ -182,23 +182,23 @@
                <button class="btn btn--ghost btn--sm" id="nextPage" ${a>=t?"disabled":""}>Siguiente →</button>
              </div>`:""}
       </div>
-    `,(d=document.getElementById("boardForm"))==null||d.addEventListener("submit",async v=>{v.preventDefault();const E=document.getElementById("boardMsg"),$=E.value.trim();if($)try{await m.board.post($),E.value="";const b=await s();document.getElementById("boardMessages").innerHTML=n(b,c),o(c),u("Mensaje publicado")}catch(b){u(b.message,"error")}}),(f=document.getElementById("prevPage"))==null||f.addEventListener("click",async()=>{a--;const v=await s();document.getElementById("boardMessages").innerHTML=n(v,c),o(c)}),(y=document.getElementById("nextPage"))==null||y.addEventListener("click",async()=>{a++;const v=await s();document.getElementById("boardMessages").innerHTML=n(v,c),o(c)}),o(c)}function n(r,c){return r.length?r.map(d=>`
+    `,(d=document.getElementById("boardForm"))==null||d.addEventListener("submit",async v=>{v.preventDefault();const E=document.getElementById("boardMsg"),$=E.value.trim();if($)try{await m.board.post($),E.value="";const b=await s();document.getElementById("boardMessages").innerHTML=i(b,c),o(c),u("Mensaje publicado")}catch(b){u(b.message,"error")}}),(f=document.getElementById("prevPage"))==null||f.addEventListener("click",async()=>{a--;const v=await s();document.getElementById("boardMessages").innerHTML=i(v,c),o(c)}),(y=document.getElementById("nextPage"))==null||y.addEventListener("click",async()=>{a++;const v=await s();document.getElementById("boardMessages").innerHTML=i(v,c),o(c)}),o(c)}function i(r,c){return r.length?r.map(d=>`
       <div class="board-message ${d.is_deleted?"board-message--deleted":""}" data-id="${d.id}">
         <div class="board-message__header">
           <strong>${d.username}</strong>
           <span class="board-message__date">${C(d.created_at)}</span>
           ${!d.is_deleted&&c&&(c.id===d.user_id||c.is_admin)?`<button class="btn btn--danger btn--xs delete-msg" data-id="${d.id}">✕</button>`:""}
         </div>
-        <p class="board-message__text">${U(d.message)}</p>
+        <p class="board-message__text">${R(d.message)}</p>
       </div>
-    `).join(""):'<p class="empty">Sin mensajes aún. ¡Sé el primero!</p>'}function o(r){e.querySelectorAll(".delete-msg").forEach(c=>{c.addEventListener("click",async()=>{if(confirm("¿Eliminar este mensaje?"))try{await m.board.delete(c.dataset.id);const d=await s();document.getElementById("boardMessages").innerHTML=n(d,r),o(r),u("Mensaje eliminado")}catch(d){u(d.message,"error")}})})}}function U(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}async function R(e){var a,t;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[s,i]=await Promise.all([m.leagues.public(),p.isLoggedIn()?m.leagues.my():Promise.resolve({leagues:[]})]),n=p.getUser();e.innerHTML=`
+    `).join(""):'<p class="empty">Sin mensajes aún. ¡Sé el primero!</p>'}function o(r){e.querySelectorAll(".delete-msg").forEach(c=>{c.addEventListener("click",async()=>{if(confirm("¿Eliminar este mensaje?"))try{await m.board.delete(c.dataset.id);const d=await s();document.getElementById("boardMessages").innerHTML=i(d,r),o(r),u("Mensaje eliminado")}catch(d){u(d.message,"error")}})})}}function R(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}async function F(e){var a,t;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[s,n]=await Promise.all([m.leagues.public(),p.isLoggedIn()?m.leagues.my():Promise.resolve({leagues:[]})]),i=p.getUser();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Ligas</h1>
 
-        ${n?`
+        ${i?`
           <section class="section">
             <h2>Mis ligas</h2>
-            ${i.leagues.length?`<div class="leagues-grid">${i.leagues.map(L).join("")}</div>`:'<p class="empty">No perteneces a ninguna liga aún.</p>'}
+            ${n.leagues.length?`<div class="leagues-grid">${n.leagues.map(L).join("")}</div>`:'<p class="empty">No perteneces a ninguna liga aún.</p>'}
           </section>
 
           <section class="section">
@@ -239,15 +239,15 @@
       </div>
       <div class="league-card__creator">por ${e.creator_username}</div>
     </div>
-  `}async function F(e,{params:a}){var s,i;const t=parseInt(a.id);e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:n,ranking:o,is_member:r}=await m.leagues.get(t),c=p.getUser();e.innerHTML=`
+  `}async function D(e,{params:a}){var s,n;const t=parseInt(a.id);e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:i,ranking:o,is_member:r}=await m.leagues.get(t),c=p.getUser();e.innerHTML=`
       <div class="container">
         <a href="#/ligas" class="back-link">← Volver a ligas</a>
         <div class="league-header">
-          <h1 class="page-title">${n.name}</h1>
+          <h1 class="page-title">${i.name}</h1>
           <div class="league-header__meta">
-            <span>${n.is_public?"🌍 Pública":"🔒 Privada"}</span>
-            <span>${n.member_count} participantes</span>
-            ${n.invite_code?`<span class="invite-code">Código: <strong>${n.invite_code}</strong></span>`:""}
+            <span>${i.is_public?"🌍 Pública":"🔒 Privada"}</span>
+            <span>${i.member_count} participantes</span>
+            ${i.invite_code?`<span class="invite-code">Código: <strong>${i.invite_code}</strong></span>`:""}
           </div>
         </div>
 
@@ -272,7 +272,7 @@
           </table>
         </section>
       </div>
-    `,(s=document.getElementById("btnLeave"))==null||s.addEventListener("click",async()=>{if(confirm("¿Seguro que quieres abandonar esta liga?"))try{await m.leagues.leave(t),u("Has abandonado la liga"),g.navigate("/ligas")}catch(d){u(d.message,"error")}}),(i=document.getElementById("btnJoin"))==null||i.addEventListener("click",async()=>{try{await m.leagues.join({league_id:t}),u("¡Te has unido a la liga!"),g.navigate(`/ligas/${t}`)}catch(d){u(d.message,"error")}})}catch(n){e.innerHTML=`<div class="container"><p class="form__error">Error: ${n.message}</p><a href="#/ligas">Volver</a></div>`}}async function D(e){var t;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';const a=p.getUser();try{const[s,i,n]=await Promise.all([m.predictions.mine(),m.predictions.getChampion(),m.leagues.my()]),o=s.predictions.reduce((r,c)=>r+c.total_points,0)+(((t=i.champion_prediction)==null?void 0:t.points_earned)||0);e.innerHTML=`
+    `,(s=document.getElementById("btnLeave"))==null||s.addEventListener("click",async()=>{if(confirm("¿Seguro que quieres abandonar esta liga?"))try{await m.leagues.leave(t),u("Has abandonado la liga"),g.navigate("/ligas")}catch(d){u(d.message,"error")}}),(n=document.getElementById("btnJoin"))==null||n.addEventListener("click",async()=>{try{await m.leagues.join({league_id:t}),u("¡Te has unido a la liga!"),g.navigate(`/ligas/${t}`)}catch(d){u(d.message,"error")}})}catch(i){e.innerHTML=`<div class="container"><p class="form__error">Error: ${i.message}</p><a href="#/ligas">Volver</a></div>`}}async function z(e){var t;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';const a=p.getUser();try{const[s,n,i]=await Promise.all([m.predictions.mine(),m.predictions.getChampion(),m.leagues.my()]),o=s.predictions.reduce((r,c)=>r+c.total_points,0)+(((t=n.champion_prediction)==null?void 0:t.points_earned)||0);e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Mi Perfil</h1>
 
@@ -295,17 +295,17 @@
               <span class="stat__label">Predicciones</span>
             </div>
             <div class="stat">
-              <span class="stat__value">${n.leagues.length}</span>
+              <span class="stat__value">${i.leagues.length}</span>
               <span class="stat__label">Ligas</span>
             </div>
           </div>
         </section>
 
-        ${i.champion_prediction?`<section class="section">
+        ${n.champion_prediction?`<section class="section">
                <h2>Predicción Campeón</h2>
                <p class="champion-pick">
-                 🏆 <strong>${i.champion_prediction.team_name}</strong>
-                 — ${i.champion_prediction.points_earned} puntos
+                 🏆 <strong>${n.champion_prediction.team_name}</strong>
+                 — ${n.champion_prediction.points_earned} puntos
                </p>
              </section>`:`<section class="section">
                <h2>Predicción Campeón</h2>
@@ -314,21 +314,21 @@
 
         <section class="section">
           <h2>Mis predicciones</h2>
-          ${s.predictions.length?`<div class="predictions-list">${s.predictions.map(z).join("")}</div>`:'<p class="empty">Sin predicciones aún. <a href="#/quiniela">Ir a la quiniela</a></p>'}
+          ${s.predictions.length?`<div class="predictions-list">${s.predictions.map(G).join("")}</div>`:'<p class="empty">Sin predicciones aún. <a href="#/quiniela">Ir a la quiniela</a></p>'}
         </section>
 
         <section class="section">
           <h2>Mis ligas</h2>
-          ${n.leagues.length?`<ul class="leagues-list">${n.leagues.map(r=>`<li><a href="#/ligas/${r.id}">${r.name}</a> <span class="tag">${r.is_public?"Pública":"Privada"}</span></li>`).join("")}</ul>`:'<p class="empty">No perteneces a ninguna liga. <a href="#/ligas">Ver ligas</a></p>'}
+          ${i.leagues.length?`<ul class="leagues-list">${i.leagues.map(r=>`<li><a href="#/ligas/${r.id}">${r.name}</a> <span class="tag">${r.is_public?"Pública":"Privada"}</span></li>`).join("")}</ul>`:'<p class="empty">No perteneces a ninguna liga. <a href="#/ligas">Ver ligas</a></p>'}
         </section>
       </div>
-    `}catch(s){e.innerHTML=`<div class="container"><p class="form__error">Error: ${s.message}</p></div>`}}function z(e){return`
+    `}catch(s){e.innerHTML=`<div class="container"><p class="form__error">Error: ${s.message}</p></div>`}}function G(e){return`
     <div class="pred-row ${e.total_points>0?"pred-row--scored":""}">
       <span class="pred-row__result">${e.predicted_result}</span>
       <span class="pred-row__score">${e.predicted_home}-${e.predicted_away}</span>
       <span class="pred-row__pts">${e.total_points} pts</span>
     </div>
-  `}const w=new Date("2026-06-11T00:00:00Z"),G=["Argentina","Brasil","Francia","España","Inglaterra","Alemania","Portugal","Países Bajos","Italia","Bélgica","Uruguay","Colombia","México","Estados Unidos","Canadá","Marruecos","Senegal","Nigeria","Japón","Corea del Sur","Australia","Arabia Saudí","Irán","Qatar","Ecuador","Chile","Perú","Venezuela","Bolivia","Paraguay","Costa Rica","Honduras","Panamá","Jamaica","Trinidad y Tobago","Guatemala","Turquía","Polonia","Croacia","Serbia","República Checa","Eslovaquia","Austria","Suiza","Dinamarca","Suecia","Noruega","Escocia","Ucrania","Rumanía","Hungría","Grecia","Egipto","Camerún","Ghana","Costa de Marfil","Túnez","Argelia","China","India","Irak","Uzbekistán","Nueva Zelanda","Fiji"];async function P(e){var a;if(!p.isLoggedIn()){e.innerHTML='<div class="container"><p class="notice"><a href="#/login">Inicia sesión</a> para predecir el campeón.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{champion_prediction:t}=await m.predictions.getChampion(),s=new Date>=w;e.innerHTML=`
+  `}const w=new Date("2026-06-11T00:00:00Z"),J=["Argentina","Brasil","Francia","España","Inglaterra","Alemania","Portugal","Países Bajos","Italia","Bélgica","Uruguay","Colombia","México","Estados Unidos","Canadá","Marruecos","Senegal","Nigeria","Japón","Corea del Sur","Australia","Arabia Saudí","Irán","Qatar","Ecuador","Chile","Perú","Venezuela","Bolivia","Paraguay","Costa Rica","Honduras","Panamá","Jamaica","Trinidad y Tobago","Guatemala","Turquía","Polonia","Croacia","Serbia","República Checa","Eslovaquia","Austria","Suiza","Dinamarca","Suecia","Noruega","Escocia","Ucrania","Rumanía","Hungría","Grecia","Egipto","Camerún","Ghana","Costa de Marfil","Túnez","Argelia","China","India","Irak","Uzbekistán","Nueva Zelanda","Fiji"];async function P(e){var a;if(!p.isLoggedIn()){e.innerHTML='<div class="container"><p class="notice"><a href="#/login">Inicia sesión</a> para predecir el campeón.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{champion_prediction:t}=await m.predictions.getChampion(),s=new Date>=w;e.innerHTML=`
       <div class="container">
         <h1 class="page-title">🏆 Predice el Campeón</h1>
         <p class="champion-desc">
@@ -347,14 +347,14 @@
                    <input class="form__input" type="text" id="teamSearch" placeholder="Escribe para buscar…"
                      list="teamsList" autocomplete="off" required />
                    <datalist id="teamsList">
-                     ${G.map(i=>`<option value="${i}">`).join("")}
+                     ${J.map(n=>`<option value="${n}">`).join("")}
                    </datalist>
                  </div>
                  <p id="champError" class="form__error hidden"></p>
                  <button class="btn btn--primary" type="submit" id="champBtn">Confirmar predicción</button>
                </form>`}
       </div>
-    `,(a=document.getElementById("championForm"))==null||a.addEventListener("submit",async i=>{i.preventDefault();const n=document.getElementById("champBtn"),o=document.getElementById("champError"),r=document.getElementById("teamSearch").value.trim();if(r){n.disabled=!0,n.textContent="Guardando…",o.classList.add("hidden");try{await m.predictions.saveChampion(r),u(`¡${r} guardado como campeón!`),P(e)}catch(c){o.textContent=c.message,o.classList.remove("hidden"),n.disabled=!1,n.textContent="Confirmar predicción"}}})}catch(t){e.innerHTML=`<div class="container"><p class="form__error">Error: ${t.message}</p></div>`}}async function J(e){if(!p.isAdmin()){e.innerHTML='<div class="container"><p class="form__error">Acceso denegado.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{users:a}=await m.auth.users();e.innerHTML=`
+    `,(a=document.getElementById("championForm"))==null||a.addEventListener("submit",async n=>{n.preventDefault();const i=document.getElementById("champBtn"),o=document.getElementById("champError"),r=document.getElementById("teamSearch").value.trim();if(r){i.disabled=!0,i.textContent="Guardando…",o.classList.add("hidden");try{await m.predictions.saveChampion(r),u(`¡${r} guardado como campeón!`),P(e)}catch(c){o.textContent=c.message,o.classList.remove("hidden"),i.disabled=!1,i.textContent="Confirmar predicción"}}})}catch(t){e.innerHTML=`<div class="container"><p class="form__error">Error: ${t.message}</p></div>`}}async function V(e){if(!p.isAdmin()){e.innerHTML='<div class="container"><p class="form__error">Acceso denegado.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{users:a}=await m.auth.users();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Panel de Administración</h1>
 
@@ -382,12 +382,12 @@
               </tr>
             </thead>
             <tbody id="usersTableBody">
-              ${a.map(V).join("")}
+              ${a.map(Q).join("")}
             </tbody>
           </table>
         </section>
       </div>
-    `,document.getElementById("btnSync").addEventListener("click",async()=>{const t=document.getElementById("syncResult");t.textContent="Sincronizando…";try{await m.matches.sync(),t.textContent="✓ Sincronización completada",u("Sincronización completada")}catch(s){t.textContent=`Error: ${s.message}`,u(s.message,"error")}}),document.getElementById("awardForm").addEventListener("submit",async t=>{t.preventDefault();const s=document.getElementById("winnerTeam").value.trim();if(s)try{const{message:i}=await m.predictions.awardChampion(s);u(i)}catch(i){u(i.message,"error")}}),document.getElementById("usersTableBody").addEventListener("click",async t=>{const s=t.target.closest(".toggle-admin");if(!s)return;const i=parseInt(s.dataset.id);try{const{user:n}=await m.auth.toggleAdmin(i);s.closest("tr").querySelector(".admin-badge").textContent=n.is_admin?"Sí":"No",u(`${n.username} ${n.is_admin?"ahora es admin":"ya no es admin"}`)}catch(n){u(n.message,"error")}})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}function V(e){return`
+    `,document.getElementById("btnSync").addEventListener("click",async()=>{const t=document.getElementById("syncResult");t.textContent="Sincronizando…";try{await m.matches.sync(),t.textContent="✓ Sincronización completada",u("Sincronización completada")}catch(s){t.textContent=`Error: ${s.message}`,u(s.message,"error")}}),document.getElementById("awardForm").addEventListener("submit",async t=>{t.preventDefault();const s=document.getElementById("winnerTeam").value.trim();if(s)try{const{message:n}=await m.predictions.awardChampion(s);u(n)}catch(n){u(n.message,"error")}}),document.getElementById("usersTableBody").addEventListener("click",async t=>{const s=t.target.closest(".toggle-admin");if(!s)return;const n=parseInt(s.dataset.id);try{const{user:i}=await m.auth.toggleAdmin(n);s.closest("tr").querySelector(".admin-badge").textContent=i.is_admin?"Sí":"No",u(`${i.username} ${i.is_admin?"ahora es admin":"ya no es admin"}`)}catch(i){u(i.message,"error")}})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}function Q(e){return`
     <tr>
       <td>${e.id}</td>
       <td>${e.username}</td>
@@ -400,7 +400,7 @@
         </button>
       </td>
     </tr>
-  `}function Q(e){e.innerHTML=`
+  `}function X(e){e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Recuperar contraseña</h2>
@@ -418,7 +418,7 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("forgotForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("forgotBtn"),s=document.getElementById("forgotMsg"),i=document.getElementById("email").value.trim();t.disabled=!0,t.textContent="Enviando…";try{await m.auth.forgotPassword(i),s.textContent="Si el email existe, recibirás un enlace en breve.",s.classList.remove("hidden","form__error"),s.classList.add("form__success")}catch{u("Error al enviar el email","error")}finally{t.disabled=!1,t.textContent="Enviar enlace"}})}function Y(e,{query:a}){const t=a.token||"";if(!t){e.innerHTML='<div class="container"><p class="form__error">Token inválido o expirado.</p><a href="#/login">Volver</a></div>';return}e.innerHTML=`
+  `,document.getElementById("forgotForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("forgotBtn"),s=document.getElementById("forgotMsg"),n=document.getElementById("email").value.trim();t.disabled=!0,t.textContent="Enviando…";try{await m.auth.forgotPassword(n),s.textContent="Si el email existe, recibirás un enlace en breve.",s.classList.remove("hidden","form__error"),s.classList.add("form__success")}catch{u("Error al enviar el email","error")}finally{t.disabled=!1,t.textContent="Enviar enlace"}})}function Y(e,{query:a}){const t=a.token||"";if(!t){e.innerHTML='<div class="container"><p class="form__error">Token inválido o expirado.</p><a href="#/login">Volver</a></div>';return}e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Nueva contraseña</h2>
@@ -433,4 +433,4 @@
         </form>
       </div>
     </div>
-  `,document.getElementById("resetForm").addEventListener("submit",async s=>{s.preventDefault();const i=document.getElementById("resetBtn"),n=document.getElementById("resetError"),o=document.getElementById("password").value;i.disabled=!0,i.textContent="Guardando…",n.classList.add("hidden");try{await m.auth.resetPassword(t,o),u("Contraseña actualizada. Ya puedes iniciar sesión."),g.navigate("/login")}catch(r){n.textContent=r.message||"Error al restablecer la contraseña",n.classList.remove("hidden")}finally{i.disabled=!1,i.textContent="Guardar contraseña"}})}const Z={"/":M,"/login":x,"/register":k,"/quiniela":H,"/ranking":O,"/tablon":j,"/ligas":R,"/ligas/:id":F,"/perfil":D,"/campeon":P,"/admin":J,"/forgot-password":Q,"/reset-password":Y};function K(e){for(const[a,t]of Object.entries(Z)){const s=[],i=new RegExp("^"+a.replace(/:([^/]+)/g,(o,r)=>(s.push(r),"([^/]+)"))+"$"),n=e.match(i);if(n){const o={};return s.forEach((r,c)=>{o[r]=n[c+1]}),{handler:t,params:o}}}return null}const I=()=>document.getElementById("mainContent"),g={init(){window.addEventListener("hashchange",()=>this.resolve()),this.resolve()},navigate(e){window.location.hash=e},resolve(){const e=window.location.hash.slice(1)||"/",[a,t]=e.split("?"),s=Object.fromEntries(new URLSearchParams(t||"")),i=K(a);if(!i){I().innerHTML='<div class="error-page"><h2>Página no encontrada</h2><a href="#/">Volver al inicio</a></div>';return}const{handler:n,params:o}=i;if(["/perfil","/campeon","/admin"].includes(a)&&!p.isLoggedIn()){this.navigate("/login");return}if(a==="/admin"&&!p.isAdmin()){this.navigate("/");return}const c=I();c.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>',n(c,{params:o,query:s})}};async function W(){await p.init(),g.init(),X()}function X(){const e=document.getElementById("btnLogout"),a=document.getElementById("navToggle"),t=document.getElementById("navMenu");e==null||e.addEventListener("click",()=>{p.logout(),g.navigate("/")}),a==null||a.addEventListener("click",()=>{t==null||t.classList.toggle("navbar__menu--open")}),document.addEventListener("auth:change",T),T()}function T(){var i;const e=document.getElementById("navAuthLinks"),a=document.getElementById("navUserLinks"),t=document.getElementById("navAdminLink"),s=p.getUser();if(s){if(e==null||e.classList.add("hidden"),a==null||a.classList.remove("hidden"),s.is_admin&&!t){const n=document.createElement("li");n.id="navAdminLink",n.innerHTML='<a href="#/admin" class="nav-link nav-link--admin">Admin</a>',(i=a==null?void 0:a.parentNode)==null||i.insertBefore(n,a.nextSibling)}}else e==null||e.classList.remove("hidden"),a==null||a.classList.add("hidden"),t==null||t.remove()}W();
+  `,document.getElementById("resetForm").addEventListener("submit",async s=>{s.preventDefault();const n=document.getElementById("resetBtn"),i=document.getElementById("resetError"),o=document.getElementById("password").value;n.disabled=!0,n.textContent="Guardando…",i.classList.add("hidden");try{await m.auth.resetPassword(t,o),u("Contraseña actualizada. Ya puedes iniciar sesión."),g.navigate("/login")}catch(r){i.textContent=r.message||"Error al restablecer la contraseña",i.classList.remove("hidden")}finally{n.disabled=!1,n.textContent="Guardar contraseña"}})}const Z={"/":M,"/login":x,"/register":k,"/quiniela":H,"/ranking":j,"/tablon":U,"/ligas":F,"/ligas/:id":D,"/perfil":z,"/campeon":P,"/admin":V,"/forgot-password":X,"/reset-password":Y};function K(e){for(const[a,t]of Object.entries(Z)){const s=[],n=new RegExp("^"+a.replace(/:([^/]+)/g,(o,r)=>(s.push(r),"([^/]+)"))+"$"),i=e.match(n);if(i){const o={};return s.forEach((r,c)=>{o[r]=i[c+1]}),{handler:t,params:o}}}return null}const I=()=>document.getElementById("mainContent"),g={init(){window.addEventListener("hashchange",()=>this.resolve()),this.resolve()},navigate(e){window.location.hash=e},resolve(){const e=window.location.hash.slice(1)||"/",[a,t]=e.split("?"),s=Object.fromEntries(new URLSearchParams(t||"")),n=K(a);if(!n){I().innerHTML='<div class="error-page"><h2>Página no encontrada</h2><a href="#/">Volver al inicio</a></div>';return}const{handler:i,params:o}=n;if(["/perfil","/campeon","/admin"].includes(a)&&!p.isLoggedIn()){this.navigate("/login");return}if(a==="/admin"&&!p.isAdmin()){this.navigate("/");return}const c=I();c.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>',i(c,{params:o,query:s})}};async function W(){await p.init(),g.init(),ee()}function ee(){const e=document.getElementById("btnLogout"),a=document.getElementById("navToggle"),t=document.getElementById("navMenu");e==null||e.addEventListener("click",()=>{p.logout(),g.navigate("/")}),a==null||a.addEventListener("click",()=>{t==null||t.classList.toggle("navbar__menu--open")}),document.addEventListener("auth:change",T),T()}function T(){var n;const e=document.getElementById("navAuthLinks"),a=document.getElementById("navUserLinks"),t=document.getElementById("navAdminLink"),s=p.getUser();if(s){if(e==null||e.classList.add("hidden"),a==null||a.classList.remove("hidden"),s.is_admin&&!t){const i=document.createElement("li");i.id="navAdminLink",i.innerHTML='<a href="#/admin" class="nav-link nav-link--admin">Admin</a>',(n=a==null?void 0:a.parentNode)==null||n.insertBefore(i,a.nextSibling)}}else e==null||e.classList.remove("hidden"),a==null||a.classList.add("hidden"),t==null||t.remove()}W();
