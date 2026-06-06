@@ -14,6 +14,7 @@ import { renderForgotPassword } from './pages/forgot-password.js';
 import { renderResetPassword } from './pages/reset-password.js';
 import { renderResultados } from './pages/resultados.js';
 import { renderUnirse } from './pages/unirse.js';
+import { renderJugador } from './pages/jugador.js';
 
 const routes = {
   '/': renderHome,
@@ -31,6 +32,7 @@ const routes = {
   '/forgot-password': renderForgotPassword,
   '/reset-password': renderResetPassword,
   '/unirse': renderUnirse,
+  '/jugador/:id': renderJugador,
 };
 
 function matchRoute(path) {

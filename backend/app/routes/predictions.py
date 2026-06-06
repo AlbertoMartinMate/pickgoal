@@ -99,6 +99,47 @@ def save_prediction():
     return jsonify({'prediction': saved.to_dict()}), 200
 
 
+@predictions_bp.route('/user/<int:target_user_id>', methods=['GET'])
+@jwt_required()
+def get_user_predictions(target_user_id):
+    """Devuelve predicciones de partidos finalizados para un usuario dado."""
+    league_id = request.args.get('league_id', type=int)
+
+    target = User.query.get_or_404(target_user_id)
+
+    query = (
+        Prediction.query
+        .join(Match, Prediction.match_id == Match.id)
+        .filter(Prediction.user_id == target_user_id, Match.status == 'finished')
+    )
+    if league_id is not None:
+        query = query.filter(Prediction.league_id == league_id)
+
+    preds = query.all()
+
+    correct_results = sum(1 for p in preds if p.pts_result > 0)
+    exact_scores = sum(1 for p in preds if p.pts_score > 0)
+    total_points = sum(p.total_points for p in preds)
+
+    return jsonify({
+        'user': {
+            'id': target.id,
+            'username': target.username,
+            'country': target.country,
+            'total_points': total_points,
+            'correct_results': correct_results,
+            'exact_scores': exact_scores,
+        },
+        'predictions': [
+            {
+                **p.to_dict(),
+                'match': p.match.to_dict(),
+            }
+            for p in sorted(preds, key=lambda p: p.match.match_datetime, reverse=True)
+        ],
+    }), 200
+
+
 @predictions_bp.route('/champion', methods=['GET'])
 @jwt_required()
 def get_champion_prediction():

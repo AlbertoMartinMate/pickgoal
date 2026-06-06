@@ -1,0 +1,198 @@
+@use '../abstracts/variables' as v;
+
+.jugador {
+  &__back {
+    display: inline-block;
+    color: v.$text-muted;
+    font-size: v.$fs-sm;
+    margin-bottom: v.$sp-6;
+    text-decoration: none;
+    &:hover { color: v.$text; }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-4;
+    margin-bottom: v.$sp-6;
+  }
+
+  &__avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: v.$accent-dim;
+    border: 2px solid v.$accent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-bold;
+    margin: 0 0 v.$sp-1;
+  }
+
+  &__country {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+  }
+
+  &__stats {
+    display: flex;
+    gap: v.$sp-3;
+    margin-bottom: v.$sp-8;
+  }
+
+  &__stat {
+    flex: 1;
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    border-radius: v.$r-lg;
+    padding: v.$sp-4;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-1;
+  }
+
+  &__stat-val {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+  }
+
+  &__stat-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__section-title {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: v.$sp-4;
+    padding-bottom: v.$sp-3;
+    border-bottom: 1px solid v.$border;
+  }
+
+  &__pred-list {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-2;
+  }
+
+  &__pred-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: v.$sp-4;
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+    padding: v.$sp-3 v.$sp-4;
+
+    @media (max-width: v.$bp-sm) {
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+
+      .jugador__pred-scores { grid-column: 1; }
+      .jugador__pred-right  { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+    }
+  }
+
+  &__pred-match {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__pred-teams {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__pred-date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+
+  &__pred-scores {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__pred-real {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+  }
+
+  &__pred-arrow {
+    color: v.$text-dim;
+    font-size: v.$fs-xs;
+  }
+
+  &__pred-pick {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+  }
+
+  &__pred-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: v.$sp-1;
+    white-space: nowrap;
+  }
+
+  &__pred-pts {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__badge {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    padding: 2px 6px;
+    border-radius: 4px;
+
+    &--exact {
+      background: v.$accent-dim;
+      color: v.$accent;
+    }
+    &--ok {
+      background: rgba(61, 145, 255, 0.12);
+      color: v.$info;
+    }
+    &--miss {
+      background: v.$danger-dim;
+      color: v.$danger;
+    }
+  }
+}
+
+// Clickable username in ranking table
+.ranking-table__link {
+  color: inherit;
+  text-decoration: none;
+  &:hover { color: v.$accent; text-decoration: underline; }
+}

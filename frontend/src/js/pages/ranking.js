@@ -36,8 +36,8 @@ export async function renderRanking(el) {
             <tbody>
               ${ranking.map(u => `
                 <tr class="${currentUser && u.id === currentUser.id ? 'ranking-table__row--me' : ''}">
-                  <td class="ranking-table__pos">${u.position}</td>
-                  <td>${u.username}</td>
+                  <td class="ranking-table__pos" data-pos="${u.position}">${u.position}</td>
+                  <td><a class="ranking-table__link" href="#/jugador/${u.id}">${u.username}</a></td>
                   <td>${u.country || '—'}</td>
                   <td class="ranking-table__pts">${u.total_points}</td>
                   <td class="ranking-table__stat">${u.correct_results}</td>
