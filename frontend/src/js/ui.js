@@ -17,6 +17,19 @@ export function showToast(message, type = 'success') {
   }, 3000);
 }
 
+export function leagueGateHtml() {
+  return `
+    <div class="container">
+      <div class="league-gate">
+        <div class="league-gate__icon">⚽</div>
+        <h2 class="league-gate__title">¡Inicia tu Liga!</h2>
+        <p class="league-gate__text">Únete a una liga para empezar a predecir</p>
+        <a href="#/ligas" class="btn btn--primary">Ver ligas disponibles</a>
+      </div>
+    </div>
+  `;
+}
+
 export function formatDate(isoString) {
   if (!isoString) return '—';
   const date = new Date(isoString);

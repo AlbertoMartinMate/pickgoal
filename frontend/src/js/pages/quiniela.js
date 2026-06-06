@@ -1,11 +1,20 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { showToast, formatDate } from '../ui.js';
+import { showToast, formatDate, leagueGateHtml } from '../ui.js';
 
 export async function renderQuiniela(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
+    // Gate: logged-in users must be in at least one league
+    if (auth.isLoggedIn()) {
+      const { leagues } = await api.leagues.my();
+      if (leagues.length === 0) {
+        el.innerHTML = leagueGateHtml();
+        return;
+      }
+    }
+
     const [{ groups }, predictionsRes] = await Promise.all([
       api.matches.grouped(),
       auth.isLoggedIn() ? api.predictions.mine() : Promise.resolve({ predictions: [] }),

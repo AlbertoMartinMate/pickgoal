@@ -6,15 +6,19 @@
   inset-inline: 0;
   height: v.$navbar-h;
   z-index: 200;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 v.$sp-6;
-  gap: v.$sp-4;
+  padding: 0 v.$sp-4;
+  gap: v.$sp-2;
   background: #000000;
   border-bottom: 2px solid #39FF14;
 
-  &__brand { flex-shrink: 0; }
+  &__brand {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
   &__logo {
     display: flex;
@@ -25,47 +29,120 @@
     &:hover { opacity: 1; }
   }
 
+  // ─── League selector (left column) ─────────────────────────────────────────
+  &__league {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    visibility: hidden; // shown by JS when logged in
+  }
+
+  // ─── User menu (right column) ───────────────────────────────────────────────
   &__right {
     display: flex;
     align-items: center;
-    gap: v.$sp-3;
+    justify-content: flex-end;
+    gap: v.$sp-2;
+    position: relative;
   }
 
-  &__username {
-    font-size: v.$fs-sm;
-    font-weight: v.$fw-semi;
-    color: v.$text-muted;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 140px;
-    text-decoration: none;
-    transition: color v.$t-fast;
+  // ─── Dropdown trigger button ────────────────────────────────────────────────
+  &__dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
     cursor: pointer;
-    &:hover { color: v.$text; }
+    color: v.$text-muted;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    padding: 5px v.$sp-2;
+    border-radius: v.$r-sm;
+    transition: color v.$t-fast, background v.$t-fast;
+    max-width: 130px;
+    visibility: hidden; // shown by JS when logged in
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &:hover {
+      color: v.$text;
+      background: v.$bg-surface;
+    }
+
+    &--open {
+      color: v.$accent;
+      background: v.$accent-dim;
+
+      .navbar__chevron {
+        transform: rotate(180deg);
+      }
+    }
   }
-}
 
-.nav-link {
-  display: inline-flex;
-  align-items: center;
-  padding: v.$sp-2 v.$sp-3;
-  border-radius: v.$r-sm;
-  font-size: v.$fs-sm;
-  font-weight: v.$fw-medium;
-  color: v.$text-muted;
-  text-decoration: none;
-  transition: color v.$t-fast, background v.$t-fast;
-  white-space: nowrap;
+  &__chevron {
+    flex-shrink: 0;
+    transition: transform v.$t-fast;
+  }
 
-  &:hover {
+  // ─── Dropdown panel ─────────────────────────────────────────────────────────
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 180px;
+    background: v.$bg-card;
+    border: 1px solid v.$border-light;
+    border-radius: v.$r-md;
+    overflow: hidden;
+    z-index: 300;
+    box-shadow: v.$shadow-lg;
+
+    &--right {
+      left: auto;
+      right: 0;
+    }
+  }
+
+  // ─── Dropdown items ──────────────────────────────────────────────────────────
+  &__dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    width: 100%;
+    padding: 10px v.$sp-4;
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
     color: v.$text;
-    background: v.$bg-surface;
-    opacity: 1;
-  }
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+    transition: background v.$t-fast, color v.$t-fast;
 
-  &--admin {
-    color: v.$accent;
-    &:hover { background: v.$accent-dim; }
+    &:hover { background: v.$bg-surface; }
+
+    &--active { color: v.$accent; }
+
+    &--muted {
+      color: v.$text-muted;
+      font-size: v.$fs-xs;
+      border-top: 1px solid v.$border;
+      padding-top: 10px;
+
+      svg { flex-shrink: 0; }
+    }
+
+    &--danger {
+      color: v.$danger;
+      &:hover { background: v.$danger-dim; }
+    }
   }
 }

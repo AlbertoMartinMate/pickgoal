@@ -1,10 +1,20 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { leagueGateHtml } from '../ui.js';
 
 export async function renderRanking(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
+    // Gate: logged-in users must be in at least one league
+    if (auth.isLoggedIn()) {
+      const { leagues } = await api.leagues.my();
+      if (leagues.length === 0) {
+        el.innerHTML = leagueGateHtml();
+        return;
+      }
+    }
+
     const { ranking } = await api.auth.ranking();
     const currentUser = auth.getUser();
 

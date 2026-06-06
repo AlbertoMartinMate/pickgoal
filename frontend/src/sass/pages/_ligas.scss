@@ -1,5 +1,58 @@
 @use '../abstracts/variables' as v;
 
+// ─── Liga gate (sin ligas) ────────────────────────────────────────────────────
+.league-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: v.$sp-20 v.$sp-6;
+  gap: v.$sp-4;
+
+  &__icon {
+    font-size: 56px;
+    line-height: 1;
+  }
+
+  &__title {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+    margin: 0;
+  }
+
+  &__text {
+    font-size: v.$fs-base;
+    color: v.$text-muted;
+    margin: 0;
+    max-width: 280px;
+  }
+}
+
+// ─── Ligas page actions ───────────────────────────────────────────────────────
+.ligas-actions {
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+  }
+}
+
+.create-league-panel {
+  margin-top: v.$sp-5;
+  padding: v.$sp-5;
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+
+  .form__actions {
+    display: flex;
+    gap: v.$sp-3;
+  }
+}
+
 .leagues-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
