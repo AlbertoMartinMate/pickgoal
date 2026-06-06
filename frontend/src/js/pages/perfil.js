@@ -7,9 +7,10 @@ export async function renderPerfil(el) {
   const user = auth.getUser();
 
   try {
+    const leagueId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
     const [predsRes, champRes, leaguesRes] = await Promise.all([
-      api.predictions.mine(),
-      api.predictions.getChampion(),
+      api.predictions.mine(leagueId),
+      api.predictions.getChampion(leagueId),
       api.leagues.my(),
     ]);
 

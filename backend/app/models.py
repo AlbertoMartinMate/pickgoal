@@ -15,7 +15,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     predictions = db.relationship('Prediction', backref='user', lazy='dynamic', cascade='all, delete-orphan')
-    champion_prediction = db.relationship('ChampionPrediction', backref='user', uselist=False, cascade='all, delete-orphan')
+    champion_predictions = db.relationship('ChampionPrediction', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     league_memberships = db.relationship('LeagueMember', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     board_messages = db.relationship('BoardMessage', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -36,7 +36,9 @@ class User(db.Model):
         result = db.session.query(func.sum(Prediction.total_points)).filter(
             Prediction.user_id == self.id
         ).scalar() or 0
-        champion_pts = self.champion_prediction.points_earned if self.champion_prediction else 0
+        champion_pts = db.session.query(func.sum(ChampionPrediction.points_earned)).filter(
+            ChampionPrediction.user_id == self.id
+        ).scalar() or 0
         return result + champion_pts
 
 
