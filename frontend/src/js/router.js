@@ -12,12 +12,14 @@ import { renderCampeon } from './pages/campeon.js';
 import { renderAdmin } from './pages/admin.js';
 import { renderForgotPassword } from './pages/forgot-password.js';
 import { renderResetPassword } from './pages/reset-password.js';
+import { renderResultados } from './pages/resultados.js';
 
 const routes = {
   '/': renderHome,
   '/login': renderLogin,
   '/register': renderRegister,
   '/quiniela': renderQuiniela,
+  '/resultados': renderResultados,
   '/ranking': renderRanking,
   '/tablon': renderTablon,
   '/ligas': renderLigas,

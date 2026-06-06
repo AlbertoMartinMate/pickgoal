@@ -34,7 +34,7 @@ export async function renderQuiniela(el) {
 
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Resultados — Mundial 2026</h1>
+        <h1 class="page-title">Pronósticos — Mundial 2026</h1>
         ${!auth.isLoggedIn() ? '<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>' : ''}
         <nav class="date-nav" id="dateNav"></nav>
         <div id="matchesContent"></div>
