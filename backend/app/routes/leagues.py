@@ -87,6 +87,10 @@ def create_league():
 @jwt_required()
 def join_league():
     user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        return jsonify({'error': 'El administrador no puede participar en ligas'}), 403
+
     data = request.get_json()
     league_id = data.get('league_id')
     invite_code = data.get('invite_code', '').strip().upper()
@@ -117,6 +121,10 @@ def join_league():
 def join_by_code(codigo):
     """Unirse a una liga mediante código de invitación (GET)."""
     user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    if user.is_admin:
+        return jsonify({'error': 'El administrador no puede participar en ligas'}), 403
+
     code = codigo.strip().upper()
 
     league = League.query.filter_by(invite_code=code).first()

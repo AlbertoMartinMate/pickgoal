@@ -62,7 +62,6 @@
     border-radius: v.$r-sm;
     transition: color v.$t-fast, background v.$t-fast;
     max-width: 130px;
-    visibility: hidden; // shown by JS when logged in
 
     span {
       overflow: hidden;
