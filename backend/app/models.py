@@ -11,6 +11,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     country = db.Column(db.String(60))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    is_bot = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     predictions = db.relationship('Prediction', backref='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -105,6 +106,7 @@ class Prediction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=False)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
     predicted_result = db.Column(db.String(1), nullable=False)  # 1, X, 2
     predicted_home = db.Column(db.Integer, nullable=False)
     predicted_away = db.Column(db.Integer, nullable=False)
@@ -114,7 +116,7 @@ class Prediction(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    __table_args__ = (db.UniqueConstraint('user_id', 'match_id', name='uq_user_match'),)
+    __table_args__ = (db.UniqueConstraint('user_id', 'match_id', 'league_id', name='uq_user_match_league'),)
 
     def to_dict(self, reveal_score=True):
         data = {
@@ -138,15 +140,19 @@ class ChampionPrediction(db.Model):
     __tablename__ = 'champion_predictions'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
     team_name = db.Column(db.String(60), nullable=False)
     points_earned = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'league_id', name='uq_champion_user_league'),)
 
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'league_id': self.league_id,
             'team_name': self.team_name,
             'points_earned': self.points_earned,
             'created_at': self.created_at.isoformat(),

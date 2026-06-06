@@ -45,11 +45,11 @@ export const api = {
   },
 
   predictions: {
-    mine: () => request('/predictions/'),
-    forMatch: (matchId) => request(`/predictions/match/${matchId}`),
+    mine: (leagueId) => request(`/predictions/${leagueId ? `?league_id=${leagueId}` : ''}`),
+    forMatch: (matchId, leagueId) => request(`/predictions/match/${matchId}${leagueId ? `?league_id=${leagueId}` : ''}`),
     save: (data) => request('/predictions/', { method: 'POST', body: JSON.stringify(data) }),
-    getChampion: () => request('/predictions/champion'),
-    saveChampion: (team_name) => request('/predictions/champion', { method: 'POST', body: JSON.stringify({ team_name }) }),
+    getChampion: (leagueId) => request(`/predictions/champion${leagueId ? `?league_id=${leagueId}` : ''}`),
+    saveChampion: (team_name, leagueId) => request('/predictions/champion', { method: 'POST', body: JSON.stringify({ team_name, league_id: leagueId ?? null }) }),
     awardChampion: (team_name) => request('/predictions/champion/award', { method: 'POST', body: JSON.stringify({ team_name }) }),
   },
 

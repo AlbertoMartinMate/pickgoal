@@ -2,6 +2,11 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { showToast, formatDate, leagueGateHtml } from '../ui.js';
 
+function getActiveLeagueId() {
+  const raw = localStorage.getItem('activeLeagueId');
+  return raw ? parseInt(raw) : null;
+}
+
 export async function renderQuiniela(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
@@ -15,9 +20,11 @@ export async function renderQuiniela(el) {
       }
     }
 
+    const leagueId = getActiveLeagueId();
+
     const [{ groups }, predictionsRes] = await Promise.all([
       api.matches.grouped(),
-      auth.isLoggedIn() ? api.predictions.mine() : Promise.resolve({ predictions: [] }),
+      auth.isLoggedIn() ? api.predictions.mine(leagueId) : Promise.resolve({ predictions: [] }),
     ]);
 
     const predMap = {};
@@ -50,10 +57,10 @@ export async function renderQuiniela(el) {
       </div>
     `;
 
-    renderDateNav(days, defaultDay, byDay, predMap);
+    renderDateNav(days, defaultDay, byDay, predMap, leagueId);
 
     if (auth.isLoggedIn()) {
-      saveDefaultPredictions(allMatches, predMap);
+      saveDefaultPredictions(allMatches, predMap, leagueId);
     }
 
   } catch (err) {
@@ -61,7 +68,7 @@ export async function renderQuiniela(el) {
   }
 }
 
-function renderDateNav(days, activeDay, byDay, predMap) {
+function renderDateNav(days, activeDay, byDay, predMap, leagueId) {
   const nav = document.getElementById('dateNav');
   if (!nav) return;
 
@@ -71,21 +78,20 @@ function renderDateNav(days, activeDay, byDay, predMap) {
     </button>
   `).join('');
 
-  // Hacer scroll al día activo
   nav.querySelector('.date-nav__btn--active')?.scrollIntoView({ inline: 'center', behavior: 'instant', block: 'nearest' });
 
   nav.querySelectorAll('.date-nav__btn').forEach(btn => {
     btn.addEventListener('click', () => {
       nav.querySelectorAll('.date-nav__btn').forEach(b => b.classList.remove('date-nav__btn--active'));
       btn.classList.add('date-nav__btn--active');
-      renderMatches(byDay.get(btn.dataset.day) ?? [], predMap);
+      renderMatches(byDay.get(btn.dataset.day) ?? [], predMap, leagueId);
     });
   });
 
-  renderMatches(byDay.get(activeDay) ?? [], predMap);
+  renderMatches(byDay.get(activeDay) ?? [], predMap, leagueId);
 }
 
-function renderMatches(matches, predMap) {
+function renderMatches(matches, predMap, leagueId) {
   const content = document.getElementById('matchesContent');
   if (!content) return;
 
@@ -98,7 +104,7 @@ function renderMatches(matches, predMap) {
 
   if (auth.isLoggedIn()) {
     content.querySelectorAll('.prediction-form').forEach(form => {
-      attachPredictionForm(form, predMap);
+      attachPredictionForm(form, predMap, leagueId);
     });
   }
 }
@@ -174,7 +180,7 @@ function predictionForm(match, prediction) {
   `;
 }
 
-async function saveDefaultPredictions(allMatches, predMap) {
+async function saveDefaultPredictions(allMatches, predMap, leagueId) {
   const pending = allMatches.filter(m => !m.is_locked && !predMap[m.id]);
   for (const match of pending) {
     try {
@@ -183,6 +189,7 @@ async function saveDefaultPredictions(allMatches, predMap) {
         predicted_result: 'X',
         predicted_home: 0,
         predicted_away: 0,
+        league_id: leagueId ?? null,
       });
       predMap[match.id] = prediction;
     } catch (_) {
@@ -191,7 +198,7 @@ async function saveDefaultPredictions(allMatches, predMap) {
   }
 }
 
-function attachPredictionForm(form, predMap) {
+function attachPredictionForm(form, predMap, leagueId) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const matchId = parseInt(form.dataset.matchId);
@@ -211,6 +218,7 @@ function attachPredictionForm(form, predMap) {
         predicted_result: result,
         predicted_home: home,
         predicted_away: away,
+        league_id: leagueId ?? null,
       });
       predMap[matchId] = prediction;
       showToast('Predicción guardada');

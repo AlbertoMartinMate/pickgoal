@@ -105,6 +105,128 @@ def sync_live_matches(app):
             db.session.rollback()
 
 
+# FIFA ranking aproximado (menor = mejor) para los equipos del Mundial 2026
+FIFA_RANKINGS = {
+    'Argentina': 1, 'France': 2, 'England': 3, 'Belgium': 4, 'Brazil': 5,
+    'Portugal': 6, 'Netherlands': 7, 'Spain': 8, 'Italy': 9, 'Germany': 10,
+    'Croatia': 11, 'Uruguay': 12, 'United States': 13, 'Mexico': 14,
+    'Colombia': 15, 'Senegal': 16, 'Denmark': 17, 'Austria': 18,
+    'Switzerland': 19, 'Japan': 20, 'Morocco': 21, 'Ecuador': 22,
+    'South Korea': 23, 'Canada': 24, 'Australia': 25, 'Peru': 26,
+    'Poland': 27, 'Tunisia': 28, 'Cameroon': 29, 'Nigeria': 30,
+    'Serbia': 31, 'Czech Republic': 32, 'Hungary': 33, 'Chile': 34,
+    'Venezuela': 35, 'Ukraine': 36, 'Saudi Arabia': 37, 'Algeria': 38,
+    'Paraguay': 39, 'Slovenia': 40, 'Bolivia': 41, 'Egypt': 42,
+    'Costa Rica': 43, 'Jamaica': 44, 'Panama': 45, 'Honduras': 46,
+    'Ivory Coast': 47, 'South Africa': 48,
+}
+DEFAULT_RANKING = 50  # equipos desconocidos
+
+
+def _rank(team_name):
+    return FIFA_RANKINGS.get(team_name, DEFAULT_RANKING)
+
+
+def _bot_pick(home_team, away_team, rng):
+    """Devuelve (predicted_home, predicted_away, predicted_result) para un bot."""
+    import random
+    r_home = _rank(home_team)
+    r_away = _rank(away_team)
+
+    # Probabilidad de victoria local proporcional a la diferencia de ranking
+    diff = r_away - r_home  # positivo → favorito local
+    # Mapear diferencia a probabilidad [0.2, 0.7]
+    p_home = max(0.2, min(0.7, 0.45 + diff * 0.012))
+    p_draw = 0.22
+    p_away = max(0.1, 1.0 - p_home - p_draw)
+
+    # Normalizar
+    total = p_home + p_draw + p_away
+    p_home /= total
+    p_draw /= total
+    p_away /= total
+
+    roll = rng.random()
+    if roll < p_home:
+        result = '1'
+    elif roll < p_home + p_draw:
+        result = 'X'
+    else:
+        result = '2'
+
+    # Generar marcador coherente
+    if result == '1':
+        home_g = rng.choices([1, 2, 3, 4], weights=[40, 35, 18, 7])[0]
+        away_g = rng.choices([0, 1, 2], weights=[50, 35, 15])[0]
+        away_g = min(away_g, home_g - 1)
+    elif result == 'X':
+        goals = rng.choices([0, 1, 2, 3], weights=[25, 40, 25, 10])[0]
+        home_g = away_g = goals
+    else:
+        away_g = rng.choices([1, 2, 3, 4], weights=[40, 35, 18, 7])[0]
+        home_g = rng.choices([0, 1, 2], weights=[50, 35, 15])[0]
+        home_g = min(home_g, away_g - 1)
+
+    return home_g, away_g, result
+
+
+def generate_bot_predictions(app):
+    """Genera predicciones para todos los bots en todos los partidos no bloqueados."""
+    with app.app_context():
+        import random
+        from datetime import datetime, timezone, timedelta
+        from app import db
+        from app.models import User, Match, Prediction, LeagueMember
+
+        try:
+            bots = User.query.filter_by(is_bot=True).all()
+            if not bots:
+                logger.info('No hay bots en la BD')
+                return
+
+            now = datetime.now(timezone.utc)
+            matches = Match.query.filter_by(status='scheduled').all()
+            open_matches = [
+                m for m in matches
+                if now < m.match_datetime.replace(tzinfo=timezone.utc) - timedelta(minutes=30)
+            ]
+
+            if not open_matches:
+                logger.info('No hay partidos abiertos para bots')
+                return
+
+            saved = 0
+            for bot in bots:
+                rng = random.Random(bot.id)  # semilla por bot para reproducibilidad
+                # ligas del bot
+                memberships = LeagueMember.query.filter_by(user_id=bot.id).all()
+                league_ids = [m.league_id for m in memberships] or [None]
+
+                for match in open_matches:
+                    home_g, away_g, result = _bot_pick(match.home_team, match.away_team, rng)
+                    for lid in league_ids:
+                        existing = Prediction.query.filter_by(
+                            user_id=bot.id, match_id=match.id, league_id=lid
+                        ).first()
+                        if existing:
+                            continue
+                        db.session.add(Prediction(
+                            user_id=bot.id,
+                            match_id=match.id,
+                            league_id=lid,
+                            predicted_result=result,
+                            predicted_home=home_g,
+                            predicted_away=away_g,
+                        ))
+                        saved += 1
+
+            db.session.commit()
+            logger.info('Bot predictions generadas: %d nuevas', saved)
+        except Exception as e:
+            logger.error('Error generando bot predictions: %s', e)
+            db.session.rollback()
+
+
 def init_scheduler(app):
     if scheduler.running:
         return
@@ -121,6 +243,13 @@ def init_scheduler(app):
         args=[app],
         trigger=IntervalTrigger(minutes=5),
         id='sync_live_matches',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=generate_bot_predictions,
+        args=[app],
+        trigger=IntervalTrigger(hours=6),
+        id='generate_bot_predictions',
         replace_existing=True,
     )
     scheduler.start()

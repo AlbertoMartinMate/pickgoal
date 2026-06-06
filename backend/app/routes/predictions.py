@@ -14,7 +14,13 @@ TOURNAMENT_START = datetime(2026, 6, 11, 0, 0, 0, tzinfo=timezone.utc)
 @jwt_required()
 def get_my_predictions():
     user_id = int(get_jwt_identity())
-    preds = Prediction.query.filter_by(user_id=user_id).all()
+    league_id = request.args.get('league_id', type=int)
+
+    query = Prediction.query.filter_by(user_id=user_id)
+    if league_id is not None:
+        query = query.filter_by(league_id=league_id)
+
+    preds = query.all()
     return jsonify({'predictions': [p.to_dict() for p in preds]}), 200
 
 
@@ -22,7 +28,13 @@ def get_my_predictions():
 @jwt_required()
 def get_prediction_for_match(match_id):
     user_id = int(get_jwt_identity())
-    pred = Prediction.query.filter_by(user_id=user_id, match_id=match_id).first()
+    league_id = request.args.get('league_id', type=int)
+
+    query = Prediction.query.filter_by(user_id=user_id, match_id=match_id)
+    if league_id is not None:
+        query = query.filter_by(league_id=league_id)
+
+    pred = query.first()
     if not pred:
         return jsonify({'prediction': None}), 200
     return jsonify({'prediction': pred.to_dict()}), 200
@@ -38,6 +50,7 @@ def save_prediction():
     predicted_result = data.get('predicted_result')
     predicted_home = data.get('predicted_home')
     predicted_away = data.get('predicted_away')
+    league_id = data.get('league_id')  # nullable — liga activa del frontend
 
     if not all([match_id, predicted_result, predicted_home is not None, predicted_away is not None]):
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
@@ -52,7 +65,6 @@ def save_prediction():
     if datetime.now(timezone.utc) >= match_dt_utc - timedelta(minutes=30):
         return jsonify({'error': 'El plazo para predecir este partido ha cerrado (cierra 30 min antes)'}), 403
 
-    # Validar coherencia 1X2 con marcador
     home = int(predicted_home)
     away = int(predicted_away)
     if home < 0 or away < 0:
@@ -62,7 +74,9 @@ def save_prediction():
     if derived_result != predicted_result:
         return jsonify({'error': 'El resultado 1X2 no coincide con el marcador predicho'}), 400
 
-    existing = Prediction.query.filter_by(user_id=user_id, match_id=match_id).first()
+    existing = Prediction.query.filter_by(
+        user_id=user_id, match_id=match_id, league_id=league_id
+    ).first()
     if existing:
         existing.predicted_result = predicted_result
         existing.predicted_home = home
@@ -71,6 +85,7 @@ def save_prediction():
         pred = Prediction(
             user_id=user_id,
             match_id=match_id,
+            league_id=league_id,
             predicted_result=predicted_result,
             predicted_home=home,
             predicted_away=away,
@@ -78,15 +93,23 @@ def save_prediction():
         db.session.add(pred)
 
     db.session.commit()
-    pred = existing or Prediction.query.filter_by(user_id=user_id, match_id=match_id).first()
-    return jsonify({'prediction': pred.to_dict()}), 200
+    saved = existing or Prediction.query.filter_by(
+        user_id=user_id, match_id=match_id, league_id=league_id
+    ).first()
+    return jsonify({'prediction': saved.to_dict()}), 200
 
 
 @predictions_bp.route('/champion', methods=['GET'])
 @jwt_required()
 def get_champion_prediction():
     user_id = int(get_jwt_identity())
-    cp = ChampionPrediction.query.filter_by(user_id=user_id).first()
+    league_id = request.args.get('league_id', type=int)
+
+    query = ChampionPrediction.query.filter_by(user_id=user_id)
+    if league_id is not None:
+        query = query.filter_by(league_id=league_id)
+
+    cp = query.first()
     return jsonify({'champion_prediction': cp.to_dict() if cp else None}), 200
 
 
@@ -98,16 +121,19 @@ def save_champion_prediction():
     if datetime.now(timezone.utc) >= TOURNAMENT_START:
         return jsonify({'error': 'El plazo para predecir el campeón ha cerrado'}), 403
 
-    existing = ChampionPrediction.query.filter_by(user_id=user_id).first()
-    if existing:
-        return jsonify({'error': 'Ya has enviado tu predicción de campeón'}), 409
-
     data = request.get_json()
+    league_id = data.get('league_id')
     team_name = data.get('team_name', '').strip()
     if not team_name:
         return jsonify({'error': 'Debes indicar un equipo'}), 400
 
-    cp = ChampionPrediction(user_id=user_id, team_name=team_name)
+    existing = ChampionPrediction.query.filter_by(
+        user_id=user_id, league_id=league_id
+    ).first()
+    if existing:
+        return jsonify({'error': 'Ya has enviado tu predicción de campeón'}), 409
+
+    cp = ChampionPrediction(user_id=user_id, league_id=league_id, team_name=team_name)
     db.session.add(cp)
     db.session.commit()
     return jsonify({'champion_prediction': cp.to_dict()}), 201
