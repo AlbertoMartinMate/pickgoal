@@ -1,0 +1,69 @@
+@use '../abstracts/variables' as v;
+
+.install-banner {
+  position: fixed;
+  bottom: 0;
+  inset-inline: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-4;
+  padding: v.$sp-4 v.$sp-6;
+  background: #000000;
+  border-top: 2px solid #39FF14;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
+
+  // Sit above the bottom nav when present
+  .has-bottom-nav & {
+    bottom: v.$bottom-nav-h;
+  }
+
+  @media (max-width: v.$bp-sm) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: v.$sp-3;
+    padding: v.$sp-4;
+  }
+
+  &__text {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: #39FF14;
+    white-space: nowrap;
+
+    @media (max-width: v.$bp-sm) {
+      white-space: normal;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    padding: 7px v.$sp-4;
+    border-radius: v.$r-full;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-bold;
+    cursor: pointer;
+    border: none;
+    transition: opacity v.$t-fast;
+
+    &:hover { opacity: 0.85; }
+
+    &--primary {
+      background: #39FF14;
+      color: #000000;
+    }
+
+    &--ghost {
+      background: transparent;
+      color: v.$text-muted;
+      border: 1px solid v.$border;
+    }
+  }
+}

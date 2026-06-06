@@ -4,11 +4,50 @@ import { auth } from './auth.js';
 import { api } from './api.js';
 
 let userLeagues = [];
+let deferredInstallPrompt = null;
 
 async function bootstrap() {
   await auth.init();
   router.init();
   setupNavbar();
+  setupInstallBanner();
+}
+
+function setupInstallBanner() {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallBanner();
+  });
+}
+
+function showInstallBanner() {
+  if (sessionStorage.getItem('installBannerDismissed')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.className = 'install-banner';
+  banner.innerHTML = `
+    <span class="install-banner__text">⚽ Instala PickGoal en tu dispositivo</span>
+    <div class="install-banner__actions">
+      <button class="install-banner__btn install-banner__btn--primary" id="installBtn">Instalar</button>
+      <button class="install-banner__btn install-banner__btn--ghost" id="installDismissBtn">Ahora no</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    banner.remove();
+  });
+
+  document.getElementById('installDismissBtn').addEventListener('click', () => {
+    sessionStorage.setItem('installBannerDismissed', '1');
+    banner.remove();
+  });
 }
 
 function closeAllDropdowns() {
