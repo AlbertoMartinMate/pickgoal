@@ -52,12 +52,14 @@ def create_app():
     from app.routes.predictions import predictions_bp
     from app.routes.leagues import leagues_bp
     from app.routes.board import board_bp
+    from app.routes.home import home_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(matches_bp, url_prefix='/api/matches')
     app.register_blueprint(predictions_bp, url_prefix='/api/predictions')
     app.register_blueprint(leagues_bp, url_prefix='/api/leagues')
     app.register_blueprint(board_bp, url_prefix='/api/board')
+    app.register_blueprint(home_bp, url_prefix='/api/home')
 
     with app.app_context():
         db.create_all()

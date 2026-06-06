@@ -99,6 +99,206 @@
   }
 }
 
+// ─── Dashboard (usuario con ligas) ───────────────────────────────────────────
+.home-dashboard {
+  padding-top: v.$sp-6;
+  padding-bottom: v.$sp-16;
+
+  &__leagues {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: v.$sp-4;
+    margin-bottom: v.$sp-8;
+  }
+}
+
+.league-card {
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-xl;
+  padding: v.$sp-5;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+  transition: border-color v.$t-fast;
+
+  &:hover { border-color: v.$border-light; }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: v.$sp-3;
+  }
+
+  &__name {
+    font-size: v.$fs-md;
+    font-weight: v.$fw-bold;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  &__rank {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    white-space: nowrap;
+    background: v.$accent-dim;
+    padding: 3px 10px;
+    border-radius: v.$r-full;
+    flex-shrink: 0;
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: v.$sp-2;
+  }
+
+  &__stat {
+    background: v.$bg-card;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+    padding: v.$sp-3 v.$sp-2;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__stat-val {
+    font-size: v.$fs-lg;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__stat-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__next {
+    background: v.$bg-card;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+    padding: v.$sp-3 v.$sp-4;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    &--done {
+      color: v.$text-muted;
+      font-size: v.$fs-sm;
+      text-align: center;
+      padding: v.$sp-3;
+    }
+  }
+
+  &__next-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__next-match {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: v.$text;
+  }
+
+  &__next-date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+
+  &__cta {
+    align-self: flex-start;
+  }
+}
+
+// ─── Próximos partidos ────────────────────────────────────────────────────────
+.upcoming-matches {
+  &__title {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: v.$sp-4;
+    padding-bottom: v.$sp-3;
+    border-bottom: 1px solid v.$border;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-2;
+    margin-bottom: v.$sp-4;
+  }
+}
+
+.upcoming-match {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-4;
+  padding: v.$sp-3 v.$sp-4;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+
+  @media (max-width: v.$bp-sm) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: v.$sp-2;
+  }
+
+  &__teams {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
+  }
+
+  &__vs {
+    color: v.$text-muted;
+    font-size: v.$fs-xs;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-shrink: 0;
+  }
+
+  &__date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+
+  &__badge {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    padding: 2px 8px;
+    border-radius: v.$r-full;
+
+    &--done {
+      background: v.$accent-dim;
+      color: v.$accent;
+    }
+    &--pending {
+      background: v.$warning-dim;
+      color: v.$warning;
+    }
+  }
+}
+
 // ─── Features ────────────────────────────────────────────────────────────────
 .features {
   padding-bottom: v.$sp-16;

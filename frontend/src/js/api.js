@@ -66,6 +66,10 @@ export const api = {
     matchPredictions: (leagueId, matchId) => request(`/leagues/${leagueId}/predictions/${matchId}`),
   },
 
+  home: {
+    summary: () => request('/home/summary'),
+  },
+
   board: {
     messages: (page = 1) => request(`/board/?page=${page}`),
     post: (message) => request('/board/', { method: 'POST', body: JSON.stringify({ message }) }),
