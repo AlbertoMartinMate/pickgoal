@@ -53,6 +53,87 @@
   }
 }
 
+// ─── League badge ─────────────────────────────────────────────────────────────
+.league-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: v.$r-full;
+  font-size: 10px;
+  font-weight: v.$fw-bold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &--official {
+    background: rgba(255, 184, 48, 0.15);
+    color: v.$warning;
+    border: 1px solid rgba(255, 184, 48, 0.4);
+  }
+}
+
+// ─── Invite link box ──────────────────────────────────────────────────────────
+.invite-link-box {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-2;
+  background: v.$bg-input;
+  border: 1px solid v.$border;
+  border-radius: v.$r-sm;
+  padding: v.$sp-2 v.$sp-3;
+  flex-wrap: wrap;
+
+  &__url {
+    font-family: v.$font-mono;
+    font-size: v.$fs-xs;
+    color: v.$accent;
+    word-break: break-all;
+    flex: 1;
+  }
+}
+
+// ─── Invite success panel ─────────────────────────────────────────────────────
+.invite-success {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+
+  &__title {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-bold;
+    color: v.$accent;
+  }
+
+  &__text {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    margin: 0;
+  }
+}
+
+// ─── Invite share box (liga-detalle) ─────────────────────────────────────────
+.invite-share-box {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+  margin-bottom: v.$sp-5;
+
+  &__label {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+// ─── League header desc ───────────────────────────────────────────────────────
+.league-header__desc {
+  font-size: v.$fs-sm;
+  color: v.$text-muted;
+  margin: v.$sp-2 0 v.$sp-3;
+}
+
+// ─── Leagues grid ─────────────────────────────────────────────────────────────
 .leagues-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

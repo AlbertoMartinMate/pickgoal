@@ -11,17 +11,33 @@ export async function renderLigaDetalle(el, { params }) {
     const { league, ranking, is_member } = await api.leagues.get(leagueId);
     const user = auth.getUser();
 
+    const officialBadge = league.is_official
+      ? '<span class="league-badge league-badge--official">⭐ Oficial</span>'
+      : '';
+
     el.innerHTML = `
       <div class="container">
         <a href="#/ligas" class="back-link">← Volver a ligas</a>
         <div class="league-header">
-          <h1 class="page-title">${league.name}</h1>
+          <h1 class="page-title">${league.name} ${officialBadge}</h1>
+          ${league.description ? `<p class="league-header__desc">${league.description}</p>` : ''}
           <div class="league-header__meta">
             <span>${league.is_public ? '🌍 Pública' : '🔒 Privada'}</span>
             <span>${league.member_count} participantes</span>
-            ${league.invite_code ? `<span class="invite-code">Código: <strong>${league.invite_code}</strong></span>` : ''}
+            ${league.prize ? `<span>🏆 ${league.prize}</span>` : ''}
           </div>
         </div>
+
+        ${is_member && league.invite_link ? `
+          <div class="invite-share-box">
+            <span class="invite-share-box__label">Enlace de invitación:</span>
+            <div class="invite-link-box">
+              <span class="invite-link-box__url">${league.invite_link}</span>
+              <button class="btn btn--sm btn--outline" id="btnCopyInvite">Copiar</button>
+              ${navigator.share ? `<button class="btn btn--sm btn--ghost" id="btnShareInvite">Compartir</button>` : ''}
+            </div>
+          </div>
+        ` : ''}
 
         ${is_member
           ? `<button class="btn btn--danger btn--sm" id="btnLeave">Abandonar liga</button>`
@@ -50,6 +66,21 @@ export async function renderLigaDetalle(el, { params }) {
         </section>
       </div>
     `;
+
+    document.getElementById('btnCopyInvite')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(league.invite_link);
+        showToast('Enlace copiado');
+      } catch {
+        showToast('No se pudo copiar', 'error');
+      }
+    });
+
+    document.getElementById('btnShareInvite')?.addEventListener('click', async () => {
+      try {
+        await navigator.share({ title: `Únete a ${league.name} en PickGoal`, url: league.invite_link });
+      } catch (_) {}
+    });
 
     document.getElementById('btnLeave')?.addEventListener('click', async () => {
       if (!confirm('¿Seguro que quieres abandonar esta liga?')) return;

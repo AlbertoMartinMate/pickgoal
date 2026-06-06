@@ -54,10 +54,12 @@ export const api = {
   },
 
   leagues: {
+    all: () => request('/leagues/all'),
     public: () => request('/leagues/public'),
     my: () => request('/leagues/my'),
     create: (data) => request('/leagues/', { method: 'POST', body: JSON.stringify(data) }),
     join: (data) => request('/leagues/join', { method: 'POST', body: JSON.stringify(data) }),
+    joinByCode: (code) => request(`/leagues/join/${encodeURIComponent(code)}`),
     get: (id) => request(`/leagues/${id}`),
     leave: (id) => request(`/leagues/${id}/leave`, { method: 'DELETE' }),
     matchPredictions: (leagueId, matchId) => request(`/leagues/${leagueId}/predictions/${matchId}`),

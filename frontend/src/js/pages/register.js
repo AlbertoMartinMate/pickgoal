@@ -59,7 +59,21 @@ export function renderRegister(el) {
       const { token, user } = await api.auth.register(data);
       auth.setUser(user, token);
       showToast('¡Cuenta creada! Bienvenido a PickGoal');
-      router.navigate('/campeon');
+
+      // Auto-join league if arriving via invite link
+      const pendingCode = sessionStorage.getItem('pendingInviteCode');
+      if (pendingCode) {
+        sessionStorage.removeItem('pendingInviteCode');
+        try {
+          const { league } = await api.leagues.joinByCode(pendingCode);
+          showToast(`¡Te has unido a "${league.name}"!`);
+          router.navigate(`/ligas/${league.id}`);
+        } catch (_) {
+          router.navigate('/ligas');
+        }
+      } else {
+        router.navigate('/campeon');
+      }
     } catch (err) {
       errEl.textContent = err.message || 'Error al registrarse';
       errEl.classList.remove('hidden');

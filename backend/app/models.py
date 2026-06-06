@@ -158,9 +158,12 @@ class League(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     invite_code = db.Column(db.String(20), unique=True)
-    is_public = db.Column(db.Boolean, default=False, nullable=False)
+    is_public = db.Column(db.Boolean, default=True, nullable=False)
+    is_official = db.Column(db.Boolean, default=False, nullable=False)
+    prize = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     creator = db.relationship('User', foreign_keys=[created_by])
@@ -170,9 +173,12 @@ class League(db.Model):
         data = {
             'id': self.id,
             'name': self.name,
+            'description': self.description,
             'created_by': self.created_by,
             'creator_username': self.creator.username if self.creator else None,
             'is_public': self.is_public,
+            'is_official': self.is_official,
+            'prize': self.prize,
             'member_count': self.members.count(),
             'created_at': self.created_at.isoformat(),
         }
