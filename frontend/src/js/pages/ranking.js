@@ -2,6 +2,11 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { leagueGateHtml } from '../ui.js';
 
+function getActiveLeagueId() {
+  const raw = localStorage.getItem('activeLeagueId');
+  return raw ? parseInt(raw) : null;
+}
+
 export async function renderRanking(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
@@ -15,12 +20,18 @@ export async function renderRanking(el) {
       }
     }
 
-    const { ranking } = await api.auth.ranking();
+    const leagueId = getActiveLeagueId();
+    const [{ ranking }, leaguesRes] = await Promise.all([
+      api.auth.ranking(leagueId),
+      auth.isLoggedIn() ? api.leagues.my() : Promise.resolve({ leagues: [] }),
+    ]);
     const currentUser = auth.getUser();
+    const activeLeague = leaguesRes.leagues.find(l => l.id === leagueId);
+    const title = activeLeague ? activeLeague.name : 'Clasificación General';
 
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Clasificación General</h1>
+        <h1 class="page-title">${title}</h1>
         <div class="ranking-table-wrapper">
           <table class="ranking-table">
             <thead>

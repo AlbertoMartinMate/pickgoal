@@ -4,7 +4,7 @@ from flask_jwt_extended import (create_access_token, jwt_required,
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask import current_app
 from app import db, bcrypt
-from app.models import User, Prediction
+from app.models import User, Prediction, LeagueMember, ChampionPrediction
 from sqlalchemy import func
 
 auth_bp = Blueprint('auth', __name__)
@@ -118,21 +118,38 @@ def reset_password():
 
 @auth_bp.route('/ranking', methods=['GET'])
 def ranking():
-    users = User.query.all()
+    league_id = request.args.get('league_id', type=int)
+
+    if league_id is not None:
+        member_ids = [
+            m.user_id for m in LeagueMember.query.filter_by(league_id=league_id).all()
+        ]
+        users = User.query.filter(User.id.in_(member_ids)).all()
+    else:
+        users = User.query.all()
+
     ranking_data = []
     for u in users:
-        correct_results = db.session.query(func.count(Prediction.id)).filter(
-            Prediction.user_id == u.id, Prediction.pts_result > 0
-        ).scalar() or 0
-        exact_scores = db.session.query(func.count(Prediction.id)).filter(
-            Prediction.user_id == u.id, Prediction.pts_score > 0
-        ).scalar() or 0
+        pred_q = Prediction.query.filter_by(user_id=u.id)
+        champ_q = ChampionPrediction.query.filter_by(user_id=u.id)
+        if league_id is not None:
+            pred_q = pred_q.filter_by(league_id=league_id)
+            champ_q = champ_q.filter_by(league_id=league_id)
+
+        preds = pred_q.all()
+        champ = champ_q.first()
+
+        total_points = sum(p.total_points for p in preds) + (champ.points_earned if champ else 0)
+        correct_results = sum(1 for p in preds if p.pts_result > 0)
+        exact_scores = sum(1 for p in preds if p.pts_score > 0)
+
         ranking_data.append({
             **u.to_dict(),
-            'total_points': u.total_points(),
+            'total_points': total_points,
             'correct_results': correct_results,
             'exact_scores': exact_scores,
         })
+
     ranking_data.sort(key=lambda x: x['total_points'], reverse=True)
     for i, entry in enumerate(ranking_data):
         entry['position'] = i + 1
