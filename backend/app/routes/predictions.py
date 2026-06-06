@@ -6,8 +6,8 @@ from app.models import Prediction, Match, User, ChampionPrediction
 
 predictions_bp = Blueprint('predictions', __name__)
 
-# Fecha de inicio del torneo (bloqueará predicción de campeón)
-TOURNAMENT_START = datetime(2026, 6, 11, 0, 0, 0, tzinfo=timezone.utc)
+# Fecha de inicio del torneo: 11 junio 2026 21:00 UTC (primer partido)
+TOURNAMENT_START = datetime(2026, 6, 11, 21, 0, 0, tzinfo=timezone.utc)
 
 
 @predictions_bp.route('/', methods=['GET'])
@@ -158,9 +158,8 @@ def get_champion_prediction():
 @jwt_required()
 def save_champion_prediction():
     user_id = int(get_jwt_identity())
-
-    if datetime.now(timezone.utc) >= TOURNAMENT_START:
-        return jsonify({'error': 'El plazo para predecir el campeón ha cerrado'}), 403
+    now = datetime.now(timezone.utc)
+    tournament_started = now >= TOURNAMENT_START
 
     data = request.get_json()
     league_id = data.get('league_id')
@@ -171,13 +170,21 @@ def save_champion_prediction():
     existing = ChampionPrediction.query.filter_by(
         user_id=user_id, league_id=league_id
     ).first()
-    if existing:
-        return jsonify({'error': 'Ya has enviado tu predicción de campeón'}), 409
 
-    cp = ChampionPrediction(user_id=user_id, league_id=league_id, team_name=team_name)
-    db.session.add(cp)
-    db.session.commit()
-    return jsonify({'champion_prediction': cp.to_dict()}), 201
+    if existing:
+        # Si el torneo ya empezó, la predicción existente está bloqueada
+        if tournament_started:
+            return jsonify({'error': 'El torneo ya ha comenzado, tu predicción está bloqueada'}), 403
+        # Antes del torneo se puede actualizar
+        existing.team_name = team_name
+        db.session.commit()
+        return jsonify({'champion_prediction': existing.to_dict()}), 200
+    else:
+        # Nueva predicción — siempre permitida (incluso tras inicio para inscritos tarde)
+        cp = ChampionPrediction(user_id=user_id, league_id=league_id, team_name=team_name)
+        db.session.add(cp)
+        db.session.commit()
+        return jsonify({'champion_prediction': cp.to_dict()}), 201
 
 
 @predictions_bp.route('/champion/award', methods=['POST'])
