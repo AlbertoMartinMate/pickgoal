@@ -8,11 +8,12 @@ export async function renderPerfil(el) {
 
   try {
     const leagueId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
-    const [predsRes, champRes, leaguesRes, meRes] = await Promise.all([
+    const [predsRes, champRes, leaguesRes, meRes, adminLeaguesRes] = await Promise.all([
       api.predictions.mine(leagueId),
       api.predictions.getChampion(leagueId),
       api.leagues.my(),
       api.auth.me(),
+      user?.is_admin ? api.leagues.adminAll() : Promise.resolve({ leagues: [] }),
     ]);
 
     const totalPts = predsRes.predictions.reduce((acc, p) => acc + p.total_points, 0)
@@ -84,6 +85,21 @@ export async function renderPerfil(el) {
             : '<p class="empty">No perteneces a ninguna liga. <a href="#/ligas">Ver ligas</a></p>'
           }
         </section>
+
+        ${user?.is_admin && adminLeaguesRes.leagues.length ? `
+          <section class="section">
+            <h2>Ligas gestionadas</h2>
+            <ul class="leagues-list">
+              ${adminLeaguesRes.leagues.map(l => `
+                <li>
+                  <span>${l.is_official ? '⭐ ' : ''}${l.name}</span>
+                  <span class="tag">${l.is_public ? 'Pública' : 'Privada'}</span>
+                  <a href="#/ligas/${l.id}" class="btn btn--sm btn--outline">Gestionar</a>
+                </li>
+              `).join('')}
+            </ul>
+          </section>
+        ` : ''}
       </div>
     `;
     el.querySelector('#btnLogoutPerfil')?.addEventListener('click', () => {

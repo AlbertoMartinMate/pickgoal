@@ -100,11 +100,14 @@ function setupNavbar() {
     const item = e.target.closest('[data-league-id]');
     if (item) {
       const newId = String(item.dataset.leagueId);
-      console.log('[navbar] selecting league id:', newId);
       localStorage.setItem('activeLeagueId', newId);
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
-      router.resolve();  // re-render current page with new active league
+      if (auth.getUser()?.is_admin) {
+        router.navigate(`/ligas/${newId}`);  // admin → go to league management page
+      } else {
+        router.resolve();  // regular user → re-render current page with new active league
+      }
       return;
     }
     // "Ver ligas disponibles" link
