@@ -81,8 +81,7 @@ def forgot_password():
 
         s = get_serializer()
         token = s.dumps(email, salt='recover-key')
-        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
-        reset_url = f'{frontend_url}/reset-password?token={token}'
+        reset_url = f"{os.environ.get('FRONTEND_URL', 'https://pickgoal.es')}/#/reset-password?token={token}"
 
         try:
             import sendgrid
