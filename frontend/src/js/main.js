@@ -164,7 +164,9 @@ async function updateNavState() {
     document.body.classList.add('has-bottom-nav');
 
     try {
-      const { leagues } = await api.leagues.my();
+      const { leagues } = user.is_admin
+        ? await api.leagues.adminAll()
+        : await api.leagues.my();
       userLeagues = leagues;
     } catch {
       userLeagues = [];

@@ -51,10 +51,11 @@ export async function renderLigaDetalle(el, { params }) {
               ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
               : ''
           }
-          ${user?.is_admin || (is_member && user && league.created_by === user.id)
-            ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>`
-            : ''
-          }
+          ${(() => {
+            const canEdit = user?.is_admin || (is_member && user && league.created_by === user.id);
+            console.log('[liga-detalle] canEdit:', canEdit, '| user.is_admin:', user?.is_admin, '| is_member:', is_member, '| created_by:', league.created_by, '| user.id:', user?.id);
+            return canEdit ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>` : '';
+          })()}
         </div>
 
         <section class="section">
