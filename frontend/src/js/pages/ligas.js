@@ -7,20 +7,28 @@ export async function renderLigas(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
+    const user = auth.getUser();
+    const isAdmin = user?.is_admin;
+
     const [allRes, myRes] = await Promise.all([
-      api.leagues.all(),
-      auth.isLoggedIn() ? api.leagues.my() : Promise.resolve({ leagues: [] }),
+      isAdmin ? api.leagues.adminAll() : api.leagues.all(),
+      auth.isLoggedIn() && !isAdmin ? api.leagues.my() : Promise.resolve({ leagues: [] }),
     ]);
 
-    const user = auth.getUser();
     const myIds = new Set(myRes.leagues.map(l => l.id));
-    const available = allRes.leagues.filter(l => !myIds.has(l.id));
+    const available = isAdmin
+      ? allRes.leagues  // admin sees all leagues
+      : allRes.leagues.filter(l => !myIds.has(l.id));
 
     el.innerHTML = `
       <div class="container">
         <h1 class="page-title">Ligas</h1>
 
-        ${user && myRes.leagues.length > 0 ? `
+        ${isAdmin ? `
+          <div class="admin-notice">Vista administrador — puedes acceder a cualquier liga sin participar en ella.</div>
+        ` : ''}
+
+        ${user && !isAdmin && myRes.leagues.length > 0 ? `
           <section class="section">
             <h2>Mis ligas</h2>
             <div class="leagues-grid">${myRes.leagues.map(l => leagueCard(l, true)).join('')}</div>
@@ -31,10 +39,11 @@ export async function renderLigas(el) {
           <section class="section ligas-actions">
             <div class="ligas-actions__row">
               <button class="btn btn--primary" id="btnShowCreate">+ Crear liga</button>
+              ${!isAdmin ? `
               <form class="form form--inline" id="joinCodeForm">
                 <input class="form__input" type="text" id="inviteCode" placeholder="Código de invitación" maxlength="20" />
                 <button class="btn btn--outline" type="submit">Unirse</button>
-              </form>
+              </form>` : ''}
             </div>
             <div class="create-league-panel hidden" id="createLeaguePanel">
               <form class="form" id="createLeagueForm">
@@ -70,12 +79,14 @@ export async function renderLigas(el) {
         ` : '<p class="notice"><a href="#/login">Inicia sesión</a> para crear o unirte a ligas.</p>'}
 
         <section class="section">
-          <h2>Ligas disponibles</h2>
+          <h2>${isAdmin ? 'Todas las ligas' : 'Ligas disponibles'}</h2>
           ${available.length
-            ? `<div class="leagues-grid">${available.map(l => leagueCard(l, false, myIds)).join('')}</div>`
-            : myRes.leagues.length > 0
-              ? '<p class="empty">Ya participas en todas las ligas disponibles.</p>'
-              : '<p class="empty">No hay ligas aún. ¡Crea la primera!</p>'
+            ? `<div class="leagues-grid">${available.map(l => leagueCard(l, false, myIds, isAdmin)).join('')}</div>`
+            : isAdmin
+              ? '<p class="empty">No hay ligas creadas aún.</p>'
+              : myRes.leagues.length > 0
+                ? '<p class="empty">Ya participas en todas las ligas disponibles.</p>'
+                : '<p class="empty">No hay ligas aún. ¡Crea la primera!</p>'
           }
         </section>
       </div>
@@ -165,20 +176,22 @@ export async function renderLigas(el) {
   }
 }
 
-function leagueCard(league, isMine = false, myIds = new Set()) {
+function leagueCard(league, isMine = false, myIds = new Set(), isAdmin = false) {
   const officialBadge = league.is_official
     ? '<span class="league-badge league-badge--official">⭐ Oficial</span>'
     : '';
   const visibilityIcon = league.is_public ? '🌍' : '🔒';
 
-  const actionBtn = isMine
-    ? `<button class="btn btn--sm btn--outline" onclick="event.stopPropagation(); window.location.hash='/ligas/${league.id}'">Ver liga</button>`
-    : league.is_public
-      ? `<button class="btn btn--sm btn--primary btn-join-league" data-id="${league.id}">Unirse</button>`
-      : `<button class="btn btn--sm btn--ghost btn-private-info">🔒 Solicitar enlace</button>`;
+  const actionBtn = isAdmin
+    ? `<button class="btn btn--sm btn--outline btn-admin-view" data-id="${league.id}">Ver (admin)</button>`
+    : isMine
+      ? `<button class="btn btn--sm btn--outline" onclick="event.stopPropagation(); window.location.hash='/ligas/${league.id}'">Ver liga</button>`
+      : league.is_public
+        ? `<button class="btn btn--sm btn--primary btn-join-league" data-id="${league.id}">Unirse</button>`
+        : `<button class="btn btn--sm btn--ghost btn-private-info">🔒 Solicitar enlace</button>`;
 
   return `
-    <div class="league-card ${isMine ? 'league-card--mine' : ''}" data-id="${league.id}" data-navigate="${isMine}">
+    <div class="league-card ${isMine ? 'league-card--mine' : ''}" data-id="${league.id}" data-navigate="${isMine || isAdmin}">
       <div class="league-card__top">
         <div class="league-card__name">${league.name} ${officialBadge}</div>
       </div>

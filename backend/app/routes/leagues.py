@@ -141,29 +141,50 @@ def join_by_code(codigo):
     return jsonify({'league': league.to_dict()}), 200
 
 
+@leagues_bp.route('/admin', methods=['GET'])
+@jwt_required()
+def admin_all_leagues():
+    """Devuelve todas las ligas con invite codes — solo admin."""
+    user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    if not user.is_admin:
+        return jsonify({'error': 'Sin permisos'}), 403
+
+    leagues = League.query.order_by(League.is_official.desc(), League.created_at.desc()).all()
+    result = []
+    for league in leagues:
+        data = league.to_dict(include_code=True)
+        data['invite_link'] = f'{SITE_URL}/#/unirse?codigo={league.invite_code}'
+        result.append(data)
+    return jsonify({'leagues': result}), 200
+
+
 @leagues_bp.route('/<int:league_id>', methods=['GET'])
 @jwt_required()
 def get_league(league_id):
     user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
     league = League.query.get_or_404(league_id)
 
+    is_admin = user.is_admin
     is_member = LeagueMember.query.filter_by(
         league_id=league_id, user_id=user_id
     ).first() is not None
 
-    if not league.is_public and not is_member:
+    # Admin can access any league without being a member
+    if not is_admin and not league.is_public and not is_member:
         return jsonify({'error': 'Acceso denegado'}), 403
 
-    # Any member can see the invite code (to share)
-    include_code = is_member
+    include_code = is_member or is_admin
     result = league.to_dict(include_code=include_code)
-    if is_member and league.invite_code:
+    if include_code and league.invite_code:
         result['invite_link'] = f'{SITE_URL}/#/unirse?codigo={league.invite_code}'
 
     return jsonify({
         'league': result,
         'ranking': league_ranking(league_id),
         'is_member': is_member,
+        'is_admin_view': is_admin and not is_member,
     }), 200
 
 

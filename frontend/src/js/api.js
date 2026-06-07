@@ -61,6 +61,7 @@ export const api = {
     create: (data) => request('/leagues/', { method: 'POST', body: JSON.stringify(data) }),
     join: (data) => request('/leagues/join', { method: 'POST', body: JSON.stringify(data) }),
     joinByCode: (code) => request(`/leagues/join/${encodeURIComponent(code)}`),
+    adminAll: () => request('/leagues/admin'),
     get: (id) => request(`/leagues/${id}`),
     leave: (id) => request(`/leagues/${id}/leave`, { method: 'DELETE' }),
     matchPredictions: (leagueId, matchId) => request(`/leagues/${leagueId}/predictions/${matchId}`),

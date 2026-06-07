@@ -8,7 +8,7 @@ export async function renderLigaDetalle(el, { params }) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const { league, ranking, is_member } = await api.leagues.get(leagueId);
+    const { league, ranking, is_member, is_admin_view } = await api.leagues.get(leagueId);
     const user = auth.getUser();
 
     const officialBadge = league.is_official
@@ -18,6 +18,11 @@ export async function renderLigaDetalle(el, { params }) {
     el.innerHTML = `
       <div class="container">
         <a href="#/ligas" class="back-link">← Volver a ligas</a>
+
+        ${is_admin_view ? `
+          <div class="admin-notice">Vista administrador — no participas en esta liga</div>
+        ` : ''}
+
         <div class="league-header">
           <h1 class="page-title">${league.name} ${officialBadge}</h1>
           ${league.description ? `<p class="league-header__desc">${league.description}</p>` : ''}
@@ -28,7 +33,7 @@ export async function renderLigaDetalle(el, { params }) {
           </div>
         </div>
 
-        ${is_member && league.invite_link ? `
+        ${(is_member || is_admin_view) && league.invite_link ? `
           <div class="invite-share-box">
             <span class="invite-share-box__label">Enlace de invitación:</span>
             <div class="invite-link-box">
@@ -41,7 +46,7 @@ export async function renderLigaDetalle(el, { params }) {
 
         ${is_member
           ? `<button class="btn btn--danger btn--sm" id="btnLeave">Abandonar liga</button>`
-          : user
+          : !is_admin_view && user
             ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
             : ''
         }
