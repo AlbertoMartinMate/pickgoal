@@ -8,8 +8,11 @@ export async function renderLigaDetalle(el, { params }) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const { league, ranking, is_member, is_admin_view } = await api.leagues.get(leagueId);
+    const response = await api.leagues.get(leagueId);
+    console.log('[liga-detalle] API response for league', leagueId, ':', JSON.stringify(response));
+    const { league, ranking, is_member, is_admin_view } = response;
     const user = auth.getUser();
+    console.log('[liga-detalle] user:', JSON.stringify(user));
 
     const officialBadge = league.is_official
       ? '<span class="league-badge league-badge--official">⭐ Oficial</span>'

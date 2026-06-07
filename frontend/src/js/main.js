@@ -100,6 +100,7 @@ function setupNavbar() {
     const item = e.target.closest('[data-league-id]');
     if (item) {
       const newId = String(item.dataset.leagueId);
+      console.log('[navbar] selecting league id:', newId);
       localStorage.setItem('activeLeagueId', newId);
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
