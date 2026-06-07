@@ -104,6 +104,12 @@
   padding-top: v.$sp-6;
   padding-bottom: v.$sp-16;
 
+  &__topbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: v.$sp-5;
+  }
+
   &__leagues {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -454,5 +460,216 @@
     color: v.$text-dim;
     font-weight: v.$fw-normal;
     margin: 0 1px;
+  }
+}
+
+// ─── Modal sistema de puntos ──────────────────────────────────────────────────
+.points-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: v.$sp-4;
+
+  &--open { display: flex; }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: v.$bg-card;
+    border: 1px solid rgba(57, 255, 20, 0.35);
+    border-radius: v.$r-xl;
+    box-shadow: 0 0 40px rgba(57, 255, 20, 0.08), 0 24px 48px rgba(0, 0, 0, 0.7);
+    padding: v.$sp-6 v.$sp-6 v.$sp-8;
+    width: 100%;
+    max-width: 560px;
+    max-height: 88vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: v.$border transparent;
+  }
+
+  &__close {
+    position: absolute;
+    top: v.$sp-4;
+    right: v.$sp-4;
+    width: 32px;
+    height: 32px;
+    border-radius: v.$r-sm;
+    background: transparent;
+    border: 1px solid v.$border;
+    color: v.$text-muted;
+    font-size: v.$fs-sm;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all v.$t-fast;
+
+    &:hover {
+      border-color: v.$border-light;
+      color: v.$text;
+    }
+  }
+
+  &__heading {
+    font-size: v.$fs-lg;
+    font-weight: v.$fw-black;
+    color: v.$text;
+    letter-spacing: -0.02em;
+    margin-bottom: v.$sp-6;
+    padding-right: v.$sp-8;
+  }
+
+  &__section {
+    margin-bottom: v.$sp-6;
+    padding-bottom: v.$sp-6;
+    border-bottom: 1px solid v.$border;
+
+    &:last-child { border-bottom: none; margin-bottom: 0; }
+  }
+
+  &__subheading {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-bold;
+    color: #39FF14;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: v.$sp-3;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-2;
+    padding-left: v.$sp-4;
+    color: v.$text-muted;
+    font-size: v.$fs-sm;
+    line-height: 1.55;
+
+    &--ordered {
+      list-style: decimal;
+    }
+
+    li { list-style: disc; }
+    &--ordered li { list-style: decimal; }
+
+    strong { color: v.$text; }
+  }
+
+  &__note {
+    font-size: v.$fs-xs !important;
+    color: v.$text-dim !important;
+    list-style: none !important;
+    padding-left: 0;
+    margin-top: v.$sp-1;
+  }
+
+  &__example {
+    margin-top: v.$sp-3;
+    padding: v.$sp-3 v.$sp-4;
+    background: v.$bg-surface;
+    border-left: 3px solid rgba(57, 255, 20, 0.4);
+    border-radius: 0 v.$r-sm v.$r-sm 0;
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    line-height: 1.55;
+  }
+
+  &__example-label {
+    display: inline-block;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-bold;
+    color: #39FF14;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: v.$sp-2;
+  }
+
+  &__phases {
+    display: flex;
+    flex-wrap: wrap;
+    gap: v.$sp-2;
+  }
+
+  &__phase-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: v.$sp-2 v.$sp-3;
+    background: v.$bg;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+    min-width: 68px;
+  }
+
+  &__phase-name {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  &__phase-pts {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-black;
+    color: #39FF14;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__max {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: v.$sp-4 v.$sp-5;
+    background: rgba(57, 255, 20, 0.05);
+    border: 1px solid rgba(57, 255, 20, 0.2);
+    border-radius: v.$r-lg;
+    margin-bottom: v.$sp-6;
+  }
+
+  &__max-label {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    font-weight: v.$fw-medium;
+  }
+
+  &__max-val {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: #39FF14;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+}
+
+.pts-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-black;
+  background: rgba(57, 255, 20, 0.1);
+  color: #39FF14;
+  border: 1px solid rgba(57, 255, 20, 0.25);
+  margin-right: v.$sp-1;
+  font-variant-numeric: tabular-nums;
+
+  &--gold {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    border-color: rgba(255, 215, 0, 0.25);
   }
 }
