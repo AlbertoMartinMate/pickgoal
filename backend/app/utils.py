@@ -92,13 +92,19 @@ def generate_invite_code(length: int = 8) -> str:
 
 
 def recalculate_match_predictions(match):
-    from app.models import Prediction
+    from app.models import Prediction, User
     from app import db
 
     predictions = Prediction.query.filter_by(match_id=match.id).all()
     for pred in predictions:
+        old_total = pred.total_points or 0
         r, s = calculate_prediction_points(pred, match)
         pred.pts_result = r
         pred.pts_score = s
         pred.total_points = r + s
+        delta = pred.total_points - old_total
+        if delta != 0:
+            user = User.query.get(pred.user_id)
+            if user:
+                user.total_points_all_time = (user.total_points_all_time or 0) + delta
     db.session.commit()

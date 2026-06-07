@@ -8,14 +8,19 @@ export async function renderPerfil(el) {
 
   try {
     const leagueId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
-    const [predsRes, champRes, leaguesRes] = await Promise.all([
+    const [predsRes, champRes, leaguesRes, meRes] = await Promise.all([
       api.predictions.mine(leagueId),
       api.predictions.getChampion(leagueId),
       api.leagues.my(),
+      api.auth.me(),
     ]);
 
     const totalPts = predsRes.predictions.reduce((acc, p) => acc + p.total_points, 0)
       + (champRes.champion_prediction?.points_earned || 0);
+
+    const meUser = meRes.user;
+    const status = meUser.status;
+    const allTimePts = meUser.total_points_all_time;
 
     el.innerHTML = `
       <div class="container">
@@ -30,6 +35,7 @@ export async function renderPerfil(el) {
               <p>${user.country || 'Sin país'}</p>
             </div>
           </div>
+          ${statusProgressHtml(status, allTimePts)}
           <button class="btn btn--danger" id="btnLogoutPerfil">Cerrar sesión</button>
           <div class="profile-card__stats">
             <div class="stat">
@@ -88,6 +94,31 @@ export async function renderPerfil(el) {
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }
+}
+
+function statusProgressHtml(status, allTimePts) {
+  const isMax = status.next_threshold === null;
+  if (isMax) {
+    return `
+      <div class="level-progress">
+        <div class="level-progress__header">
+          <span class="status-badge">${status.emoji} ${status.name}</span>
+          <span class="level-progress__label">¡Nivel máximo alcanzado!</span>
+        </div>
+        <div class="level-progress__bar"><div class="level-progress__fill" style="width:100%"></div></div>
+      </div>`;
+  }
+  const pct = Math.min(100, Math.round(
+    ((allTimePts - status.threshold) / (status.next_threshold - status.threshold)) * 100
+  ));
+  return `
+    <div class="level-progress">
+      <div class="level-progress__header">
+        <span class="status-badge">${status.emoji} ${status.name}</span>
+        <span class="level-progress__label">${allTimePts} / ${status.next_threshold} pts → ${status.next_emoji || ''} ${status.next_name}</span>
+      </div>
+      <div class="level-progress__bar"><div class="level-progress__fill" style="width:${pct}%"></div></div>
+    </div>`;
 }
 
 function predRow(p) {

@@ -77,4 +77,20 @@
     color: v.$text-muted;
     font-variant-numeric: tabular-nums;
   }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$sp-2;
+    text-decoration: none;
+    color: inherit;
+
+    &:hover { color: v.$accent; }
+  }
+}
+
+.status-emoji {
+  font-size: 1em;
+  line-height: 1;
+  flex-shrink: 0;
 }

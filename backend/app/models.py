@@ -2,6 +2,34 @@ from datetime import datetime, timezone, timedelta
 from app import db
 
 
+STATUSES = [
+    (0,    'Rookie',     '🥚'),
+    (50,   'Novato',     '👟'),
+    (150,  'Aficionado', '⚽'),
+    (300,  'Crack',      '🌟'),
+    (600,  'Experto',    '🔥'),
+    (1000, 'Elite',      '💎'),
+    (2000, 'Leyenda',    '👑'),
+]
+
+
+def get_user_status(pts):
+    current_idx = 0
+    for i, (threshold, _, __) in enumerate(STATUSES):
+        if pts >= threshold:
+            current_idx = i
+    threshold, name, emoji = STATUSES[current_idx]
+    next_entry = STATUSES[current_idx + 1] if current_idx + 1 < len(STATUSES) else None
+    return {
+        'name': name,
+        'emoji': emoji,
+        'threshold': threshold,
+        'next_threshold': next_entry[0] if next_entry else None,
+        'next_name': next_entry[1] if next_entry else None,
+        'next_emoji': next_entry[2] if next_entry else None,
+    }
+
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -12,6 +40,7 @@ class User(db.Model):
     country = db.Column(db.String(60))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     is_bot = db.Column(db.Boolean, default=False, nullable=False)
+    total_points_all_time = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     predictions = db.relationship('Prediction', backref='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -20,12 +49,16 @@ class User(db.Model):
     board_messages = db.relationship('BoardMessage', backref='user', lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self, include_email=False):
+        pts_all_time = self.total_points_all_time or 0
         data = {
             'id': self.id,
             'username': self.username,
             'country': self.country,
             'is_admin': self.is_admin,
+            'is_bot': self.is_bot,
             'created_at': self.created_at.isoformat(),
+            'total_points_all_time': pts_all_time,
+            'status': get_user_status(pts_all_time),
         }
         if include_email:
             data['email'] = self.email
