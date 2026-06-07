@@ -70,7 +70,43 @@ def me():
 
 @auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password():
-    # MINIMAL STUB — isolating Gunicorn SIGKILL issue
+    data = request.get_json()
+    email = data.get('email', '').strip().lower()
+    user = User.query.filter_by(email=email).first()
+    # Siempre devolvemos 200 para no revelar si el email existe
+    if user:
+        mail_user = current_app.config.get('MAIL_USERNAME')
+        mail_pass = current_app.config.get('MAIL_PASSWORD')
+        if not mail_user or not mail_pass:
+            logger.error('Email no configurado: faltan MAIL_USERNAME o MAIL_PASSWORD en las variables de entorno')
+            return jsonify({'error': 'El sistema de email no está configurado. Contacta con el administrador.'}), 500
+
+        s = get_serializer()
+        token = s.dumps(email, salt='recover-key')
+        frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+        reset_url = f'{frontend_url}/reset-password?token={token}'
+
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+
+            msg = MIMEMultipart()
+            msg['From'] = mail_user
+            msg['To'] = email
+            msg['Subject'] = 'PickGoal — Recuperar contraseña'
+            msg.attach(MIMEText(
+                f'Accede a este enlace para restablecer tu contraseña (válido 1 hora):\n\n{reset_url}',
+                'plain'
+            ))
+
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
+                server.starttls()
+                server.login(mail_user, mail_pass)
+                server.sendmail(mail_user, email, msg.as_string())
+        except Exception as e:
+            logger.error('Error enviando email de recuperación a %s: %s', email, e, exc_info=True)
+            return jsonify({'error': 'No se pudo enviar el email. Inténtalo de nuevo más tarde.'}), 500
     return jsonify({'message': 'Si el email existe, recibirás un enlace de recuperación'}), 200
 
 
