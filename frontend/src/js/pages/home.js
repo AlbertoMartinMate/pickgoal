@@ -50,28 +50,69 @@ function renderGuest(el) {
         </div>
       </div>
     </section>
-    <section class="features container">
-      <div class="features__grid">
-        <div class="feature-card">
-          <span class="feature-card__icon">📋</span>
-          <h3>Quiniela completa</h3>
-          <p>Predice los 104 partidos del Mundial, desde grupos hasta la final.</p>
+
+    <section class="how-it-works container">
+      <h2 class="how-it-works__title">¿Cómo funciona?</h2>
+      <div class="how-it-works__grid">
+        <div class="how-step">
+          <span class="how-step__icon">🏆</span>
+          <div class="how-step__num">1</div>
+          <h3 class="how-step__title">Únete a una liga</h3>
+          <p class="how-step__desc">Crea tu propia liga o únete a una pública o privada</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">🏆</span>
-          <h3>Ligas privadas y públicas</h3>
-          <p>Compite con amigos en ligas privadas o únete a ligas públicas.</p>
+        <div class="how-step">
+          <span class="how-step__icon">⚽</span>
+          <div class="how-step__num">2</div>
+          <h3 class="how-step__title">Predice los partidos</h3>
+          <p class="how-step__desc">Elige el resultado 1X2 y el marcador exacto de cada partido del Mundial</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">⚡</span>
-          <h3>Resultados en tiempo real</h3>
-          <p>Los puntos se calculan automáticamente al terminar cada partido.</p>
+        <div class="how-step">
+          <span class="how-step__icon">🎯</span>
+          <div class="how-step__num">3</div>
+          <h3 class="how-step__title">Acumula puntos</h3>
+          <p class="how-step__desc">Gana puntos por cada acierto. Más puntos cuanto más avanza el torneo</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">🌟</span>
-          <h3>Predice el campeón</h3>
-          <p>Gana 10 puntos extra si aciertas el campeón del mundo antes del inicio.</p>
+        <div class="how-step">
+          <span class="how-step__icon">👑</span>
+          <div class="how-step__num">4</div>
+          <h3 class="how-step__title">Gana el Mundial</h3>
+          <p class="how-step__desc">El mejor pronosticador de tu liga gana. Liga oficial con premio camiseta</p>
         </div>
+      </div>
+
+      <div class="points-table">
+        <h3 class="points-table__title">Sistema de puntos</h3>
+        <div class="points-table__grid">
+          <div class="points-pill">
+            <span class="points-pill__phase">Grupos</span>
+            <span class="points-pill__pts">1<span class="points-pill__sep">+</span>1</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Dieciseisavos</span>
+            <span class="points-pill__pts">2<span class="points-pill__sep">+</span>2</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Octavos</span>
+            <span class="points-pill__pts">3<span class="points-pill__sep">+</span>3</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Cuartos</span>
+            <span class="points-pill__pts">4<span class="points-pill__sep">+</span>4</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Semis</span>
+            <span class="points-pill__pts">5<span class="points-pill__sep">+</span>5</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Final</span>
+            <span class="points-pill__pts">6<span class="points-pill__sep">+</span>6</span>
+          </div>
+          <div class="points-pill points-pill--champion">
+            <span class="points-pill__phase">Campeón</span>
+            <span class="points-pill__pts">+10</span>
+          </div>
+        </div>
+        <p class="points-table__legend">Puntos por resultado 1X2 <span class="points-table__plus">+</span> puntos extra por marcador exacto</p>
       </div>
     </section>
   `;
