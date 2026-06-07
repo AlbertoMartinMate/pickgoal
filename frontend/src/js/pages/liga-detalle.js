@@ -9,10 +9,8 @@ export async function renderLigaDetalle(el, { params }) {
 
   try {
     const response = await api.leagues.get(leagueId);
-    console.log('[liga-detalle] API response for league', leagueId, ':', JSON.stringify(response));
     const { league, ranking, is_member, is_admin_view } = response;
     const user = auth.getUser();
-    console.log('[liga-detalle] user:', JSON.stringify(user));
 
     const officialBadge = league.is_official
       ? '<span class="league-badge league-badge--official">⭐ Oficial</span>'
@@ -54,11 +52,10 @@ export async function renderLigaDetalle(el, { params }) {
               ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
               : ''
           }
-          ${(() => {
-            const canEdit = user?.is_admin || (is_member && user && league.created_by === user.id);
-            console.log('[liga-detalle] canEdit:', canEdit, '| user.is_admin:', user?.is_admin, '| is_member:', is_member, '| created_by:', league.created_by, '| user.id:', user?.id);
-            return canEdit ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>` : '';
-          })()}
+          ${user?.is_admin || (is_member && user && league.created_by === user.id)
+            ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>`
+            : ''
+          }
         </div>
 
         <section class="section">
@@ -81,8 +78,6 @@ export async function renderLigaDetalle(el, { params }) {
         </section>
       </div>
     `;
-
-    console.log('[liga-detalle] post-render — btnEditLeague in DOM:', document.getElementById('btnEditLeague'));
 
     document.getElementById('btnCopyInvite')?.addEventListener('click', async () => {
       try {
