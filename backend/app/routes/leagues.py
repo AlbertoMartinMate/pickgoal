@@ -188,6 +188,34 @@ def get_league(league_id):
     }), 200
 
 
+@leagues_bp.route('/<int:league_id>', methods=['PUT'])
+@jwt_required()
+def update_league(league_id):
+    user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    league = League.query.get_or_404(league_id)
+
+    if not user.is_admin and league.created_by != user_id:
+        return jsonify({'error': 'Sin permisos para editar esta liga'}), 403
+
+    data = request.get_json()
+
+    name = data.get('name', '').strip()
+    if name:
+        league.name = name
+    league.description = data.get('description', '').strip() or None
+    league.prize = data.get('prize', '').strip() or None
+    league.is_public = bool(data.get('is_public', league.is_public))
+    if user.is_admin and 'is_official' in data:
+        league.is_official = bool(data['is_official'])
+
+    db.session.commit()
+
+    result = league.to_dict(include_code=True)
+    result['invite_link'] = f'{SITE_URL}/#/unirse?codigo={league.invite_code}'
+    return jsonify({'league': result}), 200
+
+
 @leagues_bp.route('/<int:league_id>/leave', methods=['DELETE'])
 @jwt_required()
 def leave_league(league_id):

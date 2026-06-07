@@ -1,5 +1,57 @@
 @use '../abstracts/variables' as v;
 
+// ─── League actions row ───────────────────────────────────────────────────────
+.league-actions {
+  display: flex;
+  gap: v.$sp-3;
+  flex-wrap: wrap;
+  margin-bottom: v.$sp-4;
+}
+
+// ─── Edit league modal ────────────────────────────────────────────────────────
+.edit-league-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$sp-4;
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+  }
+
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: v.$bg-card;
+    border: 1px solid v.$border;
+    border-radius: v.$r-xl;
+    padding: v.$sp-6;
+    width: 100%;
+    max-width: 480px;
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  &--open &__box {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  &__title {
+    font-size: v.$fs-lg;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+    margin-bottom: v.$sp-5;
+  }
+}
+
 // ─── Admin notice ─────────────────────────────────────────────────────────────
 .admin-notice {
   font-size: v.$fs-sm;

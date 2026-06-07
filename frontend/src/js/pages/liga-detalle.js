@@ -44,12 +44,18 @@ export async function renderLigaDetalle(el, { params }) {
           </div>
         ` : ''}
 
-        ${is_member
-          ? `<button class="btn btn--danger btn--sm" id="btnLeave">Abandonar liga</button>`
-          : !is_admin_view && user
-            ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
+        <div class="league-actions">
+          ${is_member
+            ? `<button class="btn btn--danger btn--sm" id="btnLeave">Abandonar liga</button>`
+            : !is_admin_view && user
+              ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
+              : ''
+          }
+          ${(is_admin_view || (is_member && user && league.created_by === user.id))
+            ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>`
             : ''
-        }
+          }
+        </div>
 
         <section class="section">
           <h2>Clasificación</h2>
@@ -108,7 +114,92 @@ export async function renderLigaDetalle(el, { params }) {
       }
     });
 
+    document.getElementById('btnEditLeague')?.addEventListener('click', () => {
+      openEditModal(league, leagueId, user);
+    });
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p><a href="#/ligas">Volver</a></div>`;
   }
+}
+
+function openEditModal(league, leagueId, user) {
+  const existing = document.getElementById('editLeagueModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'editLeagueModal';
+  modal.className = 'edit-league-modal';
+  modal.innerHTML = `
+    <div class="edit-league-modal__overlay"></div>
+    <div class="edit-league-modal__box">
+      <h2 class="edit-league-modal__title">Editar liga</h2>
+      <form class="form" id="editLeagueForm">
+        <div class="form__group">
+          <label class="form__label" for="editName">Nombre</label>
+          <input class="form__input" type="text" id="editName" value="${league.name}" required maxlength="100" />
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="editDesc">Descripción</label>
+          <input class="form__input" type="text" id="editDesc" value="${league.description || ''}" maxlength="300" />
+        </div>
+        <div class="form__group">
+          <label class="form__label" for="editPrize">Premio</label>
+          <input class="form__input" type="text" id="editPrize" value="${league.prize || ''}" maxlength="200" />
+        </div>
+        <div class="form__group form__group--checkbox">
+          <input type="checkbox" id="editPublic" ${league.is_public ? 'checked' : ''} />
+          <label for="editPublic">Liga pública</label>
+        </div>
+        ${user?.is_admin ? `
+          <div class="form__group form__group--checkbox">
+            <input type="checkbox" id="editOfficial" ${league.is_official ? 'checked' : ''} />
+            <label for="editOfficial">⭐ Liga Oficial</label>
+          </div>
+        ` : ''}
+        <div class="form__actions">
+          <button class="btn btn--primary" type="submit" id="btnSaveEdit">Guardar cambios</button>
+          <button class="btn btn--ghost" type="button" id="btnCancelEdit">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('edit-league-modal--open'));
+
+  const close = () => {
+    modal.classList.remove('edit-league-modal--open');
+    modal.addEventListener('transitionend', () => modal.remove(), { once: true });
+  };
+
+  modal.querySelector('.edit-league-modal__overlay').addEventListener('click', close);
+  document.getElementById('btnCancelEdit').addEventListener('click', close);
+
+  document.getElementById('editLeagueForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveEdit');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+
+    const payload = {
+      name: document.getElementById('editName').value.trim(),
+      description: document.getElementById('editDesc').value.trim(),
+      prize: document.getElementById('editPrize').value.trim(),
+      is_public: document.getElementById('editPublic').checked,
+    };
+    if (user?.is_admin) {
+      payload.is_official = document.getElementById('editOfficial').checked;
+    }
+
+    try {
+      await api.leagues.update(leagueId, payload);
+      showToast('Liga actualizada');
+      close();
+      router.navigate(`/ligas/${leagueId}`);
+    } catch (err) {
+      showToast(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    }
+  });
 }
