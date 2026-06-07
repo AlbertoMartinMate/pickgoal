@@ -71,6 +71,18 @@
     }
   }
 
+  &--outline {
+    background: transparent;
+    color: v.$text;
+    border-color: v.$border-light;
+
+    &:hover:not(:disabled) {
+      background: v.$bg-surface;
+      border-color: v.$text-muted;
+      opacity: 1;
+    }
+  }
+
   &--ghost {
     background: transparent;
     color: v.$text-muted;

@@ -82,6 +82,8 @@ export async function renderLigaDetalle(el, { params }) {
       </div>
     `;
 
+    console.log('[liga-detalle] post-render — btnEditLeague in DOM:', document.getElementById('btnEditLeague'));
+
     document.getElementById('btnCopyInvite')?.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(league.invite_link);
