@@ -151,11 +151,22 @@ function matchCard(match, prediction) {
 }
 
 function predictionForm(match, prediction) {
+  const saved = !!prediction;
   const home = prediction?.predicted_home ?? 0;
   const away = prediction?.predicted_away ?? 0;
   const result = prediction?.predicted_result ?? 'X';
+  const stateClass = saved ? 'prediction-form--saved' : 'prediction-form--unsaved';
+  const statusHtml = saved
+    ? '<span class="pred-status pred-status--saved">✓ Guardado</span>'
+    : '<span class="pred-status pred-status--unsaved">Sin predicción</span>';
+  const btnClass = saved
+    ? 'btn btn--saved btn--sm pred-save-btn'
+    : 'btn btn--ghost btn--sm pred-save-btn';
+  const btnText = saved ? '✓ Guardado' : 'Guardar';
+
   return `
-    <form class="prediction-form" data-match-id="${match.id}">
+    <form class="prediction-form ${stateClass}" data-match-id="${match.id}" data-saved="${saved}">
+      ${statusHtml}
       <div class="result-selector">
         ${['1', 'X', '2'].map(r => `
           <label class="result-selector__option">
@@ -171,22 +182,55 @@ function predictionForm(match, prediction) {
         <input type="number" name="predicted_away" class="score-input" min="0" max="30"
           value="${away}" placeholder="0" required />
       </div>
-      <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
+      <button type="submit" class="${btnClass}">${btnText}</button>
     </form>
   `;
 }
 
 function attachPredictionForm(form, predMap, leagueId) {
+  const matchId = parseInt(form.dataset.matchId);
+  const btn = form.querySelector('.pred-save-btn');
+  const statusEl = form.querySelector('.pred-status');
+  let isSaved = form.dataset.saved === 'true';
+
+  function setDirty() {
+    if (form.classList.contains('prediction-form--dirty')) return;
+    form.classList.remove('prediction-form--saved', 'prediction-form--unsaved');
+    form.classList.add('prediction-form--dirty');
+    btn.className = 'btn btn--primary btn--sm pred-save-btn';
+    btn.textContent = 'Guardar';
+    if (statusEl) {
+      statusEl.className = 'pred-status pred-status--unsaved';
+      statusEl.textContent = 'Sin guardar';
+    }
+  }
+
+  function setSaved() {
+    isSaved = true;
+    form.classList.remove('prediction-form--unsaved', 'prediction-form--dirty');
+    form.classList.add('prediction-form--saved');
+    btn.className = 'btn btn--saved btn--sm pred-save-btn';
+    btn.textContent = '✓ Guardado';
+    btn.disabled = false;
+    if (statusEl) {
+      statusEl.className = 'pred-status pred-status--saved';
+      statusEl.textContent = '✓ Guardado';
+    }
+  }
+
+  form.querySelectorAll('input').forEach(input => {
+    input.addEventListener('change', setDirty);
+    input.addEventListener('input', setDirty);
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const matchId = parseInt(form.dataset.matchId);
     const home = parseInt(form.querySelector('[name=predicted_home]').value);
     const away = parseInt(form.querySelector('[name=predicted_away]').value);
     const result = form.querySelector('[name=predicted_result]:checked')?.value;
 
     if (isNaN(home) || isNaN(away) || !result) return;
 
-    const btn = form.querySelector('button');
     btn.disabled = true;
     btn.textContent = '…';
 
@@ -200,12 +244,17 @@ function attachPredictionForm(form, predMap, leagueId) {
       });
       predMap[matchId] = prediction;
       showToast('Predicción guardada');
-      btn.textContent = '✓ Guardado';
-      setTimeout(() => { btn.disabled = false; btn.textContent = 'Guardar'; }, 2000);
+      setSaved();
     } catch (err) {
       showToast(err.message || 'Error al guardar', 'error');
       btn.disabled = false;
-      btn.textContent = 'Guardar';
+      if (isSaved) {
+        btn.className = 'btn btn--saved btn--sm pred-save-btn';
+        btn.textContent = '✓ Guardado';
+      } else {
+        btn.className = 'btn btn--primary btn--sm pred-save-btn';
+        btn.textContent = 'Guardar';
+      }
     }
   });
 }

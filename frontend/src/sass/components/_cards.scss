@@ -151,6 +151,28 @@
   }
 }
 
+// ─── Prediction status badge ──────────────────────────────────────────────────
+.pred-status {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  padding: 2px 10px;
+  border-radius: v.$r-full;
+  border: 1px solid transparent;
+  transition: color v.$t-fast, background v.$t-fast, border-color v.$t-fast;
+
+  &--saved {
+    color: #39FF14;
+    background: rgba(57, 255, 20, 0.08);
+    border-color: rgba(57, 255, 20, 0.25);
+  }
+
+  &--unsaved {
+    color: v.$text-muted;
+    background: transparent;
+    border-color: v.$border;
+  }
+}
+
 .prediction-form {
   display: flex;
   flex-direction: column;
@@ -166,6 +188,35 @@
     font-weight: v.$fw-bold;
     color: v.$text-dim;
     font-size: v.$fs-md;
+  }
+
+  // ── Estado: predicción guardada ───────────────────────────────────────────
+  &--saved {
+    border-top-color: rgba(57, 255, 20, 0.2);
+
+    .score-input {
+      color: #39FF14;
+      border-color: rgba(57, 255, 20, 0.2);
+    }
+
+    .result-selector__option:has(input:checked) {
+      color: #39FF14;
+      background: rgba(57, 255, 20, 0.08);
+      border-color: rgba(57, 255, 20, 0.3);
+    }
+  }
+
+  // ── Estado: sin predicción ────────────────────────────────────────────────
+  &--unsaved {
+    .score-input {
+      color: v.$text-dim;
+    }
+
+    .result-selector__option:has(input:checked) {
+      color: v.$text-muted;
+      background: v.$bg-surface;
+      border-color: v.$border-light;
+    }
   }
 }
 

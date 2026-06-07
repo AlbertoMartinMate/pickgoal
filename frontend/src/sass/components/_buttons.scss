@@ -107,6 +107,18 @@
     }
   }
 
+  &--saved {
+    background: rgba(57, 255, 20, 0.08);
+    color: #39FF14;
+    border-color: rgba(57, 255, 20, 0.25);
+
+    &:hover:not(:disabled) {
+      background: rgba(57, 255, 20, 0.15);
+      border-color: rgba(57, 255, 20, 0.4);
+      opacity: 1;
+    }
+  }
+
   // ─── Tamaños ─────────────────────────────────────────────────────────────
   &--lg { padding: 14px 30px; font-size: v.$fs-base; border-radius: v.$r-lg; }
   &--sm { padding: 7px 14px; font-size: v.$fs-xs; border-radius: v.$r-sm; }
