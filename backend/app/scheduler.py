@@ -7,6 +7,7 @@ scheduler = BackgroundScheduler()
 
 
 def sync_full_calendar(app):
+    logger.info('JOB sync_full_calendar — inicio')
     with app.app_context():
         from app import db
         from app.models import Match
@@ -75,6 +76,7 @@ def sync_full_calendar(app):
 
 
 def sync_live_matches(app):
+    logger.info('JOB sync_live_matches — inicio')
     with app.app_context():
         from app import db
         from app.models import Match
@@ -172,6 +174,7 @@ def _bot_pick(home_team, away_team, rng):
 
 def generate_bot_predictions(app):
     """Genera predicciones para todos los bots en todos los partidos no bloqueados."""
+    logger.info('JOB generate_bot_predictions — inicio')
     with app.app_context():
         import random
         from datetime import datetime, timezone, timedelta
@@ -253,4 +256,5 @@ def init_scheduler(app):
         replace_existing=True,
     )
     scheduler.start()
-    logger.info('Scheduler iniciado')
+    job_ids = [j.id for j in scheduler.get_jobs()]
+    logger.info('Scheduler iniciado — jobs registrados: %s', job_ids)
