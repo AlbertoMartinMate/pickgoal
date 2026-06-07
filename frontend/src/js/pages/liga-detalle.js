@@ -33,7 +33,7 @@ export async function renderLigaDetalle(el, { params }) {
           </div>
         </div>
 
-        ${(is_member || is_admin_view) && league.invite_link ? `
+        ${(is_member || user?.is_admin) && league.invite_link ? `
           <div class="invite-share-box">
             <span class="invite-share-box__label">Enlace de invitación:</span>
             <div class="invite-link-box">
@@ -47,11 +47,11 @@ export async function renderLigaDetalle(el, { params }) {
         <div class="league-actions">
           ${is_member
             ? `<button class="btn btn--danger btn--sm" id="btnLeave">Abandonar liga</button>`
-            : !is_admin_view && user
+            : !user?.is_admin && user
               ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
               : ''
           }
-          ${(user?.is_admin || (is_member && user && league.created_by === user.id))
+          ${user?.is_admin || (is_member && user && league.created_by === user.id)
             ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>`
             : ''
           }

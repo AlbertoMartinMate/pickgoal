@@ -96,10 +96,11 @@ function setupNavbar() {
     e.stopPropagation();
     const item = e.target.closest('[data-league-id]');
     if (item) {
-      localStorage.setItem('activeLeagueId', item.dataset.leagueId);
+      const newId = String(item.dataset.leagueId);
+      localStorage.setItem('activeLeagueId', newId);
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
-      router.resolve();  // recargar página actual con la nueva liga activa
+      router.resolve();  // re-render current page with new active league
       return;
     }
     // "Ver ligas disponibles" link
