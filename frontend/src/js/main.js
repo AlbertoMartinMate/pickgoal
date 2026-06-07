@@ -13,11 +13,22 @@ async function bootstrap() {
   setupInstallBanner();
 }
 
+function isAppInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+
 function setupInstallBanner() {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
+    if (isAppInstalled()) return;
     deferredInstallPrompt = e;
     showInstallBanner();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    document.getElementById('installBanner')?.remove();
   });
 }
 
