@@ -59,10 +59,6 @@ export async function renderQuiniela(el) {
 
     renderDateNav(days, defaultDay, byDay, predMap, leagueId);
 
-    if (auth.isLoggedIn()) {
-      saveDefaultPredictions(allMatches, predMap, leagueId);
-    }
-
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando los partidos: ${err.message}</p></div>`;
   }
@@ -178,24 +174,6 @@ function predictionForm(match, prediction) {
       <button type="submit" class="btn btn--primary btn--sm">Guardar</button>
     </form>
   `;
-}
-
-async function saveDefaultPredictions(allMatches, predMap, leagueId) {
-  const pending = allMatches.filter(m => !m.is_locked && !predMap[m.id]);
-  for (const match of pending) {
-    try {
-      const { prediction } = await api.predictions.save({
-        match_id: match.id,
-        predicted_result: 'X',
-        predicted_home: 0,
-        predicted_away: 0,
-        league_id: leagueId ?? null,
-      });
-      predMap[match.id] = prediction;
-    } catch (_) {
-      // silencioso — no bloquear el resto
-    }
-  }
 }
 
 function attachPredictionForm(form, predMap, leagueId) {
