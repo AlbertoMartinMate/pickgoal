@@ -14,7 +14,8 @@ async function bootstrap() {
 }
 
 function isAppInstalled() {
-  return window.matchMedia('(display-mode: standalone)').matches
+  return localStorage.getItem('pwa_installed') === 'true'
+    || window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true;
 }
 
@@ -27,12 +28,14 @@ function setupInstallBanner() {
   });
 
   window.addEventListener('appinstalled', () => {
+    localStorage.setItem('pwa_installed', 'true');
     deferredInstallPrompt = null;
     document.getElementById('installBanner')?.remove();
   });
 }
 
 function showInstallBanner() {
+  if (isAppInstalled()) return;
   if (sessionStorage.getItem('installBannerDismissed')) return;
 
   const banner = document.createElement('div');
