@@ -1,4 +1,4 @@
-(function(){const a=document.createElement("link").relList;if(a&&a.supports&&a.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))n(s);new MutationObserver(s=>{for(const i of s)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&n(r)}).observe(document,{childList:!0,subtree:!0});function t(s){const i={};return s.integrity&&(i.integrity=s.integrity),s.referrerPolicy&&(i.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?i.credentials="include":s.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function n(s){if(s.ep)return;s.ep=!0;const i=t(s);fetch(s.href,i)}})();const G="https://pickgoal-backend.onrender.com/api";function R(){return localStorage.getItem("token")}async function m(e,a={}){const t={"Content-Type":"application/json",...a.headers},n=R();n&&(t.Authorization=`Bearer ${n}`);const s=await fetch(`${G}${e}`,{...a,headers:t}),i=await s.json().catch(()=>({}));if(!s.ok)throw{status:s.status,message:i.error||"Error desconocido"};return i}const u={get:e=>m(e),post:(e,a)=>m(e,{method:"POST",body:JSON.stringify(a)}),patch:(e,a)=>m(e,{method:"PATCH",body:JSON.stringify(a)}),delete:e=>m(e,{method:"DELETE"}),auth:{register:e=>m("/auth/register",{method:"POST",body:JSON.stringify(e)}),login:e=>m("/auth/login",{method:"POST",body:JSON.stringify(e)}),me:()=>m("/auth/me"),forgotPassword:e=>m("/auth/forgot-password",{method:"POST",body:JSON.stringify({email:e})}),resetPassword:(e,a)=>m("/auth/reset-password",{method:"POST",body:JSON.stringify({token:e,password:a})}),ranking:e=>m(`/auth/ranking${e?`?league_id=${e}`:""}`),users:()=>m("/auth/users"),toggleAdmin:e=>m(`/auth/users/${e}/toggle-admin`,{method:"PATCH"})},matches:{grouped:()=>m("/matches/grouped"),list:(e="")=>m(`/matches/${e}`),get:e=>m(`/matches/${e}`),sync:()=>m("/matches/sync",{method:"POST"})},predictions:{mine:e=>m(`/predictions/${e?`?league_id=${e}`:""}`),forMatch:(e,a)=>m(`/predictions/match/${e}${a?`?league_id=${a}`:""}`),save:e=>m("/predictions/",{method:"POST",body:JSON.stringify(e)}),forUser:(e,a)=>m(`/predictions/user/${e}${a?`?league_id=${a}`:""}`),getChampion:e=>m(`/predictions/champion${e?`?league_id=${e}`:""}`),saveChampion:(e,a)=>m("/predictions/champion",{method:"POST",body:JSON.stringify({team_name:e,league_id:a??null})}),awardChampion:e=>m("/predictions/champion/award",{method:"POST",body:JSON.stringify({team_name:e})})},leagues:{all:()=>m("/leagues/all"),public:()=>m("/leagues/public"),my:()=>m("/leagues/my"),create:e=>m("/leagues/",{method:"POST",body:JSON.stringify(e)}),join:e=>m("/leagues/join",{method:"POST",body:JSON.stringify(e)}),joinByCode:e=>m(`/leagues/join/${encodeURIComponent(e)}`),get:e=>m(`/leagues/${e}`),leave:e=>m(`/leagues/${e}/leave`,{method:"DELETE"}),matchPredictions:(e,a)=>m(`/leagues/${e}/predictions/${a}`)},home:{summary:()=>m("/home/summary")},board:{messages:(e=1)=>m(`/board/?page=${e}`),post:e=>m("/board/",{method:"POST",body:JSON.stringify({message:e})}),delete:e=>m(`/board/${e}`,{method:"DELETE"})}};let $=null;const _={async init(){if(localStorage.getItem("token"))try{const{user:a}=await u.auth.me();$=a}catch{localStorage.removeItem("token")}},setUser(e,a){$=e,localStorage.setItem("token",a),document.dispatchEvent(new CustomEvent("auth:change",{detail:e}))},logout(){$=null,localStorage.removeItem("token"),document.dispatchEvent(new CustomEvent("auth:change",{detail:null}))},getUser(){return $},isLoggedIn(){return!!$},isAdmin(){return($==null?void 0:$.is_admin)===!0}};let B=null;function p(e,a="success"){let t=document.getElementById("toast");t||(t=document.createElement("div"),t.id="toast",document.body.appendChild(t)),t.textContent=e,t.className=`toast toast--${a} toast--visible`,B&&clearTimeout(B),B=setTimeout(()=>{t.classList.remove("toast--visible")},3e3)}function q(){return`
+(function(){const a=document.createElement("link").relList;if(a&&a.supports&&a.supports("modulepreload"))return;for(const s of document.querySelectorAll('link[rel="modulepreload"]'))n(s);new MutationObserver(s=>{for(const i of s)if(i.type==="childList")for(const r of i.addedNodes)r.tagName==="LINK"&&r.rel==="modulepreload"&&n(r)}).observe(document,{childList:!0,subtree:!0});function t(s){const i={};return s.integrity&&(i.integrity=s.integrity),s.referrerPolicy&&(i.referrerPolicy=s.referrerPolicy),s.crossOrigin==="use-credentials"?i.credentials="include":s.crossOrigin==="anonymous"?i.credentials="omit":i.credentials="same-origin",i}function n(s){if(s.ep)return;s.ep=!0;const i=t(s);fetch(s.href,i)}})();const G="https://pickgoal-backend.onrender.com/api";function R(){return localStorage.getItem("token")}async function u(e,a={}){const t={"Content-Type":"application/json",...a.headers},n=R();n&&(t.Authorization=`Bearer ${n}`);const s=await fetch(`${G}${e}`,{...a,headers:t}),i=await s.json().catch(()=>({}));if(!s.ok)throw{status:s.status,message:i.error||"Error desconocido"};return i}const p={get:e=>u(e),post:(e,a)=>u(e,{method:"POST",body:JSON.stringify(a)}),patch:(e,a)=>u(e,{method:"PATCH",body:JSON.stringify(a)}),delete:e=>u(e,{method:"DELETE"}),auth:{register:e=>u("/auth/register",{method:"POST",body:JSON.stringify(e)}),login:e=>u("/auth/login",{method:"POST",body:JSON.stringify(e)}),me:()=>u("/auth/me"),forgotPassword:e=>u("/auth/forgot-password",{method:"POST",body:JSON.stringify({email:e})}),resetPassword:(e,a)=>u("/auth/reset-password",{method:"POST",body:JSON.stringify({token:e,password:a})}),ranking:e=>u(`/auth/ranking${e?`?league_id=${e}`:""}`),users:()=>u("/auth/users"),toggleAdmin:e=>u(`/auth/users/${e}/toggle-admin`,{method:"PATCH"})},matches:{grouped:()=>u("/matches/grouped"),list:(e="")=>u(`/matches/${e}`),get:e=>u(`/matches/${e}`),sync:()=>u("/matches/sync",{method:"POST"})},predictions:{mine:e=>u(`/predictions/${e?`?league_id=${e}`:""}`),forMatch:(e,a)=>u(`/predictions/match/${e}${a?`?league_id=${a}`:""}`),save:e=>u("/predictions/",{method:"POST",body:JSON.stringify(e)}),forUser:(e,a)=>u(`/predictions/user/${e}${a?`?league_id=${a}`:""}`),getChampion:e=>u(`/predictions/champion${e?`?league_id=${e}`:""}`),saveChampion:(e,a)=>u("/predictions/champion",{method:"POST",body:JSON.stringify({team_name:e,league_id:a??null})}),awardChampion:e=>u("/predictions/champion/award",{method:"POST",body:JSON.stringify({team_name:e})})},leagues:{all:()=>u("/leagues/all"),public:()=>u("/leagues/public"),my:()=>u("/leagues/my"),create:e=>u("/leagues/",{method:"POST",body:JSON.stringify(e)}),join:e=>u("/leagues/join",{method:"POST",body:JSON.stringify(e)}),joinByCode:e=>u(`/leagues/join/${encodeURIComponent(e)}`),get:e=>u(`/leagues/${e}`),leave:e=>u(`/leagues/${e}/leave`,{method:"DELETE"}),matchPredictions:(e,a)=>u(`/leagues/${e}/predictions/${a}`)},home:{summary:()=>u("/home/summary")},board:{messages:(e=1)=>u(`/board/?page=${e}`),post:e=>u("/board/",{method:"POST",body:JSON.stringify({message:e})}),delete:e=>u(`/board/${e}`,{method:"DELETE"})}};let $=null;const v={async init(){if(localStorage.getItem("token"))try{const{user:a}=await p.auth.me();$=a}catch{localStorage.removeItem("token")}},setUser(e,a){$=e,localStorage.setItem("token",a),document.dispatchEvent(new CustomEvent("auth:change",{detail:e}))},logout(){$=null,localStorage.removeItem("token"),document.dispatchEvent(new CustomEvent("auth:change",{detail:null}))},getUser(){return $},isLoggedIn(){return!!$},isAdmin(){return($==null?void 0:$.is_admin)===!0}};let B=null;function m(e,a="success"){let t=document.getElementById("toast");t||(t=document.createElement("div"),t.id="toast",document.body.appendChild(t)),t.textContent=e,t.className=`toast toast--${a} toast--visible`,B&&clearTimeout(B),B=setTimeout(()=>{t.classList.remove("toast--visible")},3e3)}function A(){return`
     <div class="container">
       <div class="league-gate">
         <div class="league-gate__icon">⚽</div>
@@ -7,7 +7,7 @@
         <a href="#/ligas" class="btn btn--primary">Ver ligas disponibles</a>
       </div>
     </div>
-  `}function L(e){return e?new Date(e).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}async function z(e){if(!_.getUser()){F(e);return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{leagues_summary:t,upcoming_matches:n}=await u.home.summary();if(t.length===0){J(e);return}const s=(()=>{const r=localStorage.getItem("activeLeagueId");return r?parseInt(r):null})(),i=[...t].sort((r,o)=>r.league_id===s?-1:o.league_id===s?1:0);e.innerHTML=`
+  `}function L(e){return e?new Date(e).toLocaleString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}async function z(e){if(!v.getUser()){F(e);return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{leagues_summary:t,upcoming_matches:n}=await p.home.summary();if(t.length===0){J(e);return}const s=(()=>{const r=localStorage.getItem("activeLeagueId");return r?parseInt(r):null})(),i=[...t].sort((r,o)=>r.league_id===s?-1:o.league_id===s?1:0);e.innerHTML=`
       <div class="home-dashboard container">
         <div class="home-dashboard__leagues">
           ${i.map(r=>X(r)).join("")}
@@ -24,28 +24,69 @@
         </div>
       </div>
     </section>
-    <section class="features container">
-      <div class="features__grid">
-        <div class="feature-card">
-          <span class="feature-card__icon">📋</span>
-          <h3>Quiniela completa</h3>
-          <p>Predice los 104 partidos del Mundial, desde grupos hasta la final.</p>
+
+    <section class="how-it-works container">
+      <h2 class="how-it-works__title">¿Cómo funciona?</h2>
+      <div class="how-it-works__grid">
+        <div class="how-step">
+          <span class="how-step__icon">🏆</span>
+          <div class="how-step__num">1</div>
+          <h3 class="how-step__title">Únete a una liga</h3>
+          <p class="how-step__desc">Crea tu propia liga o únete a una pública o privada</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">🏆</span>
-          <h3>Ligas privadas y públicas</h3>
-          <p>Compite con amigos en ligas privadas o únete a ligas públicas.</p>
+        <div class="how-step">
+          <span class="how-step__icon">⚽</span>
+          <div class="how-step__num">2</div>
+          <h3 class="how-step__title">Predice los partidos</h3>
+          <p class="how-step__desc">Elige el resultado 1X2 y el marcador exacto de cada partido del Mundial</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">⚡</span>
-          <h3>Resultados en tiempo real</h3>
-          <p>Los puntos se calculan automáticamente al terminar cada partido.</p>
+        <div class="how-step">
+          <span class="how-step__icon">🎯</span>
+          <div class="how-step__num">3</div>
+          <h3 class="how-step__title">Acumula puntos</h3>
+          <p class="how-step__desc">Gana puntos por cada acierto. Más puntos cuanto más avanza el torneo</p>
         </div>
-        <div class="feature-card">
-          <span class="feature-card__icon">🌟</span>
-          <h3>Predice el campeón</h3>
-          <p>Gana 10 puntos extra si aciertas el campeón del mundo antes del inicio.</p>
+        <div class="how-step">
+          <span class="how-step__icon">👑</span>
+          <div class="how-step__num">4</div>
+          <h3 class="how-step__title">Gana el Mundial</h3>
+          <p class="how-step__desc">El mejor pronosticador de tu liga gana. Liga oficial con premio camiseta</p>
         </div>
+      </div>
+
+      <div class="points-table">
+        <h3 class="points-table__title">Sistema de puntos</h3>
+        <div class="points-table__grid">
+          <div class="points-pill">
+            <span class="points-pill__phase">Grupos</span>
+            <span class="points-pill__pts">1<span class="points-pill__sep">+</span>1</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Dieciseisavos</span>
+            <span class="points-pill__pts">2<span class="points-pill__sep">+</span>2</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Octavos</span>
+            <span class="points-pill__pts">3<span class="points-pill__sep">+</span>3</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Cuartos</span>
+            <span class="points-pill__pts">4<span class="points-pill__sep">+</span>4</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Semis</span>
+            <span class="points-pill__pts">5<span class="points-pill__sep">+</span>5</span>
+          </div>
+          <div class="points-pill">
+            <span class="points-pill__phase">Final</span>
+            <span class="points-pill__pts">6<span class="points-pill__sep">+</span>6</span>
+          </div>
+          <div class="points-pill points-pill--champion">
+            <span class="points-pill__phase">Campeón</span>
+            <span class="points-pill__pts">+10</span>
+          </div>
+        </div>
+        <p class="points-table__legend">Puntos por resultado 1X2 <span class="points-table__plus">+</span> puntos extra por marcador exacto</p>
       </div>
     </section>
   `}function J(e){e.innerHTML=`
@@ -107,7 +148,7 @@
       </div>
       <a class="btn btn--ghost btn--sm" href="#/quiniela">Ver todos los pronósticos</a>
     </section>
-  `:""}function Q(e){e.innerHTML=`
+  `:""}function K(e){e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Iniciar sesión</h2>
@@ -132,7 +173,7 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("loginForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("loginBtn"),n=document.getElementById("loginError"),s=document.getElementById("identifier").value.trim(),i=document.getElementById("password").value;t.disabled=!0,t.textContent="Entrando…",n.classList.add("hidden");try{const{token:r,user:o}=await u.auth.login({identifier:s,password:i});_.setUser(o,r),p(`¡Bienvenido, ${o.username}!`),b.navigate("/quiniela")}catch(r){n.textContent=r.message||"Error al iniciar sesión",n.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Entrar"}})}function K(e){e.innerHTML=`
+  `,document.getElementById("loginForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("loginBtn"),n=document.getElementById("loginError"),s=document.getElementById("identifier").value.trim(),i=document.getElementById("password").value;t.disabled=!0,t.textContent="Entrando…",n.classList.add("hidden");try{const{token:r,user:o}=await p.auth.login({identifier:s,password:i});v.setUser(o,r),m(`¡Bienvenido, ${o.username}!`),b.navigate("/quiniela")}catch(r){n.textContent=r.message||"Error al iniciar sesión",n.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Entrar"}})}function Q(e){e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Crear cuenta</h2>
@@ -165,10 +206,10 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("registerForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("registerBtn"),n=document.getElementById("registerError");t.disabled=!0,t.textContent="Creando cuenta…",n.classList.add("hidden");const s={username:document.getElementById("username").value.trim(),email:document.getElementById("email").value.trim(),country:document.getElementById("country").value.trim(),password:document.getElementById("password").value};try{const{token:i,user:r}=await u.auth.register(s);_.setUser(r,i),p("¡Cuenta creada! Bienvenido a PickGoal");const o=sessionStorage.getItem("pendingInviteCode");if(o){sessionStorage.removeItem("pendingInviteCode");try{const{league:d}=await u.leagues.joinByCode(o);p(`¡Te has unido a "${d.name}"!`),b.navigate(`/ligas/${d.id}`)}catch{b.navigate("/ligas")}}else b.navigate("/campeon")}catch(i){n.textContent=i.message||"Error al registrarse",n.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Crear cuenta"}})}function W(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function Z(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{if(_.isLoggedIn()){const{leagues:c}=await u.leagues.my();if(c.length===0){e.innerHTML=q();return}}const a=W(),[{groups:t},n]=await Promise.all([u.matches.grouped(),_.isLoggedIn()?u.predictions.mine(a):Promise.resolve({predictions:[]})]),s={};for(const c of n.predictions)s[c.match_id]=c;const i=t.flatMap(c=>c.matches),r=new Map;for(const c of i){const g=T(c.match_datetime);r.has(g)||r.set(g,[]),r.get(g).push(c)}const o=[...r.keys()].sort(),d=T(new Date().toISOString()),l=o.find(c=>c>=d)??o[0];e.innerHTML=`
+  `,document.getElementById("registerForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("registerBtn"),n=document.getElementById("registerError");t.disabled=!0,t.textContent="Creando cuenta…",n.classList.add("hidden");const s={username:document.getElementById("username").value.trim(),email:document.getElementById("email").value.trim(),country:document.getElementById("country").value.trim(),password:document.getElementById("password").value};try{const{token:i,user:r}=await p.auth.register(s);v.setUser(r,i),m("¡Cuenta creada! Bienvenido a PickGoal");const o=sessionStorage.getItem("pendingInviteCode");if(o){sessionStorage.removeItem("pendingInviteCode");try{const{league:d}=await p.leagues.joinByCode(o);m(`¡Te has unido a "${d.name}"!`),b.navigate(`/ligas/${d.id}`)}catch{b.navigate("/ligas")}}else b.navigate("/campeon")}catch(i){n.textContent=i.message||"Error al registrarse",n.classList.remove("hidden")}finally{t.disabled=!1,t.textContent="Crear cuenta"}})}function W(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function Z(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{if(v.isLoggedIn()){const{leagues:c}=await p.leagues.my();if(c.length===0){e.innerHTML=A();return}}const a=W(),[{groups:t},n]=await Promise.all([p.matches.grouped(),v.isLoggedIn()?p.predictions.mine(a):Promise.resolve({predictions:[]})]),s={};for(const c of n.predictions)s[c.match_id]=c;const i=t.flatMap(c=>c.matches),r=new Map;for(const c of i){const g=x(c.match_datetime);r.has(g)||r.set(g,[]),r.get(g).push(c)}const o=[...r.keys()].sort(),d=x(new Date().toISOString()),l=o.find(c=>c>=d)??o[0];e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Pronósticos — Mundial 2026</h1>
-        ${_.isLoggedIn()?"":'<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>'}
+        ${v.isLoggedIn()?"":'<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>'}
         <nav class="date-nav" id="dateNav"></nav>
         <div id="matchesContent"></div>
       </div>
@@ -176,7 +217,7 @@
     <button class="date-nav__btn ${o===a?"date-nav__btn--active":""}" data-day="${o}">
       ${ae(o)}
     </button>
-  `).join(""),(r=i.querySelector(".date-nav__btn--active"))==null||r.scrollIntoView({inline:"center",behavior:"instant",block:"nearest"}),i.querySelectorAll(".date-nav__btn").forEach(o=>{o.addEventListener("click",()=>{i.querySelectorAll(".date-nav__btn").forEach(d=>d.classList.remove("date-nav__btn--active")),o.classList.add("date-nav__btn--active"),x(t.get(o.dataset.day)??[],n,s)})}),x(t.get(a)??[],n,s))}function x(e,a,t){const n=document.getElementById("matchesContent");if(n){if(e.length===0){n.innerHTML='<p class="empty">Sin partidos este día.</p>';return}n.innerHTML=`<div class="matches-grid">${e.map(s=>te(s,a[s.id])).join("")}</div>`,_.isLoggedIn()&&n.querySelectorAll(".prediction-form").forEach(s=>{ne(s,a,t)})}}function T(e){const a=new Date(e);return`${a.getFullYear()}-${String(a.getMonth()+1).padStart(2,"0")}-${String(a.getDate()).padStart(2,"0")}`}function ae(e){const[a,t,n]=e.split("-").map(Number);return new Date(a,t-1,n).toLocaleDateString("es-ES",{day:"numeric",month:"short"})}function te(e,a){const t=e.is_locked,n=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",s={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
+  `).join(""),(r=i.querySelector(".date-nav__btn--active"))==null||r.scrollIntoView({inline:"center",behavior:"instant",block:"nearest"}),i.querySelectorAll(".date-nav__btn").forEach(o=>{o.addEventListener("click",()=>{i.querySelectorAll(".date-nav__btn").forEach(d=>d.classList.remove("date-nav__btn--active")),o.classList.add("date-nav__btn--active"),k(t.get(o.dataset.day)??[],n,s)})}),k(t.get(a)??[],n,s))}function k(e,a,t){const n=document.getElementById("matchesContent");if(n){if(e.length===0){n.innerHTML='<p class="empty">Sin partidos este día.</p>';return}n.innerHTML=`<div class="matches-grid">${e.map(s=>te(s,a[s.id])).join("")}</div>`,v.isLoggedIn()&&n.querySelectorAll(".prediction-form").forEach(s=>{ne(s,a,t)})}}function x(e){const a=new Date(e);return`${a.getFullYear()}-${String(a.getMonth()+1).padStart(2,"0")}-${String(a.getDate()).padStart(2,"0")}`}function ae(e){const[a,t,n]=e.split("-").map(Number);return new Date(a,t-1,n).toLocaleDateString("es-ES",{day:"numeric",month:"short"})}function te(e,a){const t=e.is_locked,n=a?`<span class="pts-badge">${a.total_points} pts</span>`:"",s={scheduled:"Programado",live:"🔴 En juego",finished:"Finalizado"}[e.status];return`
     <div class="match-card ${t?"match-card--locked":""}" data-match-id="${e.id}">
       <div class="match-card__header">
         <span class="match-card__status">${s}</span>
@@ -190,7 +231,7 @@
         </div>
         <span class="team team--away">${e.away_team}</span>
       </div>
-      ${!t&&_.isLoggedIn()?se(e,a):t&&a?`<div class="prediction-result">
+      ${!t&&v.isLoggedIn()?se(e,a):t&&a?`<div class="prediction-result">
                Tu predicción: <strong>${a.predicted_home}-${a.predicted_away}</strong>
                (${a.predicted_result}) · ${a.total_points} pts
              </div>`:""}
@@ -215,7 +256,7 @@
       </div>
       <button type="submit" class="${d}">${l}</button>
     </form>
-  `}function ne(e,a,t){const n=parseInt(e.dataset.matchId),s=e.querySelector(".pred-save-btn"),i=e.querySelector(".pred-status");let r=e.dataset.saved==="true";function o(){e.classList.contains("prediction-form--dirty")||(e.classList.remove("prediction-form--saved","prediction-form--unsaved"),e.classList.add("prediction-form--dirty"),s.className="btn btn--primary btn--sm pred-save-btn",s.textContent="Guardar",i&&(i.className="pred-status pred-status--unsaved",i.textContent="Sin guardar"))}function d(){r=!0,e.classList.remove("prediction-form--unsaved","prediction-form--dirty"),e.classList.add("prediction-form--saved"),s.className="btn btn--saved btn--sm pred-save-btn",s.textContent="✓ Guardado",s.disabled=!1,i&&(i.className="pred-status pred-status--saved",i.textContent="✓ Guardado")}e.querySelectorAll("input").forEach(l=>{l.addEventListener("change",o),l.addEventListener("input",o)}),e.addEventListener("submit",async l=>{var h;l.preventDefault();const c=parseInt(e.querySelector("[name=predicted_home]").value),g=parseInt(e.querySelector("[name=predicted_away]").value),v=(h=e.querySelector("[name=predicted_result]:checked"))==null?void 0:h.value;if(!(isNaN(c)||isNaN(g)||!v)){s.disabled=!0,s.textContent="…";try{const{prediction:f}=await u.predictions.save({match_id:n,predicted_result:v,predicted_home:c,predicted_away:g,league_id:t??null});a[n]=f,p("Predicción guardada"),d()}catch(f){p(f.message||"Error al guardar","error"),s.disabled=!1,r?(s.className="btn btn--saved btn--sm pred-save-btn",s.textContent="✓ Guardado"):(s.className="btn btn--primary btn--sm pred-save-btn",s.textContent="Guardar")}}})}function ie(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function re(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{if(_.isLoggedIn()){const{leagues:o}=await u.leagues.my();if(o.length===0){e.innerHTML=q();return}}const a=ie(),[{ranking:t},n]=await Promise.all([u.auth.ranking(a),_.isLoggedIn()?u.leagues.my():Promise.resolve({leagues:[]})]),s=_.getUser(),i=n.leagues.find(o=>o.id===a),r=i?i.name:"Clasificación General";e.innerHTML=`
+  `}function ne(e,a,t){const n=parseInt(e.dataset.matchId),s=e.querySelector(".pred-save-btn"),i=e.querySelector(".pred-status");let r=e.dataset.saved==="true";function o(){e.classList.contains("prediction-form--dirty")||(e.classList.remove("prediction-form--saved","prediction-form--unsaved"),e.classList.add("prediction-form--dirty"),s.className="btn btn--primary btn--sm pred-save-btn",s.textContent="Guardar",i&&(i.className="pred-status pred-status--unsaved",i.textContent="Sin guardar"))}function d(){r=!0,e.classList.remove("prediction-form--unsaved","prediction-form--dirty"),e.classList.add("prediction-form--saved"),s.className="btn btn--saved btn--sm pred-save-btn",s.textContent="✓ Guardado",s.disabled=!1,i&&(i.className="pred-status pred-status--saved",i.textContent="✓ Guardado")}e.querySelectorAll("input").forEach(l=>{l.addEventListener("change",o),l.addEventListener("input",o)}),e.addEventListener("submit",async l=>{var h;l.preventDefault();const c=parseInt(e.querySelector("[name=predicted_home]").value),g=parseInt(e.querySelector("[name=predicted_away]").value),_=(h=e.querySelector("[name=predicted_result]:checked"))==null?void 0:h.value;if(!(isNaN(c)||isNaN(g)||!_)){s.disabled=!0,s.textContent="…";try{const{prediction:f}=await p.predictions.save({match_id:n,predicted_result:_,predicted_home:c,predicted_away:g,league_id:t??null});a[n]=f,m("Predicción guardada"),d()}catch(f){m(f.message||"Error al guardar","error"),s.disabled=!1,r?(s.className="btn btn--saved btn--sm pred-save-btn",s.textContent="✓ Guardado"):(s.className="btn btn--primary btn--sm pred-save-btn",s.textContent="Guardar")}}})}function ie(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function re(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{if(v.isLoggedIn()){const{leagues:o}=await p.leagues.my();if(o.length===0){e.innerHTML=A();return}}const a=ie(),[{ranking:t},n]=await Promise.all([p.auth.ranking(a),v.isLoggedIn()?p.leagues.my():Promise.resolve({leagues:[]})]),s=v.getUser(),i=n.leagues.find(o=>o.id===a),r=i?i.name:"Clasificación General";e.innerHTML=`
       <div class="container">
         <h1 class="page-title">${r}</h1>
         <div class="ranking-table-wrapper">
@@ -249,7 +290,7 @@
           </table>
         </div>
       </div>
-    `}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}async function oe(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';let a=1,t=1;async function n(){const{messages:o,pages:d}=await u.board.messages(a);return t=d,o}try{const o=await n();s(o)}catch(o){e.innerHTML=`<div class="container"><p class="form__error">Error: ${o.message}</p></div>`}function s(o){var l,c,g;const d=_.getUser();e.innerHTML=`
+    `}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}async function oe(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';let a=1,t=1;async function n(){const{messages:o,pages:d}=await p.board.messages(a);return t=d,o}try{const o=await n();s(o)}catch(o){e.innerHTML=`<div class="container"><p class="form__error">Error: ${o.message}</p></div>`}function s(o){var l,c,g;const d=v.getUser();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Tablón</h1>
         ${d?`<form class="board-form" id="boardForm">
@@ -266,7 +307,7 @@
                <button class="btn btn--ghost btn--sm" id="nextPage" ${a>=t?"disabled":""}>Siguiente →</button>
              </div>`:""}
       </div>
-    `,(l=document.getElementById("boardForm"))==null||l.addEventListener("submit",async v=>{v.preventDefault();const h=document.getElementById("boardMsg"),f=h.value.trim();if(f)try{await u.board.post(f),h.value="";const w=await n();document.getElementById("boardMessages").innerHTML=i(w,d),r(d),p("Mensaje publicado")}catch(w){p(w.message,"error")}}),(c=document.getElementById("prevPage"))==null||c.addEventListener("click",async()=>{a--;const v=await n();document.getElementById("boardMessages").innerHTML=i(v,d),r(d)}),(g=document.getElementById("nextPage"))==null||g.addEventListener("click",async()=>{a++;const v=await n();document.getElementById("boardMessages").innerHTML=i(v,d),r(d)}),r(d)}function i(o,d){return o.length?o.map(l=>`
+    `,(l=document.getElementById("boardForm"))==null||l.addEventListener("submit",async _=>{_.preventDefault();const h=document.getElementById("boardMsg"),f=h.value.trim();if(f)try{await p.board.post(f),h.value="";const w=await n();document.getElementById("boardMessages").innerHTML=i(w,d),r(d),m("Mensaje publicado")}catch(w){m(w.message,"error")}}),(c=document.getElementById("prevPage"))==null||c.addEventListener("click",async()=>{a--;const _=await n();document.getElementById("boardMessages").innerHTML=i(_,d),r(d)}),(g=document.getElementById("nextPage"))==null||g.addEventListener("click",async()=>{a++;const _=await n();document.getElementById("boardMessages").innerHTML=i(_,d),r(d)}),r(d)}function i(o,d){return o.length?o.map(l=>`
       <div class="board-message ${l.is_deleted?"board-message--deleted":""}" data-id="${l.id}">
         <div class="board-message__header">
           <strong>${l.username}</strong>
@@ -275,14 +316,14 @@
         </div>
         <p class="board-message__text">${ce(l.message)}</p>
       </div>
-    `).join(""):'<p class="empty">Sin mensajes aún. ¡Sé el primero!</p>'}function r(o){e.querySelectorAll(".delete-msg").forEach(d=>{d.addEventListener("click",async()=>{if(confirm("¿Eliminar este mensaje?"))try{await u.board.delete(d.dataset.id);const l=await n();document.getElementById("boardMessages").innerHTML=i(l,o),r(o),p("Mensaje eliminado")}catch(l){p(l.message,"error")}})})}}function ce(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}async function de(e){var a,t,n,s;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[i,r]=await Promise.all([u.leagues.all(),_.isLoggedIn()?u.leagues.my():Promise.resolve({leagues:[]})]),o=_.getUser(),d=new Set(r.leagues.map(c=>c.id)),l=i.leagues.filter(c=>!d.has(c.id));e.innerHTML=`
+    `).join(""):'<p class="empty">Sin mensajes aún. ¡Sé el primero!</p>'}function r(o){e.querySelectorAll(".delete-msg").forEach(d=>{d.addEventListener("click",async()=>{if(confirm("¿Eliminar este mensaje?"))try{await p.board.delete(d.dataset.id);const l=await n();document.getElementById("boardMessages").innerHTML=i(l,o),r(o),m("Mensaje eliminado")}catch(l){m(l.message,"error")}})})}}function ce(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}async function de(e){var a,t,n,s;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const[i,r]=await Promise.all([p.leagues.all(),v.isLoggedIn()?p.leagues.my():Promise.resolve({leagues:[]})]),o=v.getUser(),d=new Set(r.leagues.map(c=>c.id)),l=i.leagues.filter(c=>!d.has(c.id));e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Ligas</h1>
 
         ${o&&r.leagues.length>0?`
           <section class="section">
             <h2>Mis ligas</h2>
-            <div class="leagues-grid">${r.leagues.map(c=>k(c,!0)).join("")}</div>
+            <div class="leagues-grid">${r.leagues.map(c=>T(c,!0)).join("")}</div>
           </section>
         `:""}
 
@@ -330,10 +371,10 @@
 
         <section class="section">
           <h2>Ligas disponibles</h2>
-          ${l.length?`<div class="leagues-grid">${l.map(c=>k(c,!1,d)).join("")}</div>`:r.leagues.length>0?'<p class="empty">Ya participas en todas las ligas disponibles.</p>':'<p class="empty">No hay ligas aún. ¡Crea la primera!</p>'}
+          ${l.length?`<div class="leagues-grid">${l.map(c=>T(c,!1,d)).join("")}</div>`:r.leagues.length>0?'<p class="empty">Ya participas en todas las ligas disponibles.</p>':'<p class="empty">No hay ligas aún. ¡Crea la primera!</p>'}
         </section>
       </div>
-    `,e.querySelectorAll('.league-card[data-navigate="true"]').forEach(c=>{c.addEventListener("click",()=>b.navigate(`/ligas/${c.dataset.id}`))}),e.querySelectorAll(".btn-join-league").forEach(c=>{c.addEventListener("click",async g=>{g.stopPropagation();const v=parseInt(c.dataset.id);c.disabled=!0,c.textContent="…";try{const{league:h}=await u.leagues.join({league_id:v});p(`¡Te has unido a "${h.name}"!`),b.navigate(`/ligas/${h.id}`)}catch(h){p(h.message,"error"),c.disabled=!1,c.textContent="Unirse"}})}),e.querySelectorAll(".btn-private-info").forEach(c=>{c.addEventListener("click",g=>{g.stopPropagation(),p("Esta liga es privada. Pide el enlace de invitación a cualquier miembro para unirte.","info")})}),(a=document.getElementById("btnShowCreate"))==null||a.addEventListener("click",()=>{var c,g;(c=document.getElementById("createLeaguePanel"))==null||c.classList.remove("hidden"),(g=document.getElementById("btnShowCreate"))==null||g.classList.add("hidden")}),(t=document.getElementById("btnCancelCreate"))==null||t.addEventListener("click",()=>{var c,g;(c=document.getElementById("createLeaguePanel"))==null||c.classList.add("hidden"),(g=document.getElementById("btnShowCreate"))==null||g.classList.remove("hidden")}),(n=document.getElementById("joinCodeForm"))==null||n.addEventListener("submit",async c=>{c.preventDefault();const g=document.getElementById("inviteCode").value.trim().toUpperCase();if(g)try{const{league:v}=await u.leagues.join({invite_code:g});p(`Te has unido a "${v.name}"`),b.navigate(`/ligas/${v.id}`)}catch(v){p(v.message,"error")}}),(s=document.getElementById("createLeagueForm"))==null||s.addEventListener("submit",async c=>{var P;c.preventDefault();const g=document.getElementById("createBtn");g.disabled=!0,g.textContent="Creando…";const v=document.getElementById("leagueName").value.trim(),h=document.getElementById("leagueDesc").value.trim(),f=document.getElementById("leaguePrize").value.trim(),w=document.getElementById("isPublic").checked,U=((P=document.getElementById("isOfficial"))==null?void 0:P.checked)??!1;try{const{league:S}=await u.leagues.create({name:v,description:h,prize:f,is_public:w,is_official:U});le(S)}catch(S){p(S.message,"error"),g.disabled=!1,g.textContent="Crear liga"}})}catch(i){e.innerHTML=`<div class="container"><p class="form__error">Error: ${i.message}</p></div>`}}function k(e,a=!1,t=new Set){const n=e.is_official?'<span class="league-badge league-badge--official">⭐ Oficial</span>':"",s=e.is_public?"🌍":"🔒",i=a?`<button class="btn btn--sm btn--outline" onclick="event.stopPropagation(); window.location.hash='/ligas/${e.id}'">Ver liga</button>`:e.is_public?`<button class="btn btn--sm btn--primary btn-join-league" data-id="${e.id}">Unirse</button>`:'<button class="btn btn--sm btn--ghost btn-private-info">🔒 Solicitar enlace</button>';return`
+    `,e.querySelectorAll('.league-card[data-navigate="true"]').forEach(c=>{c.addEventListener("click",()=>b.navigate(`/ligas/${c.dataset.id}`))}),e.querySelectorAll(".btn-join-league").forEach(c=>{c.addEventListener("click",async g=>{g.stopPropagation();const _=parseInt(c.dataset.id);c.disabled=!0,c.textContent="…";try{const{league:h}=await p.leagues.join({league_id:_});m(`¡Te has unido a "${h.name}"!`),b.navigate(`/ligas/${h.id}`)}catch(h){m(h.message,"error"),c.disabled=!1,c.textContent="Unirse"}})}),e.querySelectorAll(".btn-private-info").forEach(c=>{c.addEventListener("click",g=>{g.stopPropagation(),m("Esta liga es privada. Pide el enlace de invitación a cualquier miembro para unirte.","info")})}),(a=document.getElementById("btnShowCreate"))==null||a.addEventListener("click",()=>{var c,g;(c=document.getElementById("createLeaguePanel"))==null||c.classList.remove("hidden"),(g=document.getElementById("btnShowCreate"))==null||g.classList.add("hidden")}),(t=document.getElementById("btnCancelCreate"))==null||t.addEventListener("click",()=>{var c,g;(c=document.getElementById("createLeaguePanel"))==null||c.classList.add("hidden"),(g=document.getElementById("btnShowCreate"))==null||g.classList.remove("hidden")}),(n=document.getElementById("joinCodeForm"))==null||n.addEventListener("submit",async c=>{c.preventDefault();const g=document.getElementById("inviteCode").value.trim().toUpperCase();if(g)try{const{league:_}=await p.leagues.join({invite_code:g});m(`Te has unido a "${_.name}"`),b.navigate(`/ligas/${_.id}`)}catch(_){m(_.message,"error")}}),(s=document.getElementById("createLeagueForm"))==null||s.addEventListener("submit",async c=>{var P;c.preventDefault();const g=document.getElementById("createBtn");g.disabled=!0,g.textContent="Creando…";const _=document.getElementById("leagueName").value.trim(),h=document.getElementById("leagueDesc").value.trim(),f=document.getElementById("leaguePrize").value.trim(),w=document.getElementById("isPublic").checked,U=((P=document.getElementById("isOfficial"))==null?void 0:P.checked)??!1;try{const{league:S}=await p.leagues.create({name:_,description:h,prize:f,is_public:w,is_official:U});le(S)}catch(S){m(S.message,"error"),g.disabled=!1,g.textContent="Crear liga"}})}catch(i){e.innerHTML=`<div class="container"><p class="form__error">Error: ${i.message}</p></div>`}}function T(e,a=!1,t=new Set){const n=e.is_official?'<span class="league-badge league-badge--official">⭐ Oficial</span>':"",s=e.is_public?"🌍":"🔒",i=a?`<button class="btn btn--sm btn--outline" onclick="event.stopPropagation(); window.location.hash='/ligas/${e.id}'">Ver liga</button>`:e.is_public?`<button class="btn btn--sm btn--primary btn-join-league" data-id="${e.id}">Unirse</button>`:'<button class="btn btn--sm btn--ghost btn-private-info">🔒 Solicitar enlace</button>';return`
     <div class="league-card ${a?"league-card--mine":""}" data-id="${e.id}" data-navigate="${a}">
       <div class="league-card__top">
         <div class="league-card__name">${e.name} ${n}</div>
@@ -360,7 +401,7 @@
       ${navigator.share?'<button class="btn btn--primary" id="btnShare">Compartir</button>':""}
       <a href="#/ligas/${e.id}" class="btn btn--ghost">Ir a la liga</a>
     </div>
-  `,(n=document.getElementById("btnCopyLink"))==null||n.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(a),p("Enlace copiado")}catch{p("No se pudo copiar","error")}}),(s=document.getElementById("btnShare"))==null||s.addEventListener("click",async()=>{try{await navigator.share({title:`Únete a ${e.name} en PickGoal`,url:a})}catch{}}))}async function ue(e,{params:a}){var n,s,i,r;const t=parseInt(a.id);e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:o,ranking:d,is_member:l}=await u.leagues.get(t),c=_.getUser(),g=o.is_official?'<span class="league-badge league-badge--official">⭐ Oficial</span>':"";e.innerHTML=`
+  `,(n=document.getElementById("btnCopyLink"))==null||n.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(a),m("Enlace copiado")}catch{m("No se pudo copiar","error")}}),(s=document.getElementById("btnShare"))==null||s.addEventListener("click",async()=>{try{await navigator.share({title:`Únete a ${e.name} en PickGoal`,url:a})}catch{}}))}async function pe(e,{params:a}){var n,s,i,r;const t=parseInt(a.id);e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:o,ranking:d,is_member:l}=await p.leagues.get(t),c=v.getUser(),g=o.is_official?'<span class="league-badge league-badge--official">⭐ Oficial</span>':"";e.innerHTML=`
       <div class="container">
         <a href="#/ligas" class="back-link">← Volver a ligas</a>
         <div class="league-header">
@@ -393,19 +434,19 @@
               <tr><th>#</th><th>Usuario</th><th>País</th><th>Puntos</th></tr>
             </thead>
             <tbody>
-              ${d.map(v=>`
-                <tr class="${c&&v.id===c.id?"ranking-table__row--me":""}">
-                  <td>${v.position}</td>
-                  <td>${v.username}</td>
-                  <td>${v.country||"—"}</td>
-                  <td class="ranking-table__pts">${v.total_points}</td>
+              ${d.map(_=>`
+                <tr class="${c&&_.id===c.id?"ranking-table__row--me":""}">
+                  <td>${_.position}</td>
+                  <td>${_.username}</td>
+                  <td>${_.country||"—"}</td>
+                  <td class="ranking-table__pts">${_.total_points}</td>
                 </tr>
               `).join("")}
             </tbody>
           </table>
         </section>
       </div>
-    `,(n=document.getElementById("btnCopyInvite"))==null||n.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(o.invite_link),p("Enlace copiado")}catch{p("No se pudo copiar","error")}}),(s=document.getElementById("btnShareInvite"))==null||s.addEventListener("click",async()=>{try{await navigator.share({title:`Únete a ${o.name} en PickGoal`,url:o.invite_link})}catch{}}),(i=document.getElementById("btnLeave"))==null||i.addEventListener("click",async()=>{if(confirm("¿Seguro que quieres abandonar esta liga?"))try{await u.leagues.leave(t),p("Has abandonado la liga"),b.navigate("/ligas")}catch(v){p(v.message,"error")}}),(r=document.getElementById("btnJoin"))==null||r.addEventListener("click",async()=>{try{await u.leagues.join({league_id:t}),p("¡Te has unido a la liga!"),b.navigate(`/ligas/${t}`)}catch(v){p(v.message,"error")}})}catch(o){e.innerHTML=`<div class="container"><p class="form__error">Error: ${o.message}</p><a href="#/ligas">Volver</a></div>`}}async function me(e){var t,n;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';const a=_.getUser();try{const s=(()=>{const h=localStorage.getItem("activeLeagueId");return h?parseInt(h):null})(),[i,r,o,d]=await Promise.all([u.predictions.mine(s),u.predictions.getChampion(s),u.leagues.my(),u.auth.me()]),l=i.predictions.reduce((h,f)=>h+f.total_points,0)+(((t=r.champion_prediction)==null?void 0:t.points_earned)||0),c=d.user,g=c.status,v=c.total_points_all_time;e.innerHTML=`
+    `,(n=document.getElementById("btnCopyInvite"))==null||n.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(o.invite_link),m("Enlace copiado")}catch{m("No se pudo copiar","error")}}),(s=document.getElementById("btnShareInvite"))==null||s.addEventListener("click",async()=>{try{await navigator.share({title:`Únete a ${o.name} en PickGoal`,url:o.invite_link})}catch{}}),(i=document.getElementById("btnLeave"))==null||i.addEventListener("click",async()=>{if(confirm("¿Seguro que quieres abandonar esta liga?"))try{await p.leagues.leave(t),m("Has abandonado la liga"),b.navigate("/ligas")}catch(_){m(_.message,"error")}}),(r=document.getElementById("btnJoin"))==null||r.addEventListener("click",async()=>{try{await p.leagues.join({league_id:t}),m("¡Te has unido a la liga!"),b.navigate(`/ligas/${t}`)}catch(_){m(_.message,"error")}})}catch(o){e.innerHTML=`<div class="container"><p class="form__error">Error: ${o.message}</p><a href="#/ligas">Volver</a></div>`}}async function ue(e){var t,n;e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';const a=v.getUser();try{const s=(()=>{const h=localStorage.getItem("activeLeagueId");return h?parseInt(h):null})(),[i,r,o,d]=await Promise.all([p.predictions.mine(s),p.predictions.getChampion(s),p.leagues.my(),p.auth.me()]),l=i.predictions.reduce((h,f)=>h+f.total_points,0)+(((t=r.champion_prediction)==null?void 0:t.points_earned)||0),c=d.user,g=c.status,_=c.total_points_all_time;e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Mi Perfil</h1>
 
@@ -418,7 +459,7 @@
               <p>${a.country||"Sin país"}</p>
             </div>
           </div>
-          ${pe(g,v)}
+          ${me(g,_)}
           <button class="btn btn--danger" id="btnLogoutPerfil">Cerrar sesión</button>
           <div class="profile-card__stats">
             <div class="stat">
@@ -457,7 +498,7 @@
           ${o.leagues.length?`<ul class="leagues-list">${o.leagues.map(h=>`<li><a href="#/ligas/${h.id}">${h.name}</a> <span class="tag">${h.is_public?"Pública":"Privada"}</span></li>`).join("")}</ul>`:'<p class="empty">No perteneces a ninguna liga. <a href="#/ligas">Ver ligas</a></p>'}
         </section>
       </div>
-    `,(n=e.querySelector("#btnLogoutPerfil"))==null||n.addEventListener("click",()=>{_.logout(),window.location.hash="/"})}catch(s){e.innerHTML=`<div class="container"><p class="form__error">Error: ${s.message}</p></div>`}}function pe(e,a){if(e.next_threshold===null)return`
+    `,(n=e.querySelector("#btnLogoutPerfil"))==null||n.addEventListener("click",()=>{v.logout(),window.location.hash="/"})}catch(s){e.innerHTML=`<div class="container"><p class="form__error">Error: ${s.message}</p></div>`}}function me(e,a){if(e.next_threshold===null)return`
       <div class="level-progress">
         <div class="level-progress__header">
           <span class="status-badge">${e.emoji} ${e.name}</span>
@@ -477,7 +518,7 @@
       <span class="pred-row__score">${e.predicted_home}-${e.predicted_away}</span>
       <span class="pred-row__pts">${e.total_points} pts</span>
     </div>
-  `}const M=new Date("2026-06-11T21:00:00Z"),ve=["Argentina","Brasil","Francia","España","Inglaterra","Alemania","Portugal","Países Bajos","Italia","Bélgica","Uruguay","Colombia","México","Estados Unidos","Canadá","Marruecos","Senegal","Nigeria","Japón","Corea del Sur","Australia","Arabia Saudí","Irán","Qatar","Ecuador","Chile","Perú","Venezuela","Bolivia","Paraguay","Costa Rica","Honduras","Panamá","Jamaica","Trinidad y Tobago","Guatemala","Turquía","Polonia","Croacia","Serbia","República Checa","Eslovaquia","Austria","Suiza","Dinamarca","Suecia","Noruega","Escocia","Ucrania","Rumanía","Hungría","Grecia","Egipto","Camerún","Ghana","Costa de Marfil","Túnez","Argelia","China","India","Irak","Uzbekistán","Nueva Zelanda","Fiji"];function _e(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function A(e){var a;if(!_.isLoggedIn()){e.innerHTML='<div class="container"><p class="notice"><a href="#/login">Inicia sesión</a> para predecir el campeón.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const t=_e(),{champion_prediction:n}=await u.predictions.getChampion(t),s=new Date>=M;let i;n&&s?i=`
+  `}const M=new Date("2026-06-11T21:00:00Z"),_e=["Argentina","Brasil","Francia","España","Inglaterra","Alemania","Portugal","Países Bajos","Italia","Bélgica","Uruguay","Colombia","México","Estados Unidos","Canadá","Marruecos","Senegal","Nigeria","Japón","Corea del Sur","Australia","Arabia Saudí","Irán","Qatar","Ecuador","Chile","Perú","Venezuela","Bolivia","Paraguay","Costa Rica","Honduras","Panamá","Jamaica","Trinidad y Tobago","Guatemala","Turquía","Polonia","Croacia","Serbia","República Checa","Eslovaquia","Austria","Suiza","Dinamarca","Suecia","Noruega","Escocia","Ucrania","Rumanía","Hungría","Grecia","Egipto","Camerún","Ghana","Costa de Marfil","Túnez","Argelia","China","India","Irak","Uzbekistán","Nueva Zelanda","Fiji"];function ve(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function q(e){var a;if(!v.isLoggedIn()){e.innerHTML='<div class="container"><p class="notice"><a href="#/login">Inicia sesión</a> para predecir el campeón.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const t=ve(),{champion_prediction:n}=await p.predictions.getChampion(t),s=new Date>=M;let i;n&&s?i=`
         <div class="champion-result">
           <p>Tu predicción: <strong class="champion-result__team">${n.team_name}</strong></p>
           <p>Puntos ganados: <strong>${n.points_earned}</strong></p>
@@ -499,7 +540,7 @@
         </p>
         ${i}
       </div>
-    `,(a=document.getElementById("championForm"))==null||a.addEventListener("submit",async r=>{r.preventDefault();const o=document.getElementById("champBtn"),d=document.getElementById("champError"),l=document.getElementById("teamSearch").value.trim();if(l){o.disabled=!0,o.textContent="Guardando…",d.classList.add("hidden");try{await u.predictions.saveChampion(l,t),p(`¡${l} guardado como campeón!`),A(e)}catch(c){d.textContent=c.message,d.classList.remove("hidden"),o.disabled=!1,o.textContent=o.dataset.label||"Confirmar predicción"}}})}catch(t){e.innerHTML=`<div class="container"><p class="form__error">Error: ${t.message}</p></div>`}}function C(e){const a=e?"Actualizar predicción":"Confirmar predicción";return`
+    `,(a=document.getElementById("championForm"))==null||a.addEventListener("submit",async r=>{r.preventDefault();const o=document.getElementById("champBtn"),d=document.getElementById("champError"),l=document.getElementById("teamSearch").value.trim();if(l){o.disabled=!0,o.textContent="Guardando…",d.classList.add("hidden");try{await p.predictions.saveChampion(l,t),m(`¡${l} guardado como campeón!`),q(e)}catch(c){d.textContent=c.message,d.classList.remove("hidden"),o.disabled=!1,o.textContent=o.dataset.label||"Confirmar predicción"}}})}catch(t){e.innerHTML=`<div class="container"><p class="form__error">Error: ${t.message}</p></div>`}}function C(e){const a=e?"Actualizar predicción":"Confirmar predicción";return`
     <form class="form champion-form" id="championForm">
       <div class="form__group">
         <label class="form__label" for="teamSearch">Selecciona el equipo campeón</label>
@@ -508,7 +549,7 @@
           list="teamsList" autocomplete="off"
           value="${e??""}" required />
         <datalist id="teamsList">
-          ${ve.map(t=>`<option value="${t}">`).join("")}
+          ${_e.map(t=>`<option value="${t}">`).join("")}
         </datalist>
       </div>
       <p id="champError" class="form__error hidden"></p>
@@ -516,7 +557,7 @@
         ${a}
       </button>
     </form>
-  `}async function he(e){if(!_.isAdmin()){e.innerHTML='<div class="container"><p class="form__error">Acceso denegado.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{users:a}=await u.auth.users();e.innerHTML=`
+  `}async function he(e){if(!v.isAdmin()){e.innerHTML='<div class="container"><p class="form__error">Acceso denegado.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{users:a}=await p.auth.users();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Panel de Administración</h1>
 
@@ -549,7 +590,7 @@
           </table>
         </section>
       </div>
-    `,document.getElementById("btnSync").addEventListener("click",async()=>{const t=document.getElementById("syncResult");t.textContent="Sincronizando…";try{await u.matches.sync(),t.textContent="✓ Sincronización completada",p("Sincronización completada")}catch(n){t.textContent=`Error: ${n.message}`,p(n.message,"error")}}),document.getElementById("awardForm").addEventListener("submit",async t=>{t.preventDefault();const n=document.getElementById("winnerTeam").value.trim();if(n)try{const{message:s}=await u.predictions.awardChampion(n);p(s)}catch(s){p(s.message,"error")}}),document.getElementById("usersTableBody").addEventListener("click",async t=>{const n=t.target.closest(".toggle-admin");if(!n)return;const s=parseInt(n.dataset.id);try{const{user:i}=await u.auth.toggleAdmin(s);n.closest("tr").querySelector(".admin-badge").textContent=i.is_admin?"Sí":"No",p(`${i.username} ${i.is_admin?"ahora es admin":"ya no es admin"}`)}catch(i){p(i.message,"error")}})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}function be(e){return`
+    `,document.getElementById("btnSync").addEventListener("click",async()=>{const t=document.getElementById("syncResult");t.textContent="Sincronizando…";try{await p.matches.sync(),t.textContent="✓ Sincronización completada",m("Sincronización completada")}catch(n){t.textContent=`Error: ${n.message}`,m(n.message,"error")}}),document.getElementById("awardForm").addEventListener("submit",async t=>{t.preventDefault();const n=document.getElementById("winnerTeam").value.trim();if(n)try{const{message:s}=await p.predictions.awardChampion(n);m(s)}catch(s){m(s.message,"error")}}),document.getElementById("usersTableBody").addEventListener("click",async t=>{const n=t.target.closest(".toggle-admin");if(!n)return;const s=parseInt(n.dataset.id);try{const{user:i}=await p.auth.toggleAdmin(s);n.closest("tr").querySelector(".admin-badge").textContent=i.is_admin?"Sí":"No",m(`${i.username} ${i.is_admin?"ahora es admin":"ya no es admin"}`)}catch(i){m(i.message,"error")}})}catch(a){e.innerHTML=`<div class="container"><p class="form__error">Error: ${a.message}</p></div>`}}function be(e){return`
     <tr>
       <td>${e.id}</td>
       <td>${e.username}</td>
@@ -580,7 +621,7 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("forgotForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("forgotBtn"),n=document.getElementById("forgotMsg"),s=document.getElementById("email").value.trim();t.disabled=!0,t.textContent="Enviando…";try{await u.auth.forgotPassword(s),n.textContent="Si el email existe, recibirás un enlace en breve.",n.classList.remove("hidden","form__error"),n.classList.add("form__success")}catch{p("Error al enviar el email","error")}finally{t.disabled=!1,t.textContent="Enviar enlace"}})}function ye(e,{query:a}){const t=a.token||"";if(!t){e.innerHTML='<div class="container"><p class="form__error">Token inválido o expirado.</p><a href="#/login">Volver</a></div>';return}e.innerHTML=`
+  `,document.getElementById("forgotForm").addEventListener("submit",async a=>{a.preventDefault();const t=document.getElementById("forgotBtn"),n=document.getElementById("forgotMsg"),s=document.getElementById("email").value.trim();t.disabled=!0,t.textContent="Enviando…";try{await p.auth.forgotPassword(s),n.textContent="Si el email existe, recibirás un enlace en breve.",n.classList.remove("hidden","form__error"),n.classList.add("form__success")}catch{m("Error al enviar el email","error")}finally{t.disabled=!1,t.textContent="Enviar enlace"}})}function ye(e,{query:a}){const t=a.token||"";if(!t){e.innerHTML='<div class="container"><p class="form__error">Token inválido o expirado.</p><a href="#/login">Volver</a></div>';return}e.innerHTML=`
     <div class="auth-container container">
       <div class="auth-card">
         <h2 class="auth-card__title">Nueva contraseña</h2>
@@ -595,7 +636,7 @@
         </form>
       </div>
     </div>
-  `,document.getElementById("resetForm").addEventListener("submit",async n=>{n.preventDefault();const s=document.getElementById("resetBtn"),i=document.getElementById("resetError"),r=document.getElementById("password").value;s.disabled=!0,s.textContent="Guardando…",i.classList.add("hidden");try{await u.auth.resetPassword(t,r),p("Contraseña actualizada. Ya puedes iniciar sesión."),b.navigate("/login")}catch(o){i.textContent=o.message||"Error al restablecer la contraseña",i.classList.remove("hidden")}finally{s.disabled=!1,s.textContent="Guardar contraseña"}})}const $e={r32:"Dieciseisavos",r16:"Octavos",quarters:"Cuartos",semis:"Semis",third:"3º y 4º",final:"Final"};async function Ee(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{groups:a}=await u.matches.grouped();e.innerHTML=`
+  `,document.getElementById("resetForm").addEventListener("submit",async n=>{n.preventDefault();const s=document.getElementById("resetBtn"),i=document.getElementById("resetError"),r=document.getElementById("password").value;s.disabled=!0,s.textContent="Guardando…",i.classList.add("hidden");try{await p.auth.resetPassword(t,r),m("Contraseña actualizada. Ya puedes iniciar sesión."),b.navigate("/login")}catch(o){i.textContent=o.message||"Error al restablecer la contraseña",i.classList.remove("hidden")}finally{s.disabled=!1,s.textContent="Guardar contraseña"}})}const $e={r32:"Dieciseisavos",r16:"Octavos",quarters:"Cuartos",semis:"Semis",third:"3º y 4º",final:"Final"};async function Ee(e){e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{groups:a}=await p.matches.grouped();e.innerHTML=`
       <div class="container">
         <h1 class="page-title">Resultados — Mundial 2026</h1>
         <nav class="phase-nav" id="phaseNav"></nav>
@@ -654,7 +695,7 @@
     </tr>
   `).join("")}</tbody>
     </table>
-  `}async function Be(e,{query:a}){const t=(a.codigo||"").trim().toUpperCase();if(!t){e.innerHTML='<div class="container"><p class="form__error">Enlace de invitación inválido.</p><a href="#/ligas">Ver ligas</a></div>';return}if(!_.isLoggedIn()){sessionStorage.setItem("pendingInviteCode",t),b.navigate("/register");return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:n}=await u.leagues.joinByCode(t);p(`¡Te has unido a "${n.name}"!`),b.navigate(`/ligas/${n.id}`)}catch(n){if(n.status===409){p("Ya eres miembro de esta liga");try{const{leagues:s}=await u.leagues.my(),i=s.find(r=>r.invite_code===t);if(i){b.navigate(`/ligas/${i.id}`);return}}catch{}}e.innerHTML=`
+  `}async function Be(e,{query:a}){const t=(a.codigo||"").trim().toUpperCase();if(!t){e.innerHTML='<div class="container"><p class="form__error">Enlace de invitación inválido.</p><a href="#/ligas">Ver ligas</a></div>';return}if(!v.isLoggedIn()){sessionStorage.setItem("pendingInviteCode",t),b.navigate("/register");return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const{league:n}=await p.leagues.joinByCode(t);m(`¡Te has unido a "${n.name}"!`),b.navigate(`/ligas/${n.id}`)}catch(n){if(n.status===409){m("Ya eres miembro de esta liga");try{const{leagues:s}=await p.leagues.my(),i=s.find(r=>r.invite_code===t);if(i){b.navigate(`/ligas/${i.id}`);return}}catch{}}e.innerHTML=`
       <div class="container">
         <div class="league-gate">
           <div class="league-gate__icon">⚠️</div>
@@ -663,7 +704,7 @@
           <a href="#/ligas" class="btn btn--primary">Ver ligas</a>
         </div>
       </div>
-    `}}function Ce(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function Pe(e,{params:a}){const t=parseInt(a.id);if(!t){e.innerHTML='<div class="container"><p class="form__error">Usuario no válido.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const n=Ce(),{user:s,predictions:i}=await u.predictions.forUser(t,n);e.innerHTML=`
+    `}}function Ce(){const e=localStorage.getItem("activeLeagueId");return e?parseInt(e):null}async function Pe(e,{params:a}){const t=parseInt(a.id);if(!t){e.innerHTML='<div class="container"><p class="form__error">Usuario no válido.</p></div>';return}e.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>';try{const n=Ce(),{user:s,predictions:i}=await p.predictions.forUser(t,n);e.innerHTML=`
       <div class="container">
         <a class="jugador__back" href="#/ranking">← Tabla</a>
 
@@ -693,10 +734,10 @@
         <h2 class="jugador__section-title">Predicciones en partidos jugados</h2>
 
         ${i.length===0?'<p class="empty">Sin pronósticos en partidos finalizados.</p>':`<div class="jugador__pred-list">
-              ${i.map(r=>xe(r)).join("")}
+              ${i.map(r=>ke(r)).join("")}
             </div>`}
       </div>
-    `}catch(n){e.innerHTML=`<div class="container"><p class="form__error">Error: ${n.message}</p></div>`}}function xe(e){const a=e.match,t=e.total_points,n=e.pts_score>0,s=e.pts_result>0;let i="";return n?i='<span class="jugador__badge jugador__badge--exact">Exacto</span>':s?i='<span class="jugador__badge jugador__badge--ok">1X2 ✓</span>':i='<span class="jugador__badge jugador__badge--miss">Fallo</span>',`
+    `}catch(n){e.innerHTML=`<div class="container"><p class="form__error">Error: ${n.message}</p></div>`}}function ke(e){const a=e.match,t=e.total_points,n=e.pts_score>0,s=e.pts_result>0;let i="";return n?i='<span class="jugador__badge jugador__badge--exact">Exacto</span>':s?i='<span class="jugador__badge jugador__badge--ok">1X2 ✓</span>':i='<span class="jugador__badge jugador__badge--miss">Fallo</span>',`
     <div class="jugador__pred-row">
       <div class="jugador__pred-match">
         <span class="jugador__pred-teams">${a.home_team} vs ${a.away_team}</span>
@@ -712,13 +753,13 @@
         <span class="jugador__pred-pts">${t>0?`+${t}`:"0"} pts</span>
       </div>
     </div>
-  `}const Te={"/":z,"/login":Q,"/register":K,"/quiniela":Z,"/resultados":Ee,"/ranking":re,"/tablon":oe,"/ligas":de,"/ligas/:id":ue,"/perfil":me,"/campeon":A,"/admin":he,"/forgot-password":fe,"/reset-password":ye,"/unirse":Be,"/jugador/:id":Pe};function ke(e){for(const[a,t]of Object.entries(Te)){const n=[],s=new RegExp("^"+a.replace(/:([^/]+)/g,(r,o)=>(n.push(o),"([^/]+)"))+"$"),i=e.match(s);if(i){const r={};return n.forEach((o,d)=>{r[o]=i[d+1]}),{handler:t,params:r}}}return null}const H=()=>document.getElementById("mainContent"),b={init(){window.addEventListener("hashchange",()=>this.resolve()),this.resolve()},navigate(e){window.location.hash=e},resolve(){const e=window.location.hash.slice(1)||"/",[a,t]=e.split("?"),n=Object.fromEntries(new URLSearchParams(t||"")),s=ke(a);if(!s){H().innerHTML='<div class="error-page"><h2>Página no encontrada</h2><a href="#/">Volver al inicio</a></div>';return}const{handler:i,params:r}=s;if(["/perfil","/campeon","/admin"].includes(a)&&!_.isLoggedIn()){this.navigate("/login");return}if(a==="/admin"&&!_.isAdmin()){this.navigate("/");return}const d=H();d.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>',i(d,{params:r,query:n})}};let E=[],I=null;async function Me(){await _.init(),b.init(),Ne(),je()}function je(){window.addEventListener("beforeinstallprompt",e=>{e.preventDefault(),I=e,He()})}function He(){if(sessionStorage.getItem("installBannerDismissed"))return;const e=document.createElement("div");e.id="installBanner",e.className="install-banner",e.innerHTML=`
+  `}const xe={"/":z,"/login":K,"/register":Q,"/quiniela":Z,"/resultados":Ee,"/ranking":re,"/tablon":oe,"/ligas":de,"/ligas/:id":pe,"/perfil":ue,"/campeon":q,"/admin":he,"/forgot-password":fe,"/reset-password":ye,"/unirse":Be,"/jugador/:id":Pe};function Te(e){for(const[a,t]of Object.entries(xe)){const n=[],s=new RegExp("^"+a.replace(/:([^/]+)/g,(r,o)=>(n.push(o),"([^/]+)"))+"$"),i=e.match(s);if(i){const r={};return n.forEach((o,d)=>{r[o]=i[d+1]}),{handler:t,params:r}}}return null}const H=()=>document.getElementById("mainContent"),b={init(){window.addEventListener("hashchange",()=>this.resolve()),this.resolve()},navigate(e){window.location.hash=e},resolve(){const e=window.location.hash.slice(1)||"/",[a,t]=e.split("?"),n=Object.fromEntries(new URLSearchParams(t||"")),s=Te(a);if(!s){H().innerHTML='<div class="error-page"><h2>Página no encontrada</h2><a href="#/">Volver al inicio</a></div>';return}const{handler:i,params:r}=s;if(["/perfil","/campeon","/admin"].includes(a)&&!v.isLoggedIn()){this.navigate("/login");return}if(a==="/admin"&&!v.isAdmin()){this.navigate("/");return}const d=H();d.innerHTML='<div class="loading"><div class="loading__spinner"></div></div>',i(d,{params:r,query:n})}};let E=[],I=null;async function Me(){await v.init(),b.init(),Ne(),je()}function je(){window.addEventListener("beforeinstallprompt",e=>{e.preventDefault(),I=e,He()})}function He(){if(sessionStorage.getItem("installBannerDismissed"))return;const e=document.createElement("div");e.id="installBanner",e.className="install-banner",e.innerHTML=`
     <span class="install-banner__text">⚽ Instala PickGoal en tu dispositivo</span>
     <div class="install-banner__actions">
       <button class="install-banner__btn install-banner__btn--primary" id="installBtn">Instalar</button>
       <button class="install-banner__btn install-banner__btn--ghost" id="installDismissBtn">Ahora no</button>
     </div>
-  `,document.body.appendChild(e),document.getElementById("installBtn").addEventListener("click",async()=>{I&&(I.prompt(),await I.userChoice,I=null,e.remove())}),document.getElementById("installDismissBtn").addEventListener("click",()=>{sessionStorage.setItem("installBannerDismissed","1"),e.remove()})}function y(){var e,a,t,n;(e=document.getElementById("leagueDropdown"))==null||e.classList.add("hidden"),(a=document.getElementById("leagueBtn"))==null||a.classList.remove("navbar__dropdown-btn--open"),(t=document.getElementById("userDropdown"))==null||t.classList.add("hidden"),(n=document.getElementById("userBtn"))==null||n.classList.remove("navbar__dropdown-btn--open")}function Ne(){var e,a,t,n,s;document.addEventListener("auth:change",N),window.addEventListener("hashchange",()=>{y(),O()}),document.addEventListener("click",y),(e=document.getElementById("leagueBtn"))==null||e.addEventListener("click",i=>{var d;i.stopPropagation();const r=document.getElementById("leagueDropdown"),o=r==null?void 0:r.classList.contains("hidden");y(),o&&(r==null||r.classList.remove("hidden"),(d=document.getElementById("leagueBtn"))==null||d.classList.add("navbar__dropdown-btn--open"))}),(a=document.getElementById("leagueDropdown"))==null||a.addEventListener("click",i=>{i.stopPropagation();const r=i.target.closest("[data-league-id]");if(r){localStorage.setItem("activeLeagueId",r.dataset.leagueId),y(),D(E),b.resolve();return}i.target.closest("a")&&y()}),(t=document.getElementById("userBtn"))==null||t.addEventListener("click",i=>{var d;i.stopPropagation();const r=document.getElementById("userDropdown"),o=r==null?void 0:r.classList.contains("hidden");y(),o&&(r==null||r.classList.remove("hidden"),(d=document.getElementById("userBtn"))==null||d.classList.add("navbar__dropdown-btn--open"))}),(n=document.getElementById("userDropdown"))==null||n.addEventListener("click",i=>{i.stopPropagation(),i.target.closest("#navProfileLink")&&y()}),(s=document.getElementById("navLogoutBtn"))==null||s.addEventListener("click",()=>{E=[],localStorage.removeItem("activeLeagueId"),y(),_.logout(),b.navigate("/")}),N()}async function N(){const e=document.getElementById("navAuthLinks"),a=document.getElementById("userBtn"),t=document.getElementById("navUsername"),n=document.getElementById("navLeague"),s=document.getElementById("bottomNav"),i=_.getUser();if(y(),i){e==null||e.classList.add("hidden"),t&&(t.textContent=i.username),n.style.visibility="visible",a.style.visibility="visible",s==null||s.classList.remove("hidden"),document.body.classList.add("has-bottom-nav");try{const{leagues:r}=await u.leagues.my();E=r}catch{E=[]}D(E)}else e==null||e.classList.remove("hidden"),n.style.visibility="hidden",a.style.visibility="hidden",s==null||s.classList.add("hidden"),document.body.classList.remove("has-bottom-nav"),E=[],localStorage.removeItem("activeLeagueId");O()}function D(e){const a=document.getElementById("leagueDropdown"),t=document.getElementById("navLeagueName");if(!a||!t)return;let n=localStorage.getItem("activeLeagueId"),s=e.find(r=>String(r.id)===String(n));!s&&e.length>0&&(s=e[0],localStorage.setItem("activeLeagueId",String(s.id))),s||localStorage.removeItem("activeLeagueId"),t.textContent=s?s.name:"Inicia Liga";const i=e.map(r=>`
+  `,document.body.appendChild(e),document.getElementById("installBtn").addEventListener("click",async()=>{I&&(I.prompt(),await I.userChoice,I=null,e.remove())}),document.getElementById("installDismissBtn").addEventListener("click",()=>{sessionStorage.setItem("installBannerDismissed","1"),e.remove()})}function y(){var e,a,t,n;(e=document.getElementById("leagueDropdown"))==null||e.classList.add("hidden"),(a=document.getElementById("leagueBtn"))==null||a.classList.remove("navbar__dropdown-btn--open"),(t=document.getElementById("userDropdown"))==null||t.classList.add("hidden"),(n=document.getElementById("userBtn"))==null||n.classList.remove("navbar__dropdown-btn--open")}function Ne(){var e,a,t,n,s;document.addEventListener("auth:change",N),window.addEventListener("hashchange",()=>{y(),O()}),document.addEventListener("click",y),(e=document.getElementById("leagueBtn"))==null||e.addEventListener("click",i=>{var d;i.stopPropagation();const r=document.getElementById("leagueDropdown"),o=r==null?void 0:r.classList.contains("hidden");y(),o&&(r==null||r.classList.remove("hidden"),(d=document.getElementById("leagueBtn"))==null||d.classList.add("navbar__dropdown-btn--open"))}),(a=document.getElementById("leagueDropdown"))==null||a.addEventListener("click",i=>{i.stopPropagation();const r=i.target.closest("[data-league-id]");if(r){localStorage.setItem("activeLeagueId",r.dataset.leagueId),y(),D(E),b.resolve();return}i.target.closest("a")&&y()}),(t=document.getElementById("userBtn"))==null||t.addEventListener("click",i=>{var d;i.stopPropagation();const r=document.getElementById("userDropdown"),o=r==null?void 0:r.classList.contains("hidden");y(),o&&(r==null||r.classList.remove("hidden"),(d=document.getElementById("userBtn"))==null||d.classList.add("navbar__dropdown-btn--open"))}),(n=document.getElementById("userDropdown"))==null||n.addEventListener("click",i=>{i.stopPropagation(),i.target.closest("#navProfileLink")&&y()}),(s=document.getElementById("navLogoutBtn"))==null||s.addEventListener("click",()=>{E=[],localStorage.removeItem("activeLeagueId"),y(),v.logout(),b.navigate("/")}),N()}async function N(){const e=document.getElementById("navAuthLinks"),a=document.getElementById("userBtn"),t=document.getElementById("navUsername"),n=document.getElementById("navLeague"),s=document.getElementById("bottomNav"),i=v.getUser();if(y(),i){e==null||e.classList.add("hidden"),t&&(t.textContent=i.username),n.style.visibility="visible",a.style.visibility="visible",s==null||s.classList.remove("hidden"),document.body.classList.add("has-bottom-nav");try{const{leagues:r}=await p.leagues.my();E=r}catch{E=[]}D(E)}else e==null||e.classList.remove("hidden"),n.style.visibility="hidden",a.style.visibility="hidden",s==null||s.classList.add("hidden"),document.body.classList.remove("has-bottom-nav"),E=[],localStorage.removeItem("activeLeagueId");O()}function D(e){const a=document.getElementById("leagueDropdown"),t=document.getElementById("navLeagueName");if(!a||!t)return;let n=localStorage.getItem("activeLeagueId"),s=e.find(r=>String(r.id)===String(n));!s&&e.length>0&&(s=e[0],localStorage.setItem("activeLeagueId",String(s.id))),s||localStorage.removeItem("activeLeagueId"),t.textContent=s?s.name:"Inicia Liga";const i=e.map(r=>`
     <button class="navbar__dropdown-item ${String(r.id)===String(s==null?void 0:s.id)?"navbar__dropdown-item--active":""}" data-league-id="${r.id}">${r.name}</button>
   `).join("");a.innerHTML=`
     ${i}
