@@ -75,6 +75,10 @@ def forgot_password():
     user = User.query.filter_by(email=email).first()
     # Siempre devolvemos 200 para no revelar si el email existe
     if user:
+        if not current_app.config.get('MAIL_USERNAME') or not current_app.config.get('MAIL_PASSWORD'):
+            logger.error('Email no configurado: faltan MAIL_USERNAME o MAIL_PASSWORD en las variables de entorno')
+            return jsonify({'error': 'El sistema de email no está configurado. Contacta con el administrador.'}), 500
+
         s = get_serializer()
         token = s.dumps(email, salt='recover-key')
         from flask_mail import Message
