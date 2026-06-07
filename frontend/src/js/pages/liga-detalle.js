@@ -51,7 +51,7 @@ export async function renderLigaDetalle(el, { params }) {
               ? `<button class="btn btn--primary" id="btnJoin">Unirse a esta liga</button>`
               : ''
           }
-          ${(is_admin_view || (is_member && user && league.created_by === user.id))
+          ${(user?.is_admin || (is_member && user && league.created_by === user.id))
             ? `<button class="btn btn--outline btn--sm" id="btnEditLeague">Editar liga</button>`
             : ''
           }
