@@ -75,10 +75,8 @@ def forgot_password():
     user = User.query.filter_by(email=email).first()
     # Siempre devolvemos 200 para no revelar si el email existe
     if user:
-        mail_user = current_app.config.get('MAIL_USERNAME')
-        mail_pass = current_app.config.get('MAIL_PASSWORD')
-        if not mail_user or not mail_pass:
-            logger.error('Email no configurado: faltan MAIL_USERNAME o MAIL_PASSWORD en las variables de entorno')
+        if not current_app.config.get('SENDGRID_API_KEY'):
+            logger.error('Email no configurado: falta SENDGRID_API_KEY en las variables de entorno')
             return jsonify({'error': 'El sistema de email no está configurado. Contacta con el administrador.'}), 500
 
         s = get_serializer()
@@ -87,23 +85,24 @@ def forgot_password():
         reset_url = f'{frontend_url}/reset-password?token={token}'
 
         try:
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
+            import sendgrid
+            from sendgrid.helpers.mail import Mail as SGMail
 
-            msg = MIMEMultipart()
-            msg['From'] = mail_user
-            msg['To'] = email
-            msg['Subject'] = 'PickGoal — Recuperar contraseña'
-            msg.attach(MIMEText(
-                f'Accede a este enlace para restablecer tu contraseña (válido 1 hora):\n\n{reset_url}',
-                'plain'
-            ))
-
-            with smtplib.SMTP('smtp.gmail.com', 587, timeout=10) as server:
-                server.starttls()
-                server.login(mail_user, mail_pass)
-                server.sendmail(mail_user, email, msg.as_string())
+            sg = sendgrid.SendGridAPIClient(api_key=current_app.config.get('SENDGRID_API_KEY'))
+            message = SGMail(
+                from_email='noreply@pickgoal.es',
+                to_emails=email,
+                subject='Recupera tu contraseña — PickGoal',
+                html_content=f'''
+                <h2>Recupera tu contraseña</h2>
+                <p>Haz clic en el enlace para restablecer tu contraseña:</p>
+                <a href="{reset_url}">Restablecer contraseña</a>
+                <p>El enlace expira en 1 hora.</p>
+                <p>Si no solicitaste esto, ignora este email.</p>
+                '''
+            )
+            response = sg.send(message)
+            logger.info('Email de recuperación enviado a %s — status %s', email, response.status_code)
         except Exception as e:
             logger.error('Error enviando email de recuperación a %s: %s', email, e, exc_info=True)
             return jsonify({'error': 'No se pudo enviar el email. Inténtalo de nuevo más tarde.'}), 500

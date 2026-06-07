@@ -32,6 +32,7 @@ def create_app():
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
     app.config['MAIL_TIMEOUT'] = 10  # evita que el worker se cuelgue esperando SMTP
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
+    app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
 
     db.init_app(app)
     migrate.init_app(app, db)
