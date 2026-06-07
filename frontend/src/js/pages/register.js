@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
 import { showToast } from '../ui.js';
+import { maybeShowWelcome } from '../welcome.js';
 
 export function renderRegister(el) {
   el.innerHTML = `
@@ -73,6 +74,7 @@ export function renderRegister(el) {
         }
       } else {
         router.navigate('/campeon');
+        maybeShowWelcome('/ligas');
       }
     } catch (err) {
       errEl.textContent = err.message || 'Error al registrarse';

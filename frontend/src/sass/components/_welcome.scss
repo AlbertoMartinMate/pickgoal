@@ -1,0 +1,112 @@
+@use '../abstracts/variables' as v;
+
+.welcome-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.$sp-4;
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+  }
+
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: v.$bg-card;
+    border: 1px solid rgba(57, 255, 20, 0.4);
+    border-radius: v.$r-xl;
+    box-shadow:
+      0 0 0 1px rgba(57, 255, 20, 0.08),
+      0 0 60px rgba(57, 255, 20, 0.1),
+      0 32px 64px rgba(0, 0, 0, 0.8);
+    padding: v.$sp-8 v.$sp-6;
+    width: 100%;
+    max-width: 440px;
+
+    // Animación de entrada
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  &--open &__box {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  &--open &__overlay {
+    // El overlay no necesita animación propia
+  }
+
+  &__title {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: v.$text;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: v.$sp-2;
+  }
+
+  &__subtitle {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    text-align: center;
+    margin-bottom: v.$sp-6;
+  }
+
+  &__steps {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-3;
+    list-style: none;
+    padding: 0;
+    margin-bottom: v.$sp-5;
+  }
+
+  &__step {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    padding: v.$sp-3 v.$sp-4;
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    transition: border-color v.$t-fast;
+
+    strong {
+      color: v.$text;
+      font-weight: v.$fw-semi;
+    }
+
+    &:hover { border-color: v.$border-light; }
+  }
+
+  &__step-num {
+    font-size: 1.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  &__highlight {
+    text-align: center;
+    font-size: v.$fs-sm;
+    color: #39FF14;
+    background: rgba(57, 255, 20, 0.06);
+    border: 1px solid rgba(57, 255, 20, 0.2);
+    border-radius: v.$r-md;
+    padding: v.$sp-3 v.$sp-4;
+    margin-bottom: v.$sp-6;
+    line-height: 1.5;
+
+    strong { font-weight: v.$fw-bold; }
+  }
+}

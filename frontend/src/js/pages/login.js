@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
 import { showToast } from '../ui.js';
+import { maybeShowWelcome } from '../welcome.js';
 
 export function renderLogin(el) {
   el.innerHTML = `
@@ -47,6 +48,7 @@ export function renderLogin(el) {
       auth.setUser(user, token);
       showToast(`¡Bienvenido, ${user.username}!`);
       router.navigate('/quiniela');
+      maybeShowWelcome('/quiniela');
     } catch (err) {
       errEl.textContent = err.message || 'Error al iniciar sesión';
       errEl.classList.remove('hidden');
