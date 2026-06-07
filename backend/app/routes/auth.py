@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (create_access_token, jwt_required,
                                  get_jwt_identity)
@@ -6,6 +7,8 @@ from flask import current_app
 from app import db, bcrypt
 from app.models import User, Prediction, LeagueMember, ChampionPrediction
 from sqlalchemy import func
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -85,8 +88,9 @@ def forgot_password():
                 body=f'Accede a este enlace para restablecer tu contraseña (válido 1 hora):\n\n{reset_url}',
             )
             mail.send(msg)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error('Error enviando email de recuperación a %s: %s', email, e, exc_info=True)
+            return jsonify({'error': 'No se pudo enviar el email. Inténtalo de nuevo más tarde.'}), 500
     return jsonify({'message': 'Si el email existe, recibirás un enlace de recuperación'}), 200
 
 
