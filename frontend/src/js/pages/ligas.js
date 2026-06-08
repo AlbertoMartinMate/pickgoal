@@ -191,7 +191,7 @@ function leagueCard(league, isMine = false, myIds = new Set(), isAdmin = false) 
         : `<button class="btn btn--sm btn--ghost btn-private-info">🔒 Solicitar enlace</button>`;
 
   return `
-    <div class="league-card ${isMine ? 'league-card--mine' : ''}" data-id="${league.id}" data-navigate="${isMine || isAdmin}">
+    <div class="league-card ${isMine ? 'league-card--mine' : ''}" data-id="${league.id}" data-navigate="${isMine || isAdmin || league.is_public}">
       <div class="league-card__top">
         <div class="league-card__name">${league.name} ${officialBadge}</div>
       </div>
