@@ -59,7 +59,7 @@ export async function renderLigaDetalle(el, { params }) {
           }
         </div>
 
-        ${(is_member || user?.is_admin) ? `
+        ${user ? `
           <div class="league-tabs">
             <button class="league-tab league-tab--active" id="tabRanking">Clasificación</button>
             <button class="league-tab" id="tabTablon">💬 Tablón</button>
