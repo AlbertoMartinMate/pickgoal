@@ -59,12 +59,10 @@ export async function renderLigaDetalle(el, { params }) {
           }
         </div>
 
-        ${user ? `
-          <div class="league-tabs">
-            <button class="league-tab league-tab--active" id="tabRanking">Clasificación</button>
-            <button class="league-tab" id="tabTablon">💬 Tablón</button>
-          </div>
-        ` : ''}
+        <div class="league-tabs">
+          <button class="league-tab league-tab--active" id="tabRanking">Clasificación</button>
+          <button class="league-tab" id="tabTablon">💬 Tablón</button>
+        </div>
 
         <section class="section" id="sectionRanking">
           <table class="ranking-table">
