@@ -65,6 +65,7 @@ export const api = {
     get: (id) => request(`/leagues/${id}`),
     update: (id, data) => request(`/leagues/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     leave: (id) => request(`/leagues/${id}/leave`, { method: 'DELETE' }),
+    members: (id) => request(`/leagues/${id}/members`),
     matchPredictions: (leagueId, matchId) => request(`/leagues/${leagueId}/predictions/${matchId}`),
   },
 
@@ -73,8 +74,10 @@ export const api = {
   },
 
   board: {
-    messages: (page = 1) => request(`/board/?page=${page}`),
-    post: (message) => request('/board/', { method: 'POST', body: JSON.stringify({ message }) }),
+    messages: (page = 1, leagueId = null) => request(`/board/?page=${page}${leagueId ? `&league_id=${leagueId}` : ''}`),
+    post: (message, leagueId = null) => request('/board/', { method: 'POST', body: JSON.stringify({ message, league_id: leagueId }) }),
+    pin: (id) => request(`/board/${id}/pin`, { method: 'POST' }),
+    reply: (id, message) => request(`/board/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
     delete: (id) => request(`/board/${id}`, { method: 'DELETE' }),
   },
 };

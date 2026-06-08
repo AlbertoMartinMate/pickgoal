@@ -244,6 +244,24 @@ def my_leagues():
     return jsonify({'leagues': result}), 200
 
 
+@leagues_bp.route('/<int:league_id>/members', methods=['GET'])
+@jwt_required()
+def get_league_members(league_id):
+    user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    is_member = LeagueMember.query.filter_by(league_id=league_id, user_id=user_id).first()
+    if not is_member and not user.is_admin:
+        return jsonify({'error': 'Acceso denegado'}), 403
+
+    members = LeagueMember.query.filter_by(league_id=league_id).all()
+    result = []
+    for m in members:
+        u = User.query.get(m.user_id)
+        if u:
+            result.append({'id': u.id, 'username': u.username})
+    return jsonify({'members': result}), 200
+
+
 @leagues_bp.route('/<int:league_id>/predictions/<int:match_id>', methods=['GET'])
 @jwt_required()
 def league_match_predictions(league_id, match_id):

@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
 import { showToast } from '../ui.js';
+import { renderTablon } from './tablon.js';
 
 export async function renderLigaDetalle(el, { params }) {
   const leagueId = parseInt(params.id);
@@ -58,8 +59,14 @@ export async function renderLigaDetalle(el, { params }) {
           }
         </div>
 
-        <section class="section">
-          <h2>Clasificación</h2>
+        ${(is_member || user?.is_admin) ? `
+          <div class="league-tabs">
+            <button class="league-tab league-tab--active" id="tabRanking">Clasificación</button>
+            <button class="league-tab" id="tabTablon">💬 Tablón</button>
+          </div>
+        ` : ''}
+
+        <section class="section" id="sectionRanking">
           <table class="ranking-table">
             <thead>
               <tr><th>#</th><th>Usuario</th><th>País</th><th>Puntos</th></tr>
@@ -75,6 +82,10 @@ export async function renderLigaDetalle(el, { params }) {
               `).join('')}
             </tbody>
           </table>
+        </section>
+
+        <section class="section hidden" id="sectionTablon">
+          <div id="tablonEmbed"></div>
         </section>
       </div>
     `;
@@ -118,6 +129,33 @@ export async function renderLigaDetalle(el, { params }) {
     document.getElementById('btnEditLeague')?.addEventListener('click', () => {
       openEditModal(league, leagueId, user);
     });
+
+    // Tabs ranking / tablón
+    const tabRanking = document.getElementById('tabRanking');
+    const tabTablon = document.getElementById('tabTablon');
+    const sectionRanking = document.getElementById('sectionRanking');
+    const sectionTablon = document.getElementById('sectionTablon');
+
+    if (tabRanking && tabTablon) {
+      tabRanking.addEventListener('click', () => {
+        tabRanking.classList.add('league-tab--active');
+        tabTablon.classList.remove('league-tab--active');
+        sectionRanking.classList.remove('hidden');
+        sectionTablon.classList.add('hidden');
+      });
+
+      tabTablon.addEventListener('click', () => {
+        tabTablon.classList.add('league-tab--active');
+        tabRanking.classList.remove('league-tab--active');
+        sectionRanking.classList.add('hidden');
+        sectionTablon.classList.remove('hidden');
+        const embed = document.getElementById('tablonEmbed');
+        if (embed && !embed.dataset.loaded) {
+          embed.dataset.loaded = '1';
+          renderTablon(embed, { query: { liga: String(leagueId) } });
+        }
+      });
+    }
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p><a href="#/ligas">Volver</a></div>`;

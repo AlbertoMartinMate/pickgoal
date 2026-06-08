@@ -244,16 +244,25 @@ class BoardMessage(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('board_messages.id'), nullable=True)
     message = db.Column(db.Text, nullable=False)
     is_deleted = db.Column(db.Boolean, default=False, nullable=False)
+    is_pinned = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    replies = db.relationship('BoardMessage', backref=db.backref('parent', remote_side='BoardMessage.id'),
+                              lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'league_id': self.league_id,
+            'parent_id': self.parent_id,
             'username': self.user.username if self.user else 'Desconocido',
             'message': self.message if not self.is_deleted else '[Mensaje eliminado]',
             'is_deleted': self.is_deleted,
+            'is_pinned': self.is_pinned,
             'created_at': self.created_at.isoformat(),
         }

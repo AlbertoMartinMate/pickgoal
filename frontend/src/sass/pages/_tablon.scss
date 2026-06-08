@@ -1,5 +1,38 @@
 @use '../abstracts/variables' as v;
 
+// ── Header ────────────────────────────────────────────────────────────────────
+.board-header {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-3;
+  margin-bottom: v.$sp-6;
+  flex-wrap: wrap;
+
+  .page-title { margin-bottom: 0; }
+}
+
+.board-league-badge,
+.board-general-badge {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  padding: 2px v.$sp-2;
+  border-radius: v.$r-full;
+  letter-spacing: 0.04em;
+}
+
+.board-league-badge {
+  background: v.$accent-dim;
+  color: v.$accent;
+  border: 1px solid v.$accent-glow;
+}
+
+.board-general-badge {
+  background: rgba(61, 145, 255, 0.12);
+  color: v.$info;
+  border: 1px solid rgba(61, 145, 255, 0.25);
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────────
 .board-form {
   background: v.$bg-card;
   border: 1px solid v.$border;
@@ -13,13 +46,47 @@
 
   &:focus-within { border-color: v.$border-light; }
 
-  .btn { align-self: flex-end; }
+  &__input-wrap {
+    position: relative;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__counter {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
 }
 
+// ── Sections ──────────────────────────────────────────────────────────────────
+.board-section {
+  margin-bottom: v.$sp-8;
+
+  &__title {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: v.$sp-4;
+  }
+}
+
+// ── Messages ──────────────────────────────────────────────────────────────────
 .board-messages {
   display: flex;
   flex-direction: column;
   gap: v.$sp-2;
+}
+
+.board-pinned {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
 }
 
 .board-message {
@@ -32,6 +99,13 @@
 
   &:hover { border-color: v.$border-light; }
 
+  &--pinned {
+    border-color: rgba(0, 255, 135, 0.2);
+    background: linear-gradient(135deg, v.$bg-card 0%, rgba(0, 255, 135, 0.04) 100%);
+
+    &:hover { border-color: rgba(0, 255, 135, 0.4); }
+  }
+
   &--deleted {
     opacity: 0.4;
     pointer-events: none;
@@ -43,12 +117,16 @@
     gap: v.$sp-2;
     margin-bottom: v.$sp-2;
     flex-wrap: wrap;
+  }
 
-    strong {
-      font-size: v.$fs-sm;
-      font-weight: v.$fw-semi;
-      color: v.$accent;
-    }
+  &__pin-badge {
+    font-size: v.$fs-xs;
+  }
+
+  &__author {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: v.$accent;
   }
 
   &__date {
@@ -67,6 +145,104 @@
   }
 }
 
+// ── Replies ───────────────────────────────────────────────────────────────────
+.board-replies {
+  margin-top: v.$sp-4;
+  padding-top: v.$sp-4;
+  border-top: 1px solid v.$border;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-3;
+}
+
+.board-reply {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-1;
+  padding-left: v.$sp-4;
+  border-left: 2px solid v.$border-light;
+
+  &--deleted { opacity: 0.4; pointer-events: none; }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    flex-wrap: wrap;
+  }
+
+  &__author {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+  }
+
+  &__date {
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__text {
+    font-size: v.$fs-sm;
+    color: v.$text;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+}
+
+// ── Reply form ────────────────────────────────────────────────────────────────
+.reply-form {
+  margin-top: v.$sp-4;
+  display: flex;
+  gap: v.$sp-2;
+  align-items: flex-start;
+
+  &__input-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .form__input { margin-bottom: 0; }
+}
+
+// ── @mention ──────────────────────────────────────────────────────────────────
+.mention-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: v.$bg-surface;
+  border: 1px solid v.$border-light;
+  border-radius: v.$r-md;
+  z-index: 100;
+  min-width: 160px;
+  box-shadow: v.$shadow-md;
+  overflow: hidden;
+
+  &.hidden { display: none; }
+}
+
+.mention-item {
+  padding: v.$sp-2 v.$sp-3;
+  font-size: v.$fs-sm;
+  cursor: pointer;
+  color: v.$text;
+  transition: background v.$t-fast;
+
+  &:hover {
+    background: v.$accent-dim;
+    color: v.$accent;
+  }
+}
+
+.mention {
+  color: #39ff14;
+  font-weight: v.$fw-semi;
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
 .pagination {
   display: flex;
   align-items: center;
@@ -76,6 +252,37 @@
   font-size: v.$fs-sm;
   color: v.$text-muted;
 }
+
+// ── League tabs ───────────────────────────────────────────────────────────────
+.league-tabs {
+  display: flex;
+  gap: v.$sp-2;
+  margin-bottom: v.$sp-4;
+  border-bottom: 1px solid v.$border;
+  padding-bottom: 0;
+}
+
+.league-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: v.$text-muted;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-medium;
+  padding: v.$sp-2 v.$sp-4;
+  cursor: pointer;
+  transition: color v.$t-fast, border-color v.$t-fast;
+  margin-bottom: -1px;
+
+  &:hover { color: v.$text; }
+
+  &--active {
+    color: v.$accent;
+    border-bottom-color: v.$accent;
+  }
+}
+
+.hidden { display: none !important; }
 
 @keyframes slide-in {
   from { opacity: 0; transform: translateY(6px); }
