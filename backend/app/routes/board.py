@@ -1,3 +1,4 @@
+from datetime import timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
@@ -5,6 +6,30 @@ from app.models import BoardMessage, User, LeagueMember
 
 board_bp = Blueprint('board', __name__)
 PAGE_SIZE = 50
+
+
+@board_bp.route('/unread', methods=['GET'])
+def get_unread_count():
+    league_id = request.args.get('league_id', None, type=int)
+    since = request.args.get('since', None)
+
+    if not league_id or not since:
+        return jsonify({'count': 0}), 200
+
+    try:
+        from datetime import datetime
+        since_dt = datetime.fromisoformat(since.replace('Z', '+00:00'))
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError):
+        return jsonify({'count': 0}), 200
+
+    count = (BoardMessage.query
+             .filter_by(league_id=league_id, parent_id=None, is_deleted=False)
+             .filter(BoardMessage.created_at > since_dt)
+             .count())
+
+    return jsonify({'count': count}), 200
 
 
 @board_bp.route('/', methods=['GET'])

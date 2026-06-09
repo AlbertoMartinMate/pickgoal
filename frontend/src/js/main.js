@@ -5,6 +5,7 @@ import { api } from './api.js';
 
 let userLeagues = [];
 let deferredInstallPrompt = null;
+let unreadPollInterval = null;
 
 async function bootstrap() {
   await auth.init();
@@ -71,12 +72,38 @@ function closeAllDropdowns() {
   document.getElementById('userBtn')?.classList.remove('navbar__dropdown-btn--open');
 }
 
+async function checkTablonUnread() {
+  const badge = document.getElementById('tablonBadge');
+  if (!badge) return;
+
+  const user = auth.getUser();
+  if (!user) { badge.classList.add('hidden'); return; }
+
+  const activeLeagueId = localStorage.getItem('activeLeagueId');
+  if (!activeLeagueId) { badge.classList.add('hidden'); return; }
+
+  const since = localStorage.getItem(`tablon_last_read_${activeLeagueId}`) || new Date(0).toISOString();
+
+  try {
+    const { count } = await api.board.unread(parseInt(activeLeagueId), since);
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch {
+    badge.classList.add('hidden');
+  }
+}
+
 function setupNavbar() {
   document.addEventListener('auth:change', updateNavState);
 
   window.addEventListener('hashchange', () => {
     closeAllDropdowns();
     updateBottomNavActive();
+    setTimeout(checkTablonUnread, 200);
   });
 
   // Click outside → close all dropdowns
@@ -103,6 +130,7 @@ function setupNavbar() {
       localStorage.setItem('activeLeagueId', newId);
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
+      checkTablonUnread();
       if (auth.getUser()?.is_admin) {
         router.navigate(`/ligas/${newId}`);  // admin → go to league management page
       } else {
@@ -176,6 +204,9 @@ async function updateNavState() {
       userLeagues = [];
     }
     renderLeagueDropdown(userLeagues);
+    checkTablonUnread();
+    if (unreadPollInterval) clearInterval(unreadPollInterval);
+    unreadPollInterval = setInterval(checkTablonUnread, 5 * 60 * 1000);
   } else {
     authLinks?.classList.remove('hidden');
     // Keep space but hide buttons
@@ -185,6 +216,7 @@ async function updateNavState() {
     document.body.classList.remove('has-bottom-nav');
     userLeagues = [];
     localStorage.removeItem('activeLeagueId');
+    if (unreadPollInterval) { clearInterval(unreadPollInterval); unreadPollInterval = null; }
   }
 
   updateBottomNavActive();

@@ -75,6 +75,7 @@ export const api = {
 
   board: {
     messages: (page = 1, leagueId = null) => request(`/board/?page=${page}${leagueId ? `&league_id=${leagueId}` : ''}`),
+    unread: (leagueId, since) => request(`/board/unread?league_id=${leagueId}&since=${encodeURIComponent(since)}`),
     post: (message, leagueId = null) => request('/board/', { method: 'POST', body: JSON.stringify({ message, league_id: leagueId }) }),
     pin: (id) => request(`/board/${id}/pin`, { method: 'POST' }),
     reply: (id, message) => request(`/board/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),

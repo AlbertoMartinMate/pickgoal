@@ -7,6 +7,13 @@ export async function renderTablon(el, { query = {} } = {}) {
 
   const user = auth.getUser();
   let leagueId = query.liga ? parseInt(query.liga) : null;
+
+  // Mark as read immediately if leagueId is known from query
+  if (leagueId) {
+    localStorage.setItem(`tablon_last_read_${leagueId}`, new Date().toISOString());
+    const badge = document.getElementById('tablonBadge');
+    if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
+  }
   let leagueName = null;
   let members = [];
   let page = 1;

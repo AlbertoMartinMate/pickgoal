@@ -1,5 +1,53 @@
 @use '../abstracts/variables' as v;
 
+.ranking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+
+  .page-title { margin-bottom: 0; }
+}
+
+.ranking-tablon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid v.$border;
+  border-radius: v.$r-full;
+  color: v.$text-muted;
+  text-decoration: none;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  white-space: nowrap;
+  transition: color v.$t-fast, border-color v.$t-fast;
+
+  &:hover {
+    color: v.$text;
+    border-color: v.$text-muted;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    background: #ff3b30;
+    color: #fff;
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+
+    &.hidden { display: none; }
+  }
+}
+
 .ranking-table-wrapper {
   overflow-x: auto;
   border-radius: v.$r-lg;
