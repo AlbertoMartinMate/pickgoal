@@ -17,8 +17,6 @@ export async function renderLigaDetalle(el, { params }) {
       ? '<span class="league-badge league-badge--official">⭐ Oficial</span>'
       : '';
 
-    console.log('[liga-detalle] render tabs - user:', user?.username, 'is_admin:', user?.is_admin, 'is_member:', is_member);
-
     el.innerHTML = `
       <div class="container">
         <a href="#/ligas" class="back-link">← Volver a ligas</a>

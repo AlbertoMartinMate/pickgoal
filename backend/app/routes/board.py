@@ -10,7 +10,6 @@ PAGE_SIZE = 50
 
 @board_bp.route('/unread', methods=['GET'])
 def get_unread_count():
-    print('[board/unread] called', flush=True)
     league_id = request.args.get('league_id', None, type=int)
     since = request.args.get('since', None)
 

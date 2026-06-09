@@ -86,15 +86,13 @@ async function checkTablonUnread() {
 
   try {
     const { count } = await api.board.unread(parseInt(activeLeagueId), since);
-    console.log('[tablonUnread] liga:', activeLeagueId, 'since:', since, '→ count:', count);
     if (count > 0) {
       badge.textContent = count > 99 ? '99+' : String(count);
       badge.classList.remove('hidden');
     } else {
       badge.classList.add('hidden');
     }
-  } catch (err) {
-    console.log('[tablonUnread] error:', err);
+  } catch {
     badge.classList.add('hidden');
   }
 }
