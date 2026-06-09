@@ -133,10 +133,17 @@ function setupNavbar() {
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
       checkTablonUnread();
+      const currentPath = window.location.hash.slice(1).split('?')[0] || '/';
+      console.log('[navbar] league →', newId, 'on', currentPath);
       if (auth.getUser()?.is_admin) {
-        router.navigate(`/ligas/${newId}`);  // admin → go to league management page
+        router.navigate(`/ligas/${newId}`);
+      } else if (currentPath === '/') {
+        // Home doesn't show per-league content — navigate to ranking instead
+        router.navigate('/ranking');
       } else {
-        router.resolve();  // regular user → re-render current page with new active league
+        // Re-render current page with new active league
+        // router.navigate() is a no-op when hash is unchanged, so resolve() directly
+        router.resolve();
       }
       return;
     }
