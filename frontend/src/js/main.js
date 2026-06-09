@@ -129,6 +129,10 @@ function setupNavbar() {
     const item = e.target.closest('[data-league-id]');
     if (item) {
       const newId = String(item.dataset.leagueId);
+      // Update navbar name immediately before any navigation
+      const selectedLeague = userLeagues.find(l => String(l.id) === newId);
+      const nameEl = document.getElementById('navLeagueName');
+      if (nameEl && selectedLeague) nameEl.textContent = selectedLeague.name;
       localStorage.setItem('activeLeagueId', newId);
       closeAllDropdowns();
       renderLeagueDropdown(userLeagues);
