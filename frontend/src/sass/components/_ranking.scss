@@ -16,10 +16,11 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
+  background: transparent;
   border: 1px solid v.$border;
   border-radius: v.$r-full;
   color: v.$text-muted;
-  text-decoration: none;
+  cursor: pointer;
   font-size: v.$fs-sm;
   font-weight: v.$fw-semi;
   white-space: nowrap;

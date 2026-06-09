@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { router } from '../router.js';
 import { leagueGateHtml } from '../ui.js';
 
 function getActiveLeagueId() {
@@ -39,10 +40,10 @@ export async function renderRanking(el) {
         <div class="ranking-header">
           <h1 class="page-title">${title}</h1>
           ${leagueId ? `
-            <a href="#/tablon?liga=${leagueId}" class="ranking-tablon-btn">
+            <button class="ranking-tablon-btn" data-league-id="${leagueId}">
               💬 Tablón
               <span class="ranking-tablon-btn__badge${hasUnread ? '' : ' hidden'}">${unreadCount}</span>
-            </a>
+            </button>
           ` : ''}
         </div>
         <div class="ranking-table-wrapper">
@@ -77,6 +78,10 @@ export async function renderRanking(el) {
         </div>
       </div>
     `;
+    el.querySelector('.ranking-tablon-btn')?.addEventListener('click', () => {
+      router.navigate(`/tablon?liga=${leagueId}`);
+    });
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }

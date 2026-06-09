@@ -18,7 +18,14 @@ def get_unread_count():
 
     try:
         from datetime import datetime
-        since_dt = datetime.fromisoformat(since.replace('Z', '+00:00'))
+        # JS toISOString() produces 3-decimal milliseconds (e.g. "...000Z").
+        # Python < 3.11 fromisoformat only accepts 0 or 6 decimal places,
+        # so we strip sub-seconds as a safe fallback.
+        clean = since.replace('Z', '+00:00')
+        try:
+            since_dt = datetime.fromisoformat(clean)
+        except ValueError:
+            since_dt = datetime.fromisoformat(clean[:19] + '+00:00')
         if since_dt.tzinfo is None:
             since_dt = since_dt.replace(tzinfo=timezone.utc)
     except (ValueError, AttributeError):
