@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { router } from '../router.js';
 import { formatDate } from '../ui.js';
 
 export async function renderHome(el) {
@@ -39,6 +40,14 @@ export async function renderHome(el) {
       ${pointsModalHtml()}
     `;
     attachPointsModal(el);
+
+    el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('a')) return;
+        router.navigate(`/ligas/${card.dataset.leagueId}`);
+      });
+    });
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando el inicio: ${err.message}</p></div>`;
   }
@@ -153,7 +162,7 @@ function leagueCard(s) {
        </div>`;
 
   return `
-    <div class="league-card">
+    <div class="league-card" data-league-id="${s.league_id}">
       <div class="league-card__header">
         <h2 class="league-card__name">${s.league_name}</h2>
         <span class="league-card__rank">${ordinal(s.rank)} de ${s.member_count}</span>
@@ -173,7 +182,7 @@ function leagueCard(s) {
         </div>
       </div>
       ${nextHtml}
-      <a class="league-card__cta btn btn--ghost btn--sm" href="#/ranking">Ver clasificación</a>
+      <a class="league-card__cta btn btn--ghost btn--sm" href="#/ligas/${s.league_id}">Ver clasificación</a>
     </div>
   `;
 }
