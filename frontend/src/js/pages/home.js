@@ -45,6 +45,7 @@ export async function renderHome(el) {
       card.style.cursor = 'pointer';
       card.addEventListener('click', (e) => {
         if (e.target.closest('[data-go-ranking]') || e.target.closest('a')) return;
+        localStorage.setItem('activeLeagueId', card.dataset.leagueId);
         router.navigate(`/ligas/${card.dataset.leagueId}`);
       });
     });
@@ -52,9 +53,7 @@ export async function renderHome(el) {
     el.querySelectorAll('[data-go-ranking]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const leagueId = btn.dataset.goRanking;
-        console.log('[home] go-ranking clicked, leagueId:', leagueId);
-        localStorage.setItem('activeLeagueId', leagueId);
+        localStorage.setItem('activeLeagueId', btn.dataset.goRanking);
         router.navigate('/ranking');
       });
     });
