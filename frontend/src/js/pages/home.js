@@ -44,8 +44,16 @@ export async function renderHome(el) {
     el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
       card.style.cursor = 'pointer';
       card.addEventListener('click', (e) => {
-        if (e.target.closest('a')) return;
+        if (e.target.closest('[data-go-ranking]') || e.target.closest('a')) return;
         router.navigate(`/ligas/${card.dataset.leagueId}`);
+      });
+    });
+
+    el.querySelectorAll('[data-go-ranking]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        localStorage.setItem('activeLeagueId', btn.dataset.goRanking);
+        router.navigate('/ranking');
       });
     });
   } catch (err) {
@@ -182,7 +190,7 @@ function leagueCard(s) {
         </div>
       </div>
       ${nextHtml}
-      <a class="league-card__cta btn btn--ghost btn--sm" href="#/ligas/${s.league_id}">Ver clasificación</a>
+      <button class="league-card__cta btn btn--ghost btn--sm" data-go-ranking="${s.league_id}">Ver clasificación</button>
     </div>
   `;
 }
