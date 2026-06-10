@@ -231,9 +231,7 @@ def generate_bot_predictions(app):
 
 
 def init_scheduler(app):
-    print('[scheduler] init_scheduler llamado', flush=True)
     if scheduler.running:
-        print('[scheduler] ya estaba corriendo — saliendo', flush=True)
         return
 
     scheduler.add_job(
@@ -258,6 +256,4 @@ def init_scheduler(app):
         replace_existing=True,
     )
     scheduler.start()
-    job_ids = [j.id for j in scheduler.get_jobs()]
-    print(f'[scheduler] iniciado — jobs: {job_ids}', flush=True)
-    logger.info('Scheduler iniciado — jobs registrados: %s', job_ids)
+    logger.info('Scheduler iniciado — jobs registrados: %s', [j.id for j in scheduler.get_jobs()])
