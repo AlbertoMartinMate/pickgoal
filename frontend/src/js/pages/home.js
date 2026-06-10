@@ -52,7 +52,9 @@ export async function renderHome(el) {
     el.querySelectorAll('[data-go-ranking]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        localStorage.setItem('activeLeagueId', btn.dataset.goRanking);
+        const leagueId = btn.dataset.goRanking;
+        console.log('[home] go-ranking clicked, leagueId:', leagueId);
+        localStorage.setItem('activeLeagueId', leagueId);
         router.navigate('/ranking');
       });
     });
