@@ -85,6 +85,7 @@ def post_message():
     data = request.get_json()
     message = data.get('message', '').strip()
     league_id = data.get('league_id', None)
+    print('[board] post_message called, user_id:', user_id, 'message:', message[:50], flush=True)
 
     if not message:
         return jsonify({'error': 'El mensaje no puede estar vacío'}), 400
@@ -102,7 +103,9 @@ def post_message():
     db.session.commit()
 
     # Notify @mentioned users (skip bots and the author)
+    print('[board] calling _notify_mentions', flush=True)
     _notify_mentions(message, user_id, league_id)
+    print('[board] _notify_mentions done', flush=True)
 
     return jsonify({'message': msg.to_dict()}), 201
 
