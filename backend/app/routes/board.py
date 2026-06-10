@@ -1,9 +1,12 @@
+import logging
 import re
 from datetime import timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models import BoardMessage, User, LeagueMember, League
+
+logger = logging.getLogger(__name__)
 
 board_bp = Blueprint('board', __name__)
 PAGE_SIZE = 50
@@ -112,19 +115,24 @@ def _notify_mentions(message, author_id, league_id):
         if not usernames:
             return
         author = User.query.get(author_id)
-        league_name = League.query.get(league_id).name if league_id else 'PickGoal'
+        league = League.query.get(league_id) if league_id else None
+        league_name = league.name if league else 'PickGoal'
         tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
+        logger.info('[mention] menciones detectadas=%s en liga=%s', usernames, league_id)
         for username in usernames:
             mentioned = User.query.filter_by(username=username, is_bot=False).first()
             if mentioned and mentioned.id != author_id:
+                logger.info('[mention] notificando a %s (id=%s)', username, mentioned.id)
                 send_push_notification(
                     mentioned.id,
                     '📣 Te han mencionado en PickGoal',
                     f'@{author.username} te mencionó en {league_name}',
                     url=tablon_url,
                 )
-    except Exception:
-        pass  # never break the main request
+            elif not mentioned:
+                logger.info('[mention] usuario @%s no encontrado o es bot', username)
+    except Exception as exc:
+        logger.error('[mention] error en _notify_mentions: %s', exc, exc_info=True)
 
 
 @board_bp.route('/<int:msg_id>/pin', methods=['POST'])

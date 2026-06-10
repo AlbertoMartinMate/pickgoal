@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 
@@ -9,22 +10,32 @@ from app import db
 from app.models import PushSubscription, User, LeagueMember, League
 
 notifications_bp = Blueprint('notifications', __name__)
+logger = logging.getLogger(__name__)
 
 
 def send_push_notification(user_id, title, body, url='/'):
     """Send push to all active subscriptions of a user. Returns number sent."""
-    from pywebpush import webpush, WebPushException
+    try:
+        from pywebpush import webpush, WebPushException
+    except ImportError:
+        logger.error('[push] pywebpush no está instalado')
+        return 0
 
     private_key_raw = os.environ.get('VAPID_PRIVATE_KEY', '')
     if not private_key_raw:
+        logger.error('[push] VAPID_PRIVATE_KEY no está configurada')
         return 0
 
     # .env stores \n as literal backslash-n; restore real newlines
     private_key = private_key_raw.replace('\\n', '\n')
 
     subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
-    sent = 0
+    logger.info('[push] user_id=%s suscripciones=%d title=%r', user_id, len(subscriptions), title)
 
+    if not subscriptions:
+        return 0
+
+    sent = 0
     for sub in subscriptions:
         try:
             webpush(
@@ -37,14 +48,18 @@ def send_push_notification(user_id, title, body, url='/'):
                 vapid_claims={'sub': 'mailto:admin@pickgoal.es'},
             )
             sent += 1
+            logger.info('[push] enviada OK → endpoint=%s...', sub.endpoint[:40])
         except WebPushException as exc:
-            # 404/410 → subscription expired; clean it up
+            status = exc.response.status_code if exc.response is not None else 'n/a'
+            logger.error('[push] WebPushException status=%s: %s', status, exc)
             if exc.response is not None and exc.response.status_code in (404, 410):
+                logger.info('[push] suscripción expirada, eliminando id=%s', sub.id)
                 db.session.delete(sub)
                 db.session.commit()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.error('[push] error inesperado: %s', exc, exc_info=True)
 
+    logger.info('[push] enviadas %d/%d para user_id=%s', sent, len(subscriptions), user_id)
     return sent
 
 
