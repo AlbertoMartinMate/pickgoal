@@ -154,9 +154,16 @@ input[type='number'] {
   @media (max-width: v.$bp-md) { font-size: v.$fs-xl; }
 }
 
-.page-subtitle {
-  font-size: v.$fs-sm;
-  color: v.$text-muted;
-  margin-bottom: v.$sp-8;
-  margin-top: 0;
+.page-league-name {
+  display: block;
+  text-align: center;
+  font-size: v.$fs-xl;
+  font-weight: v.$fw-bold;
+  color: v.$accent;
+  letter-spacing: -0.02em;
+  padding: v.$sp-5 v.$sp-4;
+  margin-bottom: v.$sp-6;
+  border-bottom: 1px solid v.$accent-dim;
+
+  @media (max-width: v.$bp-md) { font-size: v.$fs-lg; }
 }

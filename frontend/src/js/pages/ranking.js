@@ -35,10 +35,10 @@ export async function renderRanking(el) {
     const unreadCount = hasUnread ? navBadge.textContent : '';
 
     el.innerHTML = `
+      ${activeLeague ? `<span class="page-league-name">${activeLeague.name}</span>` : ''}
       <div class="container">
         <div class="ranking-header">
           <h1 class="page-title">Clasificación</h1>
-          ${activeLeague ? `<p class="page-subtitle">Liga: ${activeLeague.name}</p>` : ''}
           ${leagueId ? `
             <button class="ranking-tablon-btn" data-league-id="${leagueId}">
               💬 Tablón
