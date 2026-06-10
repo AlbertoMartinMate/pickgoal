@@ -11,6 +11,7 @@ export async function renderQuiniela(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
+    let activeLeagueName = null;
     // Gate: logged-in users must be in at least one league
     if (auth.isLoggedIn()) {
       const { leagues } = await api.leagues.my();
@@ -18,6 +19,9 @@ export async function renderQuiniela(el) {
         el.innerHTML = leagueGateHtml();
         return;
       }
+      const leagueId = getActiveLeagueId();
+      const found = leagues.find(l => l.id === leagueId);
+      activeLeagueName = found ? found.name : (leagues[0]?.name ?? null);
     }
 
     const leagueId = getActiveLeagueId();
@@ -51,6 +55,7 @@ export async function renderQuiniela(el) {
     el.innerHTML = `
       <div class="container">
         <h1 class="page-title">Pronósticos — Mundial 2026</h1>
+        ${activeLeagueName ? `<p class="page-subtitle">Liga: ${activeLeagueName}</p>` : ''}
         ${!auth.isLoggedIn() ? '<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>' : ''}
         <nav class="date-nav" id="dateNav"></nav>
         <div id="matchesContent"></div>

@@ -28,7 +28,6 @@ export async function renderRanking(el) {
     ]);
     const currentUser = auth.getUser();
     const activeLeague = leaguesRes.leagues.find(l => l.id === leagueId);
-    const title = activeLeague ? activeLeague.name : 'Clasificación General';
 
     // Mirror unread badge from nav to ranking page button
     const navBadge = document.getElementById('tablonBadge');
@@ -38,7 +37,8 @@ export async function renderRanking(el) {
     el.innerHTML = `
       <div class="container">
         <div class="ranking-header">
-          <h1 class="page-title">${title}</h1>
+          <h1 class="page-title">Clasificación</h1>
+          ${activeLeague ? `<p class="page-subtitle">Liga: ${activeLeague.name}</p>` : ''}
           ${leagueId ? `
             <button class="ranking-tablon-btn" data-league-id="${leagueId}">
               💬 Tablón
