@@ -181,14 +181,18 @@ async function updateNavState() {
 }
 
 function syncActiveLeague(leagues) {
-  let activeId = localStorage.getItem('activeLeagueId');
-  let activeLeague = leagues.find(l => String(l.id) === String(activeId));
+  const activeId = localStorage.getItem('activeLeagueId');
+  const isValid = activeId && leagues.some(l => String(l.id) === String(activeId));
 
-  if (!activeLeague && leagues.length > 0) {
-    activeLeague = leagues[0];
-    localStorage.setItem('activeLeagueId', String(activeLeague.id));
+  // Already set to a valid league — respect the user's choice, don't overwrite
+  if (isValid) return;
+
+  // Not set or league no longer exists → fallback to first available
+  if (leagues.length > 0) {
+    localStorage.setItem('activeLeagueId', String(leagues[0].id));
+  } else {
+    localStorage.removeItem('activeLeagueId');
   }
-  if (!activeLeague) localStorage.removeItem('activeLeagueId');
 }
 
 function updateBottomNavActive() {
