@@ -81,4 +81,10 @@ export const api = {
     reply: (id, message) => request(`/board/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
     delete: (id) => request(`/board/${id}`, { method: 'DELETE' }),
   },
+
+  notifications: {
+    vapidPublicKey: () => request('/notifications/vapid-public-key'),
+    subscribe: (subscription) => request('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+    send: (data) => request('/notifications/send', { method: 'POST', body: JSON.stringify(data) }),
+  },
 };

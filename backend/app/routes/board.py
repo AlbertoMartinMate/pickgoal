@@ -1,8 +1,9 @@
+import re
 from datetime import timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import BoardMessage, User, LeagueMember
+from app.models import BoardMessage, User, LeagueMember, League
 
 board_bp = Blueprint('board', __name__)
 PAGE_SIZE = 50
@@ -96,7 +97,34 @@ def post_message():
     msg = BoardMessage(user_id=user_id, message=message, league_id=league_id)
     db.session.add(msg)
     db.session.commit()
+
+    # Notify @mentioned users (skip bots and the author)
+    _notify_mentions(message, user_id, league_id)
+
     return jsonify({'message': msg.to_dict()}), 201
+
+
+def _notify_mentions(message, author_id, league_id):
+    """Fire-and-forget push notifications for @username mentions."""
+    try:
+        from app.routes.notifications import send_push_notification
+        usernames = set(re.findall(r'@(\w+)', message))
+        if not usernames:
+            return
+        author = User.query.get(author_id)
+        league_name = League.query.get(league_id).name if league_id else 'PickGoal'
+        tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
+        for username in usernames:
+            mentioned = User.query.filter_by(username=username, is_bot=False).first()
+            if mentioned and mentioned.id != author_id:
+                send_push_notification(
+                    mentioned.id,
+                    '📣 Te han mencionado en PickGoal',
+                    f'@{author.username} te mencionó en {league_name}',
+                    url=tablon_url,
+                )
+    except Exception:
+        pass  # never break the main request
 
 
 @board_bp.route('/<int:msg_id>/pin', methods=['POST'])

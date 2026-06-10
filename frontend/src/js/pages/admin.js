@@ -33,6 +33,34 @@ export async function renderAdmin(el) {
         </section>
 
         <section class="section admin-section">
+          <h2>Notificaciones push</h2>
+          <form class="form" id="pushForm">
+            <div class="form__group">
+              <label class="form__label">Título</label>
+              <input class="form__input" type="text" id="pushTitle" placeholder="PickGoal" maxlength="80" />
+            </div>
+            <div class="form__group">
+              <label class="form__label">Mensaje</label>
+              <input class="form__input" type="text" id="pushBody" placeholder="Texto de la notificación" maxlength="200" />
+            </div>
+            <div class="form__group">
+              <label class="form__label">Destinatario</label>
+              <select class="form__input" id="pushTarget">
+                <option value="all">Todos los usuarios</option>
+                <option value="league">Liga (por ID)</option>
+                <option value="user">Usuario (por ID)</option>
+              </select>
+            </div>
+            <div class="form__group hidden" id="pushTargetIdGroup">
+              <label class="form__label">ID</label>
+              <input class="form__input" type="number" id="pushTargetId" placeholder="ID de liga o usuario" min="1" />
+            </div>
+            <button class="btn btn--primary" type="submit">Enviar notificación</button>
+            <span id="pushResult" style="margin-left:12px;font-size:13px;"></span>
+          </form>
+        </section>
+
+        <section class="section admin-section">
           <h2>Usuarios (${users.length})</h2>
           <table class="admin-table">
             <thead>
@@ -69,6 +97,36 @@ export async function renderAdmin(el) {
         const { message } = await api.predictions.awardChampion(team);
         showToast(message);
       } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // Push notification form
+    const pushTarget = document.getElementById('pushTarget');
+    const pushTargetIdGroup = document.getElementById('pushTargetIdGroup');
+    pushTarget.addEventListener('change', () => {
+      pushTargetIdGroup.classList.toggle('hidden', pushTarget.value === 'all');
+    });
+
+    document.getElementById('pushForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('pushTitle').value.trim() || 'PickGoal';
+      const body = document.getElementById('pushBody').value.trim();
+      const target = pushTarget.value;
+      const targetId = parseInt(document.getElementById('pushTargetId').value) || null;
+      const resultEl = document.getElementById('pushResult');
+
+      const payload = { title, body };
+      if (target === 'league' && targetId) payload.league_id = targetId;
+      if (target === 'user' && targetId) payload.user_id = targetId;
+
+      resultEl.textContent = 'Enviando…';
+      try {
+        const { sent } = await api.notifications.send(payload);
+        resultEl.textContent = `✓ Enviada a ${sent} suscripción(es)`;
+        showToast(`Notificación enviada a ${sent} suscripción(es)`);
+      } catch (err) {
+        resultEl.textContent = `Error: ${err.message}`;
         showToast(err.message, 'error');
       }
     });

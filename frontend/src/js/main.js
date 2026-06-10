@@ -12,6 +12,7 @@ async function bootstrap() {
   router.init();
   setupNavbar();
   setupInstallBanner();
+  setupPushNotifications();
 }
 
 function isAppInstalled() {
@@ -204,6 +205,58 @@ function updateBottomNavActive() {
       : path === route || path.startsWith(route + '/');
     item.classList.toggle('bottom-nav__item--active', isActive);
   });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Web Push
+// ──────────────────────────────────────────────────────────────────────────────
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function setupPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+
+    // Subscribe only when a user is logged in
+    document.addEventListener('auth:change', async (e) => {
+      if (!e.detail) return; // logged out
+      await trySubscribePush(reg);
+    });
+
+    // Also try immediately if already logged in
+    if (auth.getUser()) await trySubscribePush(reg);
+  } catch (_) {}
+}
+
+async function trySubscribePush(registration) {
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) {
+      // Re-send to backend in case the token changed
+      await api.notifications.subscribe(existing.toJSON());
+      return;
+    }
+
+    const { public_key } = await api.notifications.vapidPublicKey();
+    if (!public_key) return;
+
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(public_key),
+    });
+
+    await api.notifications.subscribe(subscription.toJSON());
+  } catch (_) {}
 }
 
 bootstrap();
