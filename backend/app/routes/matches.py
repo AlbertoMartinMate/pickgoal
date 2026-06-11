@@ -70,18 +70,6 @@ def get_match(match_id):
 @matches_bp.route('/sync', methods=['POST'])
 @jwt_required()
 def manual_sync():
-    from flask import current_app
-    user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
-    if not user.is_admin:
-        return jsonify({'error': 'Solo admins pueden forzar la sincronización'}), 403
-    _sync_full(current_app._get_current_object())
-    return jsonify({'ok': True, 'message': 'Sincronización completada'}), 200
-
-
-@matches_bp.route('/sync', methods=['POST'])
-@jwt_required()
-def manual_sync():
     user_id = int(get_jwt_identity())
     admin = User.query.get_or_404(user_id)
     if not admin.is_admin:
