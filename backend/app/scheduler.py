@@ -80,10 +80,25 @@ def sync_live_matches(app):
     with app.app_context():
         from app import db
         from app.models import Match
-        from app.utils import (fetch_live_matches, map_api_status,
-                               compute_result_90, recalculate_match_predictions)
+        from app.utils import (fetch_live_matches, fetch_match_by_api_id,
+                               map_api_status, compute_result_90,
+                               recalculate_match_predictions)
         try:
             live_data = fetch_live_matches()
+            live_api_ids = {m['id'] for m in live_data}
+
+            # Fetch individually any match that is 'live' in our DB but no longer
+            # appears in the IN_PLAY/PAUSED feed — it has likely just finished
+            db_live = Match.query.filter_by(status='live').all()
+            for db_match in db_live:
+                if db_match.api_id not in live_api_ids:
+                    try:
+                        fetched = fetch_match_by_api_id(db_match.api_id)
+                        if fetched:
+                            live_data.append(fetched)
+                    except Exception as e:
+                        logger.error('Error fetching match api_id=%s: %s', db_match.api_id, e)
+
             for m in live_data:
                 existing = Match.query.filter_by(api_id=m['id']).first()
                 if not existing:
@@ -100,7 +115,8 @@ def sync_live_matches(app):
                 if prev_status != 'finished' and existing.status == 'finished':
                     db.session.commit()
                     recalculate_match_predictions(existing)
-                    return
+                    # Continue — don't return; there may be other live matches to process
+
             db.session.commit()
         except Exception as e:
             logger.error('Error actualizando partidos en vivo: %s', e)
