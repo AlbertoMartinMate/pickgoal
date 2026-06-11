@@ -110,13 +110,13 @@ export async function renderAdmin(el) {
 
     document.getElementById('pushForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const title = document.getElementById('pushTitle').value.trim() || 'PickGoal';
+      const rawTitle = document.getElementById('pushTitle').value.trim() || 'Aviso';
       const body = document.getElementById('pushBody').value.trim();
       const target = pushTarget.value;
       const targetId = parseInt(document.getElementById('pushTargetId').value) || null;
       const resultEl = document.getElementById('pushResult');
 
-      const payload = { title, body };
+      const payload = { title: `📣 PickGoal — ${rawTitle}`, body };
       if (target === 'league' && targetId) payload.league_id = targetId;
       if (target === 'user' && targetId) payload.user_id = targetId;
 

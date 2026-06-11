@@ -117,6 +117,8 @@ def _notify_mentions(message, author_id, league_id):
         league_name = league.name if league else 'PickGoal'
         tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
 
+        snippet = message[:100] + ('…' if len(message) > 100 else '')
+
         # @todos / @everyone → notify all league members
         broadcast_keywords = {'@todos', '@everyone'}
         if any(kw in message.lower() for kw in broadcast_keywords):
@@ -129,8 +131,8 @@ def _notify_mentions(message, author_id, league_id):
                     try:
                         send_push_notification(
                             uid,
-                            '📣 Mensaje para todos en PickGoal',
-                            f'{author.username} tiene un aviso para tu liga',
+                            f'📣 {author.username} — {league_name}',
+                            snippet,
                             url=tablon_url,
                         )
                     except Exception as e:
@@ -146,8 +148,8 @@ def _notify_mentions(message, author_id, league_id):
             try:
                 send_push_notification(
                     mentioned.id,
-                    '📣 Te han mencionado en PickGoal',
-                    f'@{author.username} te mencionó en {league_name}',
+                    f'📣 {author.username} te ha mencionado',
+                    snippet,
                     url=tablon_url,
                 )
             except Exception as e:
