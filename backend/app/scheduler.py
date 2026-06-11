@@ -48,8 +48,12 @@ def sync_full_calendar(app):
                 if existing:
                     existing.phase = phase
                     existing.group_name = group_name
-                    existing.home_team = home_team
-                    existing.away_team = away_team
+                    # Don't overwrite a known team name with TBD — API can temporarily
+                    # return null for knockout teams already resolved in a prior sync
+                    if home_team != 'TBD' or existing.home_team == 'TBD':
+                        existing.home_team = home_team
+                    if away_team != 'TBD' or existing.away_team == 'TBD':
+                        existing.away_team = away_team
                     existing.match_datetime = dt
                     existing.status = status
                     existing.home_score_90 = home_90
