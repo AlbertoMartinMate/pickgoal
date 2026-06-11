@@ -26,9 +26,10 @@ export async function renderQuiniela(el) {
 
     const leagueId = getActiveLeagueId();
 
-    const [{ groups }, predictionsRes] = await Promise.all([
+    const [{ groups }, predictionsRes, championRes] = await Promise.all([
       api.matches.grouped(),
       auth.isLoggedIn() ? api.predictions.mine(leagueId) : Promise.resolve({ predictions: [] }),
+      auth.isLoggedIn() ? api.predictions.getChampion(leagueId) : Promise.resolve({ champion_prediction: null }),
     ]);
 
     const predMap = {};
@@ -52,10 +53,18 @@ export async function renderQuiniela(el) {
     const todayKey = localDateKey(new Date().toISOString());
     const defaultDay = days.find(d => d >= todayKey) ?? days[0];
 
+    const championTeam = championRes.champion_prediction?.team_name ?? null;
+    const championHtml = auth.isLoggedIn()
+      ? championTeam
+        ? `<p class="champion-banner champion-banner--set">🏆 Tu campeón: <a href="#/campeon" style="color:inherit;font-weight:bold;">${championTeam}</a></p>`
+        : `<p class="champion-banner champion-banner--missing">⚠️ <a href="#/campeon">¡Elige tu campeón antes del inicio del torneo!</a></p>`
+      : '';
+
     el.innerHTML = `
       ${activeLeagueName ? `<span class="page-league-name">${activeLeagueName}</span>` : ''}
       <div class="container">
         <h1 class="page-title">Pronósticos — Mundial 2026</h1>
+        ${championHtml}
         ${!auth.isLoggedIn() ? '<p class="notice">⚠️ <a href="#/login">Inicia sesión</a> para guardar tus predicciones.</p>' : ''}
         <nav class="date-nav" id="dateNav"></nav>
         <div id="matchesContent"></div>
