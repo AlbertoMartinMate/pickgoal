@@ -114,27 +114,38 @@ def _notify_mentions(message, author_id, league_id):
     """Fire-and-forget push notifications for @username mentions."""
     try:
         from app.routes.notifications import send_push_notification
-        usernames = set(re.findall(r'@(\w+)', message))
-        if not usernames:
+        # Use \w+ to capture single-word mentions, plus try multi-word usernames via DB lookup
+        single_word_mentions = set(re.findall(r'@(\w+)', message))
+        print('[mention] found mentions (single-word regex):', single_word_mentions, flush=True)
+        if not single_word_mentions and '@' not in message:
             return
         author = User.query.get(author_id)
         league = League.query.get(league_id) if league_id else None
         league_name = league.name if league else 'PickGoal'
         tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
-        logger.info('[mention] menciones detectadas=%s en liga=%s', usernames, league_id)
-        for username in usernames:
-            mentioned = User.query.filter_by(username=username, is_bot=False).first()
-            if mentioned and mentioned.id != author_id:
-                logger.info('[mention] notificando a %s (id=%s)', username, mentioned.id)
-                send_push_notification(
+        # Look up all non-bot users and check if their username appears after '@' in the message
+        # This handles multi-word usernames like "Alberto Martin" that \w+ would miss
+        all_users = User.query.filter(User.is_bot == False).all()
+        mentioned_users = [u for u in all_users if f'@{u.username}' in message]
+        print('[mention] found mentions (full username scan):', [u.username for u in mentioned_users], flush=True)
+        for mentioned in mentioned_users:
+            print('[mention] user found:', mentioned.id, 'username:', mentioned.username, flush=True)
+            if mentioned.id == author_id:
+                print('[mention] skipping author self-mention:', mentioned.id, flush=True)
+                continue
+            print('[mention] sending push to user:', mentioned.id, flush=True)
+            try:
+                result = send_push_notification(
                     mentioned.id,
                     '📣 Te han mencionado en PickGoal',
                     f'@{author.username} te mencionó en {league_name}',
                     url=tablon_url,
                 )
-            elif not mentioned:
-                logger.info('[mention] usuario @%s no encontrado o es bot', username)
+                print('[mention] push result:', result, flush=True)
+            except Exception as e:
+                print('[mention] ERROR sending push to', mentioned.id, ':', str(e), flush=True)
     except Exception as exc:
+        print('[mention] ERROR:', str(exc), flush=True)
         logger.error('[mention] error en _notify_mentions: %s', exc, exc_info=True)
 
 
