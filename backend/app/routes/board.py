@@ -116,8 +116,28 @@ def _notify_mentions(message, author_id, league_id):
         league = League.query.get(league_id) if league_id else None
         league_name = league.name if league else 'PickGoal'
         tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
-        # Look up all non-bot users and check if their username appears after '@' in the message
-        # This handles multi-word usernames like "Alberto Martin" that \w+ would miss
+
+        # @todos / @everyone → notify all league members
+        broadcast_keywords = {'@todos', '@everyone'}
+        if any(kw in message.lower() for kw in broadcast_keywords):
+            if league_id:
+                member_ids = (db.session.query(LeagueMember.user_id)
+                              .filter_by(league_id=league_id)
+                              .all())
+                recipient_ids = [r[0] for r in member_ids if r[0] != author_id]
+                for uid in recipient_ids:
+                    try:
+                        send_push_notification(
+                            uid,
+                            '📣 Mensaje para todos en PickGoal',
+                            f'{author.username} tiene un aviso para tu liga',
+                            url=tablon_url,
+                        )
+                    except Exception as e:
+                        logger.error('[mention] error enviando broadcast a %s: %s', uid, e, exc_info=True)
+            return
+
+        # Individual @username mentions — handles multi-word usernames (e.g. "Alberto Martin")
         all_users = User.query.filter(User.is_bot == False).all()
         mentioned_users = [u for u in all_users if f'@{u.username}' in message]
         for mentioned in mentioned_users:
