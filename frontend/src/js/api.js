@@ -42,6 +42,7 @@ export const api = {
     list: (params = '') => request(`/matches/${params}`),
     get: (id) => request(`/matches/${id}`),
     sync: () => request('/matches/sync', { method: 'POST' }),
+    recalculate: () => request('/matches/recalculate', { method: 'POST' }),
   },
 
   predictions: {

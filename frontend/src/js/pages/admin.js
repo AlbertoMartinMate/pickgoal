@@ -21,6 +21,7 @@ export async function renderAdmin(el) {
           <h2>Scheduler</h2>
           <p>El scheduler sincroniza el calendario cada 24h y actualiza partidos en vivo cada 5 min.</p>
           <button class="btn btn--primary" id="btnSync">Sincronizar ahora</button>
+          <button class="btn btn--secondary" id="btnRecalculate" style="margin-left:8px">Recalcular puntos</button>
           <div id="syncResult"></div>
         </section>
 
@@ -83,6 +84,19 @@ export async function renderAdmin(el) {
         await api.matches.sync();
         res.textContent = '✓ Sincronización completada';
         showToast('Sincronización completada');
+      } catch (err) {
+        res.textContent = `Error: ${err.message}`;
+        showToast(err.message, 'error');
+      }
+    });
+
+    document.getElementById('btnRecalculate').addEventListener('click', async () => {
+      const res = document.getElementById('syncResult');
+      res.textContent = 'Recalculando puntos…';
+      try {
+        const { message } = await api.matches.recalculate();
+        res.textContent = `✓ ${message}`;
+        showToast(message);
       } catch (err) {
         res.textContent = `Error: ${err.message}`;
         showToast(err.message, 'error');

@@ -81,3 +81,21 @@ def manual_sync():
         return jsonify({'message': 'Sincronización completada'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@matches_bp.route('/recalculate', methods=['POST'])
+@jwt_required()
+def recalculate_points():
+    user_id = int(get_jwt_identity())
+    admin = User.query.get_or_404(user_id)
+    if not admin.is_admin:
+        return jsonify({'error': 'Sin permisos'}), 403
+
+    from app.utils import recalculate_match_predictions
+    try:
+        finished = Match.query.filter_by(status='finished').all()
+        for match in finished:
+            recalculate_match_predictions(match)
+        return jsonify({'message': f'Puntos recalculados para {len(finished)} partido(s)'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
