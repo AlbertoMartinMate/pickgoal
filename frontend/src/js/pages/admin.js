@@ -11,7 +11,10 @@ export async function renderAdmin(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const { users } = await api.auth.users();
+    const [{ users }, { matches: todayMatches }] = await Promise.all([
+      api.auth.users(),
+      api.matches.today(),
+    ]);
 
     el.innerHTML = `
       <div class="container">
@@ -23,6 +26,14 @@ export async function renderAdmin(el) {
           <button class="btn btn--primary" id="btnSync">Sincronizar ahora</button>
           <button class="btn btn--secondary" id="btnRecalculate" style="margin-left:8px">Recalcular puntos</button>
           <div id="syncResult"></div>
+        </section>
+
+        <section class="section admin-section">
+          <h2>Resultados de hoy</h2>
+          ${todayMatches.length === 0
+            ? '<p>No hay partidos pendientes hoy.</p>'
+            : `<div id="todayMatchesList">${todayMatches.map(matchResultRow).join('')}</div>`
+          }
         </section>
 
         <section class="section admin-section">
@@ -103,6 +114,32 @@ export async function renderAdmin(el) {
       }
     });
 
+    const todayList = document.getElementById('todayMatchesList');
+    if (todayList) {
+      todayList.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-save-result');
+        if (!btn) return;
+        const matchId = parseInt(btn.dataset.id);
+        const row = btn.closest('.match-result-row');
+        const home = parseInt(row.querySelector('.input-home').value);
+        const away = parseInt(row.querySelector('.input-away').value);
+        if (isNaN(home) || isNaN(away)) {
+          showToast('Introduce marcadores válidos', 'error');
+          return;
+        }
+        btn.disabled = true;
+        try {
+          const { message } = await api.matches.setResult(matchId, home, away);
+          row.querySelector('.result-status').textContent = '✓ Guardado';
+          showToast(message);
+        } catch (err) {
+          row.querySelector('.result-status').textContent = `Error: ${err.message}`;
+          showToast(err.message, 'error');
+          btn.disabled = false;
+        }
+      });
+    }
+
     document.getElementById('awardForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const team = document.getElementById('winnerTeam').value.trim();
@@ -161,6 +198,24 @@ export async function renderAdmin(el) {
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }
+}
+
+function matchResultRow(m) {
+  const time = new Date(m.match_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const homeVal = m.home_score_90 ?? '';
+  const awayVal = m.away_score_90 ?? '';
+  return `
+    <div class="match-result-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="min-width:50px;font-size:13px;color:var(--color-text-muted)">${time}</span>
+      <span style="flex:1;min-width:120px">${m.home_team}</span>
+      <input class="form__input input-home" type="number" min="0" value="${homeVal}" placeholder="0" style="width:52px;text-align:center" />
+      <span>–</span>
+      <input class="form__input input-away" type="number" min="0" value="${awayVal}" placeholder="0" style="width:52px;text-align:center" />
+      <span style="flex:1;min-width:120px">${m.away_team}</span>
+      <button class="btn btn--primary btn--xs btn-save-result" data-id="${m.id}">Guardar</button>
+      <span class="result-status" style="font-size:13px"></span>
+    </div>
+  `;
 }
 
 function userRow(u) {

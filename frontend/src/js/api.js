@@ -41,6 +41,8 @@ export const api = {
     grouped: () => request('/matches/grouped'),
     list: (params = '') => request(`/matches/${params}`),
     get: (id) => request(`/matches/${id}`),
+    today: () => request('/matches/today'),
+    setResult: (id, home, away) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify({ home_score: home, away_score: away }) }),
     sync: () => request('/matches/sync', { method: 'POST' }),
     recalculate: () => request('/matches/recalculate', { method: 'POST' }),
   },

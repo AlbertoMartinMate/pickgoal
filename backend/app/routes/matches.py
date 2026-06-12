@@ -1,8 +1,11 @@
+from datetime import datetime, timezone, timedelta
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models import Match, User
 from app.scheduler import sync_full_calendar as _sync_full
+from app.utils import compute_result_90
 
 matches_bp = Blueprint('matches', __name__)
 
@@ -65,6 +68,62 @@ def get_matches_grouped():
 def get_match(match_id):
     match = Match.query.get_or_404(match_id)
     return jsonify({'match': match.to_dict()}), 200
+
+
+@matches_bp.route('/today', methods=['GET'])
+@jwt_required()
+def get_today_matches():
+    user_id = int(get_jwt_identity())
+    admin = User.query.get_or_404(user_id)
+    if not admin.is_admin:
+        return jsonify({'error': 'Sin permisos'}), 403
+
+    now_utc = datetime.now(timezone.utc)
+    start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+
+    matches = (
+        Match.query
+        .filter(Match.match_datetime >= start, Match.match_datetime < end)
+        .filter(Match.status != 'finished')
+        .order_by(Match.match_datetime)
+        .all()
+    )
+    return jsonify({'matches': [m.to_dict() for m in matches]}), 200
+
+
+@matches_bp.route('/<int:match_id>/result', methods=['PATCH'])
+@jwt_required()
+def set_match_result(match_id):
+    user_id = int(get_jwt_identity())
+    admin = User.query.get_or_404(user_id)
+    if not admin.is_admin:
+        return jsonify({'error': 'Sin permisos'}), 403
+
+    data = request.get_json() or {}
+    home = data.get('home_score')
+    away = data.get('away_score')
+    if home is None or away is None:
+        return jsonify({'error': 'Se requieren home_score y away_score'}), 400
+
+    try:
+        home, away = int(home), int(away)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Los marcadores deben ser números enteros'}), 400
+
+    match = Match.query.get_or_404(match_id)
+    match.home_score_90 = home
+    match.away_score_90 = away
+    match.home_score_final = home
+    match.away_score_final = away
+    match.result_90 = compute_result_90(home, away)
+    match.status = 'finished'
+    db.session.commit()
+
+    from app.utils import recalculate_match_predictions
+    recalculate_match_predictions(match)
+
+    return jsonify({'message': 'Resultado guardado y puntos recalculados', 'match': match.to_dict()}), 200
 
 
 @matches_bp.route('/sync', methods=['POST'])
