@@ -1,5 +1,16 @@
 @use '../abstracts/variables' as v;
 
+// ─── Topbar ───────────────────────────────────────────────────────────────────
+.resultados-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-2;
+
+  .page-title { margin-bottom: 0; }
+}
+
 // ─── Subnav de fases ──────────────────────────────────────────────────────────
 .phase-nav {
   display: flex;
@@ -123,6 +134,46 @@
     color: v.$text-muted;
     font-weight: v.$fw-normal;
   }
+}
+
+// ─── Modo edición (admin) ────────────────────────────────────────────────────
+.res-match--editing {
+  border-left-color: v.$warning !important;
+}
+
+.res-match__edit-score {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-2;
+  flex-shrink: 0;
+}
+
+.res-match__input-home,
+.res-match__input-away {
+  width: 48px;
+  padding: 4px 6px;
+  background: v.$bg-input;
+  border: 1px solid v.$border;
+  border-radius: v.$r-sm;
+  color: v.$text;
+  font-size: v.$fs-sm;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { appearance: none; margin: 0; }
+
+  &:focus {
+    outline: none;
+    border-color: rgba(v.$accent, 0.5);
+  }
+}
+
+.res-match__edit-dash {
+  color: v.$text-muted;
+  font-weight: v.$fw-bold;
+  flex-shrink: 0;
 }
 
 // ─── Tabla de clasificación ───────────────────────────────────────────────────

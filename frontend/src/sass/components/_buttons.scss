@@ -108,6 +108,18 @@
     }
   }
 
+  &--warning {
+    background: v.$warning-dim;
+    color: v.$warning;
+    border-color: rgba(v.$warning, 0.4);
+
+    &:hover:not(:disabled) {
+      background: rgba(v.$warning, 0.2);
+      border-color: v.$warning;
+      opacity: 1;
+    }
+  }
+
   &--accent-ghost {
     background: v.$accent-dim;
     color: v.$accent;

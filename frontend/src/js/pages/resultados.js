@@ -1,5 +1,6 @@
 import { api } from '../api.js';
-import { formatDate } from '../ui.js';
+import { auth } from '../auth.js';
+import { formatDate, showToast } from '../ui.js';
 
 const PHASE_SHORT_LABELS = {
   r32: 'Dieciseisavos',
@@ -10,19 +11,75 @@ const PHASE_SHORT_LABELS = {
   final: 'Final',
 };
 
+let editMode = false;
+let activeItem = null;
+
 export async function renderResultados(el) {
+  editMode = false;
+  activeItem = null;
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
     const { groups } = await api.matches.grouped();
+    const isAdmin = auth.isAdmin();
 
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Resultados — Mundial 2026</h1>
+        <div class="resultados-topbar">
+          <h1 class="page-title">Resultados — Mundial 2026</h1>
+          ${isAdmin ? `<button class="btn btn--ghost btn--sm" id="btnEditResults">✏️ Editar resultados</button>` : ''}
+        </div>
         <nav class="phase-nav" id="phaseNav"></nav>
         <div id="phaseContent"></div>
       </div>
     `;
+
+    if (isAdmin) {
+      document.getElementById('btnEditResults').addEventListener('click', () => {
+        editMode = !editMode;
+        const btn = document.getElementById('btnEditResults');
+        if (editMode) {
+          btn.textContent = '✅ Editando — salir';
+          btn.classList.add('btn--warning');
+        } else {
+          btn.textContent = '✏️ Editar resultados';
+          btn.classList.remove('btn--warning');
+        }
+        if (activeItem) renderPhaseContent(activeItem.data, activeItem.isGroup);
+      });
+    }
+
+    // Event delegation for save buttons (persists across re-renders)
+    document.getElementById('phaseContent').addEventListener('click', async (e) => {
+      const btn = e.target.closest('.res-match__save');
+      if (!btn) return;
+      const matchId = parseInt(btn.dataset.id);
+      const row = btn.closest('.res-match');
+      const home = row.querySelector('.res-match__input-home').value;
+      const away = row.querySelector('.res-match__input-away').value;
+      if (home === '' || away === '') {
+        showToast('Introduce ambos marcadores', 'error');
+        return;
+      }
+      btn.disabled = true;
+      try {
+        await api.matches.setResult(matchId, parseInt(home), parseInt(away));
+        showToast(`${home} - ${away} guardado`);
+        // Update local data so re-render shows the new score
+        if (activeItem) {
+          const m = activeItem.data.matches.find(m => m.id === matchId);
+          if (m) {
+            m.home_score_90 = parseInt(home);
+            m.away_score_90 = parseInt(away);
+            m.status = 'finished';
+          }
+          renderPhaseContent(activeItem.data, activeItem.isGroup);
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+      }
+    });
 
     renderPhaseNav(groups);
   } catch (err) {
@@ -34,7 +91,6 @@ function renderPhaseNav(groups) {
   const nav = document.getElementById('phaseNav');
   if (!nav) return;
 
-  // Separate group phases from knockout phases
   const groupPhases = groups.filter(g => g.phase === 'group');
   const knockoutPhases = groups.filter(g => g.phase !== 'group');
 
@@ -61,19 +117,21 @@ function renderPhaseNav(groups) {
     </button>
   `).join('');
 
-  // Scroll active into view
   nav.querySelector('.phase-nav__btn--active')?.scrollIntoView({ inline: 'center', behavior: 'instant', block: 'nearest' });
 
-  nav.querySelectorAll('.phase-nav__btn').forEach((btn, i) => {
+  nav.querySelectorAll('.phase-nav__btn').forEach(btn => {
     btn.addEventListener('click', () => {
       nav.querySelectorAll('.phase-nav__btn').forEach(b => b.classList.remove('phase-nav__btn--active'));
       btn.classList.add('phase-nav__btn--active');
       const item = navItems.find(it => it.key === btn.dataset.key);
-      if (item) renderPhaseContent(item.data, item.isGroup);
+      if (item) {
+        activeItem = item;
+        renderPhaseContent(item.data, item.isGroup);
+      }
     });
   });
 
-  // Render first item by default
+  activeItem = navItems[0];
   renderPhaseContent(navItems[0].data, navItems[0].isGroup);
 }
 
@@ -106,12 +164,27 @@ function renderMatchList(matches) {
 
   return matches.map(m => {
     const statusLabel = { scheduled: 'Programado', live: '🔴 En juego', finished: 'Finalizado' }[m.status] || m.status;
-    const scoreHtml = m.status !== 'scheduled'
-      ? `<span class="res-score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`
-      : `<span class="res-score res-score--pending">vs</span>`;
+
+    let scoreHtml;
+    if (editMode) {
+      const homeVal = m.home_score_90 ?? '';
+      const awayVal = m.away_score_90 ?? '';
+      scoreHtml = `
+        <div class="res-match__edit-score">
+          <input type="number" min="0" max="20" class="res-match__input-home" value="${homeVal}" placeholder="L" />
+          <span class="res-match__edit-dash">-</span>
+          <input type="number" min="0" max="20" class="res-match__input-away" value="${awayVal}" placeholder="V" />
+          <button class="btn btn--primary btn--xs res-match__save" data-id="${m.id}">Guardar</button>
+        </div>
+      `;
+    } else if (m.status !== 'scheduled') {
+      scoreHtml = `<span class="res-score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`;
+    } else {
+      scoreHtml = `<span class="res-score res-score--pending">vs</span>`;
+    }
 
     return `
-      <div class="res-match ${m.status === 'finished' ? 'res-match--finished' : ''} ${m.status === 'live' ? 'res-match--live' : ''}">
+      <div class="res-match ${m.status === 'finished' ? 'res-match--finished' : ''} ${m.status === 'live' ? 'res-match--live' : ''} ${editMode ? 'res-match--editing' : ''}">
         <div class="res-match__meta">
           <span class="res-match__status">${statusLabel}</span>
           <span class="res-match__date">${formatDate(m.match_datetime)}</span>
