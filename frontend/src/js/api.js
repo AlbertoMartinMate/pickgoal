@@ -41,9 +41,10 @@ export const api = {
     grouped: () => request('/matches/grouped'),
     list: (params = '') => request(`/matches/${params}`),
     get: (id) => request(`/matches/${id}`),
+    today: () => request('/matches/today'),
+    setResult: (id, home, away) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify({ home_score: home, away_score: away }) }),
     sync: () => request('/matches/sync', { method: 'POST' }),
-    updateResult: (id, data) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify(data) }),
-    recalculateAll: () => request('/matches/recalculate-all', { method: 'POST' }),
+    recalculate: () => request('/matches/recalculate', { method: 'POST' }),
   },
 
   predictions: {
@@ -77,9 +78,16 @@ export const api = {
 
   board: {
     messages: (page = 1, leagueId = null) => request(`/board/?page=${page}${leagueId ? `&league_id=${leagueId}` : ''}`),
+    unread: (leagueId, since) => request(`/board/unread?league_id=${leagueId}&since=${encodeURIComponent(since)}`),
     post: (message, leagueId = null) => request('/board/', { method: 'POST', body: JSON.stringify({ message, league_id: leagueId }) }),
     pin: (id) => request(`/board/${id}/pin`, { method: 'POST' }),
     reply: (id, message) => request(`/board/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
     delete: (id) => request(`/board/${id}`, { method: 'DELETE' }),
+  },
+
+  notifications: {
+    vapidPublicKey: () => request('/notifications/vapid-public-key'),
+    subscribe: (subscription) => request('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
+    send: (data) => request('/notifications/send', { method: 'POST', body: JSON.stringify(data) }),
   },
 };

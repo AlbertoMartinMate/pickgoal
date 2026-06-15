@@ -48,8 +48,12 @@ def sync_full_calendar(app):
                 if existing:
                     existing.phase = phase
                     existing.group_name = group_name
-                    existing.home_team = home_team
-                    existing.away_team = away_team
+                    # Don't overwrite a known team name with TBD — API can temporarily
+                    # return null for knockout teams already resolved in a prior sync
+                    if home_team != 'TBD' or existing.home_team == 'TBD':
+                        existing.home_team = home_team
+                    if away_team != 'TBD' or existing.away_team == 'TBD':
+                        existing.away_team = away_team
                     existing.match_datetime = dt
                     existing.status = status
                     existing.home_score_90 = home_90
@@ -80,10 +84,25 @@ def sync_live_matches(app):
     with app.app_context():
         from app import db
         from app.models import Match
-        from app.utils import (fetch_live_matches, map_api_status,
-                               compute_result_90, recalculate_match_predictions)
+        from app.utils import (fetch_live_matches, fetch_match_by_api_id,
+                               map_api_status, compute_result_90,
+                               recalculate_match_predictions)
         try:
             live_data = fetch_live_matches()
+            live_api_ids = {m['id'] for m in live_data}
+
+            # Fetch individually any match that is 'live' in our DB but no longer
+            # appears in the IN_PLAY/PAUSED feed — it has likely just finished
+            db_live = Match.query.filter_by(status='live').all()
+            for db_match in db_live:
+                if db_match.api_id not in live_api_ids:
+                    try:
+                        fetched = fetch_match_by_api_id(db_match.api_id)
+                        if fetched:
+                            live_data.append(fetched)
+                    except Exception as e:
+                        logger.error('Error fetching match api_id=%s: %s', db_match.api_id, e)
+
             for m in live_data:
                 existing = Match.query.filter_by(api_id=m['id']).first()
                 if not existing:
@@ -100,7 +119,8 @@ def sync_live_matches(app):
                 if prev_status != 'finished' and existing.status == 'finished':
                     db.session.commit()
                     recalculate_match_predictions(existing)
-                    return
+                    # Continue — don't return; there may be other live matches to process
+
             db.session.commit()
         except Exception as e:
             logger.error('Error actualizando partidos en vivo: %s', e)
@@ -231,9 +251,7 @@ def generate_bot_predictions(app):
 
 
 def init_scheduler(app):
-    print('[scheduler] init_scheduler llamado', flush=True)
     if scheduler.running:
-        print('[scheduler] ya estaba corriendo — saliendo', flush=True)
         return
 
     scheduler.add_job(
@@ -258,6 +276,4 @@ def init_scheduler(app):
         replace_existing=True,
     )
     scheduler.start()
-    job_ids = [j.id for j in scheduler.get_jobs()]
-    print(f'[scheduler] iniciado — jobs: {job_ids}', flush=True)
-    logger.info('Scheduler iniciado — jobs registrados: %s', job_ids)
+    logger.info('Scheduler iniciado — jobs registrados: %s', [j.id for j in scheduler.get_jobs()])

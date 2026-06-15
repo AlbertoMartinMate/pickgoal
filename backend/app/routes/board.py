@@ -1,10 +1,46 @@
+import logging
+import re
+from datetime import timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import BoardMessage, User, LeagueMember
+from app.models import BoardMessage, User, LeagueMember, League
+
+logger = logging.getLogger(__name__)
 
 board_bp = Blueprint('board', __name__)
 PAGE_SIZE = 50
+
+
+@board_bp.route('/unread', methods=['GET'])
+def get_unread_count():
+    league_id = request.args.get('league_id', None, type=int)
+    since = request.args.get('since', None)
+
+    if not league_id or not since:
+        return jsonify({'count': 0}), 200
+
+    try:
+        from datetime import datetime
+        # JS toISOString() produces 3-decimal milliseconds (e.g. "...000Z").
+        # Python < 3.11 fromisoformat only accepts 0 or 6 decimal places,
+        # so we strip sub-seconds as a safe fallback.
+        clean = since.replace('Z', '+00:00')
+        try:
+            since_dt = datetime.fromisoformat(clean)
+        except ValueError:
+            since_dt = datetime.fromisoformat(clean[:19] + '+00:00')
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError):
+        return jsonify({'count': 0}), 200
+
+    count = (BoardMessage.query
+             .filter_by(league_id=league_id, parent_id=None, is_deleted=False)
+             .filter(BoardMessage.created_at > since_dt)
+             .count())
+
+    return jsonify({'count': count}), 200
 
 
 @board_bp.route('/', methods=['GET'])
@@ -49,7 +85,6 @@ def post_message():
     data = request.get_json()
     message = data.get('message', '').strip()
     league_id = data.get('league_id', None)
-
     if not message:
         return jsonify({'error': 'El mensaje no puede estar vacío'}), 400
     if len(message) > 500:
@@ -64,7 +99,63 @@ def post_message():
     msg = BoardMessage(user_id=user_id, message=message, league_id=league_id)
     db.session.add(msg)
     db.session.commit()
+
+    # Notify @mentioned users (skip bots and the author)
+    _notify_mentions(message, user_id, league_id)
+
     return jsonify({'message': msg.to_dict()}), 201
+
+
+def _notify_mentions(message, author_id, league_id):
+    """Fire-and-forget push notifications for @username mentions."""
+    try:
+        from app.routes.notifications import send_push_notification
+        if '@' not in message:
+            return
+        author = User.query.get(author_id)
+        league = League.query.get(league_id) if league_id else None
+        league_name = league.name if league else 'PickGoal'
+        tablon_url = f'https://pickgoal.es/#/tablon?liga={league_id}' if league_id else 'https://pickgoal.es/#/tablon'
+
+        snippet = message[:100] + ('…' if len(message) > 100 else '')
+
+        # @todos / @everyone → notify all league members
+        broadcast_keywords = {'@todos', '@everyone'}
+        if any(kw in message.lower() for kw in broadcast_keywords):
+            if league_id:
+                member_ids = (db.session.query(LeagueMember.user_id)
+                              .filter_by(league_id=league_id)
+                              .all())
+                recipient_ids = [r[0] for r in member_ids if r[0] != author_id]
+                for uid in recipient_ids:
+                    try:
+                        send_push_notification(
+                            uid,
+                            f'📣 {author.username} — {league_name}',
+                            snippet,
+                            url=tablon_url,
+                        )
+                    except Exception as e:
+                        logger.error('[mention] error enviando broadcast a %s: %s', uid, e, exc_info=True)
+            return
+
+        # Individual @username mentions — handles multi-word usernames (e.g. "Alberto Martin")
+        all_users = User.query.filter(User.is_bot == False).all()
+        mentioned_users = [u for u in all_users if f'@{u.username}' in message]
+        for mentioned in mentioned_users:
+            if mentioned.id == author_id:
+                continue
+            try:
+                send_push_notification(
+                    mentioned.id,
+                    f'📣 {author.username} te ha mencionado',
+                    snippet,
+                    url=tablon_url,
+                )
+            except Exception as e:
+                logger.error('[mention] error enviando push a %s: %s', mentioned.id, e, exc_info=True)
+    except Exception as exc:
+        logger.error('[mention] error en _notify_mentions: %s', exc, exc_info=True)
 
 
 @board_bp.route('/<int:msg_id>/pin', methods=['POST'])

@@ -144,7 +144,7 @@ input[type='number'] {
 .page-title {
   font-size: v.$fs-2xl;
   font-weight: v.$fw-black;
-  margin-bottom: v.$sp-8;
+  margin-bottom: v.$sp-2;
   color: v.$text;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -152,4 +152,18 @@ input[type='number'] {
   span { color: v.$accent; }
 
   @media (max-width: v.$bp-md) { font-size: v.$fs-xl; }
+}
+
+.page-league-name {
+  display: block;
+  text-align: center;
+  font-size: v.$fs-xl;
+  font-weight: v.$fw-bold;
+  color: v.$accent;
+  letter-spacing: -0.02em;
+  padding: v.$sp-5 v.$sp-4;
+  margin-bottom: v.$sp-6;
+  border-bottom: 1px solid v.$accent-dim;
+
+  @media (max-width: v.$bp-md) { font-size: v.$fs-lg; }
 }

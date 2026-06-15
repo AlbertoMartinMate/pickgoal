@@ -21,10 +21,19 @@ def fetch_wc_matches():
 
 
 def fetch_live_matches():
-    url = f'{FOOTBALL_API_BASE}/competitions/WC/matches?status=IN_PLAY'
+    # Include PAUSED (half-time) so we don't miss score updates during the break
+    url = f'{FOOTBALL_API_BASE}/competitions/WC/matches?status=IN_PLAY,PAUSED'
     resp = requests.get(url, headers=get_api_headers(), timeout=10)
     resp.raise_for_status()
     return resp.json().get('matches', [])
+
+
+def fetch_match_by_api_id(api_id):
+    """Fetch a single match by its football-data.org API id."""
+    url = f'{FOOTBALL_API_BASE}/matches/{api_id}'
+    resp = requests.get(url, headers=get_api_headers(), timeout=10)
+    resp.raise_for_status()
+    return resp.json()
 
 
 def map_api_phase(stage: str) -> str:

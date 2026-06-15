@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { router } from '../router.js';
 import { leagueGateHtml } from '../ui.js';
 
 function getActiveLeagueId() {
@@ -26,13 +27,26 @@ export async function renderRanking(el) {
     ]);
     const currentUser = auth.getUser();
     const activeLeague = leaguesRes.leagues.find(l => l.id === leagueId);
-    const title = activeLeague ? activeLeague.name : 'Clasificación General';
+
+    // Mirror unread badge from nav to ranking page button
+    const navBadge = document.getElementById('tablonBadge');
+    const hasUnread = navBadge && !navBadge.classList.contains('hidden');
+    const unreadCount = hasUnread ? navBadge.textContent : '';
 
     const matchesPlayed = ranking[0]?.matches_played ?? 0;
 
     el.innerHTML = `
+      ${activeLeague ? `<span class="page-league-name">${activeLeague.name}</span>` : ''}
       <div class="container">
-        <h1 class="page-title">${title}</h1>
+        <div class="ranking-header">
+          <h1 class="page-title">Clasificación</h1>
+          ${leagueId ? `
+            <button class="ranking-tablon-btn" data-league-id="${leagueId}">
+              💬 Tablón
+              <span class="ranking-tablon-btn__badge${hasUnread ? '' : ' hidden'}">${unreadCount}</span>
+            </button>
+          ` : ''}
+        </div>
         <div class="ranking-table-wrapper">
           <table class="ranking-table">
             <thead>
@@ -74,6 +88,10 @@ export async function renderRanking(el) {
         </div>
       </div>
     `;
+    el.querySelector('.ranking-tablon-btn')?.addEventListener('click', () => {
+      router.navigate(`/tablon?liga=${leagueId}`);
+    });
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }

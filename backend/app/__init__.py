@@ -55,6 +55,7 @@ def create_app():
     from app.routes.leagues import leagues_bp
     from app.routes.board import board_bp
     from app.routes.home import home_bp
+    from app.routes.notifications import notifications_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(matches_bp, url_prefix='/api/matches')
@@ -62,6 +63,7 @@ def create_app():
     app.register_blueprint(leagues_bp, url_prefix='/api/leagues')
     app.register_blueprint(board_bp, url_prefix='/api/board')
     app.register_blueprint(home_bp, url_prefix='/api/home')
+    app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
 
     with app.app_context():
         db.create_all()

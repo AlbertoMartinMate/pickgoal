@@ -39,6 +39,34 @@
       color: #39FF14;
     }
   }
+
+  &__icon-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__badge {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    background: #ff3b30;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: none;
+
+    &.hidden { display: none; }
+  }
 }
 
 // Espacio extra en el contenido para que no quede oculto bajo el bottom nav

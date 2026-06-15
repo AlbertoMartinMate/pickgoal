@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { router } from '../router.js';
 import { formatDate } from '../ui.js';
 
 export async function renderHome(el) {
@@ -39,6 +40,23 @@ export async function renderHome(el) {
       ${pointsModalHtml()}
     `;
     attachPointsModal(el);
+
+    el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('[data-go-ranking]') || e.target.closest('a')) return;
+        localStorage.setItem('activeLeagueId', card.dataset.leagueId);
+        router.navigate(`/ligas/${card.dataset.leagueId}`);
+      });
+    });
+
+    el.querySelectorAll('[data-go-ranking]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        localStorage.setItem('activeLeagueId', btn.dataset.goRanking);
+        router.navigate('/ranking');
+      });
+    });
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando el inicio: ${err.message}</p></div>`;
   }
@@ -156,7 +174,7 @@ function leagueCard(s) {
   const mp = s.matches_played ?? 0;
 
   return `
-    <div class="league-card">
+    <div class="league-card" data-league-id="${s.league_id}">
       <div class="league-card__header">
         <h2 class="league-card__name">${s.league_name}</h2>
         <span class="league-card__rank">${ordinal(s.rank)} de ${s.member_count}</span>
@@ -179,7 +197,7 @@ function leagueCard(s) {
         Pronósticos realizados: <strong>${pm}/${mp}</strong> partidos
       </div>
       ${nextHtml}
-      <a class="league-card__cta btn btn--ghost btn--sm" href="#/ranking">Ver clasificación</a>
+      <button class="league-card__cta btn btn--ghost btn--sm" data-go-ranking="${s.league_id}">Ver clasificación</button>
     </div>
   `;
 }

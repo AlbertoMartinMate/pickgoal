@@ -235,6 +235,30 @@
     background: v.$accent-dim;
     color: v.$accent;
   }
+
+  &--broadcast {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-bottom: 1px solid v.$border;
+
+    .mention-item__name {
+      font-weight: v.$fw-semi;
+      color: #FFA500;
+    }
+
+    .mention-item__desc {
+      font-size: v.$fs-xs;
+      color: v.$text-muted;
+    }
+
+    &:hover {
+      background: rgba(255, 165, 0, 0.1);
+      color: v.$text;
+
+      .mention-item__name { color: #FFA500; }
+    }
+  }
 }
 
 .mention {

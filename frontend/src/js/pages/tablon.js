@@ -7,6 +7,13 @@ export async function renderTablon(el, { query = {} } = {}) {
 
   const user = auth.getUser();
   let leagueId = query.liga ? parseInt(query.liga) : null;
+
+  // Mark as read immediately if leagueId is known from query
+  if (leagueId) {
+    localStorage.setItem(`tablon_last_read_${leagueId}`, new Date().toISOString());
+    const badge = document.getElementById('tablonBadge');
+    if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
+  }
   let leagueName = null;
   let members = [];
   let page = 1;
@@ -356,13 +363,24 @@ export async function renderTablon(el, { query = {} } = {}) {
       m.username.toLowerCase().startsWith(query) && m.id !== user?.id
     );
 
-    if (!filtered.length) {
+    const todosItem = auth.isAdmin() && 'todos'.startsWith(query)
+      ? [{ username: 'todos', description: 'Notificar a todos los miembros' }]
+      : [];
+
+    const allItems = [...todosItem, ...filtered.slice(0, 6)];
+
+    if (!allItems.length) {
       dropdown.classList.add('hidden');
       return;
     }
 
-    dropdown.innerHTML = filtered.slice(0, 6).map(m =>
-      `<div class="mention-item" data-username="${escapeHtml(m.username)}">${escapeHtml(m.username)}</div>`
+    dropdown.innerHTML = allItems.map(m =>
+      m.description
+        ? `<div class="mention-item mention-item--broadcast" data-username="${escapeHtml(m.username)}">
+             <span class="mention-item__name">@${escapeHtml(m.username)}</span>
+             <span class="mention-item__desc">${escapeHtml(m.description)}</span>
+           </div>`
+        : `<div class="mention-item" data-username="${escapeHtml(m.username)}">${escapeHtml(m.username)}</div>`
     ).join('');
     dropdown.classList.remove('hidden');
 
