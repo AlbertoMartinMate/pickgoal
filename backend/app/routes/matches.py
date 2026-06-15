@@ -151,11 +151,30 @@ def recalculate_points():
     if not admin.is_admin:
         return jsonify({'error': 'Sin permisos'}), 403
 
-    from app.utils import recalculate_match_predictions
+    from app.utils import calculate_prediction_points
     try:
+        for pred in Prediction.query.all():
+            pred.pts_result = 0
+            pred.pts_score = 0
+            pred.total_points = 0
+        db.session.commit()
+
         finished = Match.query.filter_by(status='finished').all()
         for match in finished:
-            recalculate_match_predictions(match)
+            for pred in Prediction.query.filter_by(match_id=match.id).all():
+                r, s = calculate_prediction_points(pred, match)
+                pred.pts_result = r
+                pred.pts_score = s
+                pred.total_points = r + s
+        db.session.commit()
+
+        for u in User.query.all():
+            pts = db.session.query(func.sum(Prediction.total_points)).filter_by(user_id=u.id).scalar() or 0
+            champ_pts = db.session.query(func.sum(ChampionPrediction.points_earned)).filter_by(user_id=u.id).scalar() or 0
+            u.total_points_all_time = pts + champ_pts
+        db.session.commit()
+
         return jsonify({'message': f'Puntos recalculados para {len(finished)} partido(s)'}), 200
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500

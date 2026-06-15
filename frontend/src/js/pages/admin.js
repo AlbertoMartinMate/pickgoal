@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { showToast, formatDate } from '../ui.js';
+import { showToast } from '../ui.js';
 
 const PHASES = [
   { key: 'group',    label: 'Grupos'        },
@@ -21,10 +21,12 @@ export async function renderAdmin(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const [{ users }, { matches: todayMatches }] = await Promise.all([
+    const [{ users }, { groups }] = await Promise.all([
       api.auth.users(),
-      api.matches.today(),
+      api.matches.grouped(),
     ]);
+
+    const phaseMatches = buildPhaseMatches(groups);
 
     el.innerHTML = `
       <div class="container">
@@ -34,20 +36,11 @@ export async function renderAdmin(el) {
           <h2 class="admin-section__title">Scheduler</h2>
           <p class="admin-section__desc">Sincroniza el calendario cada 24h y actualiza partidos en vivo cada 5 min.</p>
           <button class="btn btn--primary" id="btnSync">Sincronizar ahora</button>
-          <button class="btn btn--secondary" id="btnRecalculate" style="margin-left:8px">Recalcular puntos</button>
           <div id="syncResult"></div>
         </section>
 
         <section class="section admin-section">
-          <h2>Resultados de hoy</h2>
-          ${todayMatches.length === 0
-            ? '<p>No hay partidos pendientes hoy.</p>'
-            : `<div id="todayMatchesList">${todayMatches.map(matchResultRow).join('')}</div>`
-          }
-        </section>
-
-        <section class="section admin-section">
-          <h2>Premiar campeón</h2>
+          <h2 class="admin-section__title">Premiar campeón</h2>
           <form class="form form--inline" id="awardForm">
             <input class="form__input" type="text" id="winnerTeam" placeholder="Equipo campeón" />
             <button class="btn btn--primary" type="submit">Premiar (+10 pts)</button>
@@ -55,7 +48,12 @@ export async function renderAdmin(el) {
         </section>
 
         <section class="section admin-section">
-          <h2>Notificaciones push</h2>
+          <h2 class="admin-section__title">Gestión de resultados</h2>
+          ${buildResultSection(phaseMatches)}
+        </section>
+
+        <section class="section admin-section">
+          <h2 class="admin-section__title">Notificaciones push</h2>
           <form class="form" id="pushForm">
             <div class="form__group">
               <label class="form__label">Título</label>
@@ -83,149 +81,224 @@ export async function renderAdmin(el) {
         </section>
 
         <section class="section admin-section">
-          <h2>Usuarios (${users.length})</h2>
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>ID</th><th>Usuario</th><th>Email</th><th>País</th><th>Admin</th><th>Acción</th>
-              </tr>
-            </thead>
-            <tbody id="usersTableBody">
-              ${users.map(userRow).join('')}
-            </tbody>
-          </table>
+          <h2 class="admin-section__title">Usuarios (${users.length})</h2>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th><th>Usuario</th><th>Email</th><th>País</th><th>Admin</th><th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+                ${users.map(userRow).join('')}
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
     `;
 
-    document.getElementById('btnSync').addEventListener('click', async () => {
-      const res = document.getElementById('syncResult');
-      res.textContent = 'Sincronizando…';
-      try {
-        await api.matches.sync();
-        res.textContent = '✓ Sincronización completada';
-        showToast('Sincronización completada');
-      } catch (err) {
-        res.textContent = `Error: ${err.message}`;
-        showToast(err.message, 'error');
-      }
-    });
-
-    document.getElementById('btnRecalculate').addEventListener('click', async () => {
-      const res = document.getElementById('syncResult');
-      res.textContent = 'Recalculando puntos…';
-      try {
-        const { message } = await api.matches.recalculate();
-        res.textContent = `✓ ${message}`;
-        showToast(message);
-      } catch (err) {
-        res.textContent = `Error: ${err.message}`;
-        showToast(err.message, 'error');
-      }
-    });
-
-    const todayList = document.getElementById('todayMatchesList');
-    if (todayList) {
-      todayList.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.btn-save-result');
-        if (!btn) return;
-        const matchId = parseInt(btn.dataset.id);
-        const row = btn.closest('.match-result-row');
-        const home = parseInt(row.querySelector('.input-home').value);
-        const away = parseInt(row.querySelector('.input-away').value);
-        if (isNaN(home) || isNaN(away)) {
-          showToast('Introduce marcadores válidos', 'error');
-          return;
-        }
-        btn.disabled = true;
-        try {
-          const { message } = await api.matches.setResult(matchId, home, away);
-          row.querySelector('.result-status').textContent = '✓ Guardado';
-          showToast(message);
-        } catch (err) {
-          row.querySelector('.result-status').textContent = `Error: ${err.message}`;
-          showToast(err.message, 'error');
-          btn.disabled = false;
-        }
-      });
-    }
-
-    document.getElementById('awardForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const team = document.getElementById('winnerTeam').value.trim();
-      if (!team) return;
-      try {
-        const { message } = await api.predictions.awardChampion(team);
-        showToast(message);
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
-
-    // Push notification form
-    const pushTarget = document.getElementById('pushTarget');
-    const pushTargetIdGroup = document.getElementById('pushTargetIdGroup');
-    pushTarget.addEventListener('change', () => {
-      pushTargetIdGroup.classList.toggle('hidden', pushTarget.value === 'all');
-    });
-
-    document.getElementById('pushForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const rawTitle = document.getElementById('pushTitle').value.trim() || 'Aviso';
-      const body = document.getElementById('pushBody').value.trim();
-      const target = pushTarget.value;
-      const targetId = parseInt(document.getElementById('pushTargetId').value) || null;
-      const resultEl = document.getElementById('pushResult');
-
-      const payload = { title: `📣 PickGoal — ${rawTitle}`, body };
-      if (target === 'league' && targetId) payload.league_id = targetId;
-      if (target === 'user' && targetId) payload.user_id = targetId;
-
-      resultEl.textContent = 'Enviando…';
-      try {
-        const { sent } = await api.notifications.send(payload);
-        resultEl.textContent = `✓ Enviada a ${sent} suscripción(es)`;
-        showToast(`Notificación enviada a ${sent} suscripción(es)`);
-      } catch (err) {
-        resultEl.textContent = `Error: ${err.message}`;
-        showToast(err.message, 'error');
-      }
-    });
-
-    document.getElementById('usersTableBody').addEventListener('click', async (e) => {
-      const btn = e.target.closest('.toggle-admin');
-      if (!btn) return;
-      const uid = parseInt(btn.dataset.id);
-      try {
-        const { user } = await api.auth.toggleAdmin(uid);
-        btn.closest('tr').querySelector('.admin-badge').textContent = user.is_admin ? 'Sí' : 'No';
-        showToast(`${user.username} ${user.is_admin ? 'ahora es admin' : 'ya no es admin'}`);
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
+    attachEvents(el);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
   }
 }
 
-function matchResultRow(m) {
-  const time = new Date(m.match_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  const homeVal = m.home_score_90 ?? '';
-  const awayVal = m.away_score_90 ?? '';
+function buildPhaseMatches(groups) {
+  const map = {};
+  for (const group of groups) {
+    const key = group.phase;
+    if (!map[key]) map[key] = [];
+    map[key].push(...group.matches);
+  }
+  return map;
+}
+
+function buildResultSection(phaseMatches) {
+  const available = PHASES.filter(p => phaseMatches[p.key]?.length);
+  if (!available.length) return '<p class="admin-section__desc">No hay partidos cargados.</p>';
+
+  const tabs = available.map((p, i) => `
+    <button class="admin-result-tab${i === 0 ? ' admin-result-tab--active' : ''}" data-phase="${p.key}">
+      ${p.label}
+    </button>
+  `).join('');
+
+  const panels = available.map((p, i) => `
+    <div class="admin-result-panel${i === 0 ? '' : ' admin-result-panel--hidden'}" data-phase="${p.key}">
+      ${(phaseMatches[p.key] || []).map(matchRow).join('')}
+    </div>
+  `).join('');
+
   return `
-    <div class="match-result-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-      <span style="min-width:50px;font-size:13px;color:var(--color-text-muted)">${time}</span>
-      <span style="flex:1;min-width:120px">${m.home_team}</span>
-      <input class="form__input input-home" type="number" min="0" value="${homeVal}" placeholder="0" style="width:52px;text-align:center" />
-      <span>–</span>
-      <input class="form__input input-away" type="number" min="0" value="${awayVal}" placeholder="0" style="width:52px;text-align:center" />
-      <span style="flex:1;min-width:120px">${m.away_team}</span>
-      <button class="btn btn--primary btn--xs btn-save-result" data-id="${m.id}">Guardar</button>
-      <span class="result-status" style="font-size:13px"></span>
+    <div class="admin-result-tabs">${tabs}</div>
+    <div id="resultPanels">${panels}</div>
+    <div class="admin-result-footer">
+      <button class="btn btn--danger" id="btnRecalcAll">Recalcular todos los puntos</button>
+      <span id="recalcResult" class="admin-result-footer__msg"></span>
     </div>
   `;
+}
+
+function matchRow(m) {
+  const isFinished = m.status === 'finished';
+  const homeVal = isFinished && m.home_score_90 != null ? m.home_score_90 : '';
+  const awayVal = isFinished && m.away_score_90 != null ? m.away_score_90 : '';
+  const badge = isFinished
+    ? '<span class="admin-match-badge admin-match-badge--done">Terminado</span>'
+    : '<span class="admin-match-badge admin-match-badge--pending">Pendiente</span>';
+  const date = shortDate(m.match_datetime);
+
+  return `
+    <div class="admin-match-row" data-id="${m.id}">
+      <div class="admin-match-row__info">
+        <span class="admin-match-row__teams">${m.home_team} vs ${m.away_team}</span>
+        <span class="admin-match-row__date">${date}</span>
+        ${badge}
+      </div>
+      <div class="admin-match-row__score">
+        <input type="number" min="0" max="20" class="admin-match-row__input" value="${homeVal}" placeholder="L" />
+        <span class="admin-match-row__dash">-</span>
+        <input type="number" min="0" max="20" class="admin-match-row__input" value="${awayVal}" placeholder="V" />
+        <button class="btn btn--primary btn--xs admin-match-row__save">Guardar</button>
+      </div>
+    </div>
+  `;
+}
+
+function shortDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+}
+
+function attachEvents(el) {
+  document.getElementById('btnSync')?.addEventListener('click', async () => {
+    const res = document.getElementById('syncResult');
+    res.textContent = 'Sincronizando…';
+    try {
+      await api.matches.sync();
+      res.textContent = '✓ Sincronización completada';
+      showToast('Sincronización completada');
+    } catch (err) {
+      res.textContent = `Error: ${err.message}`;
+      showToast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('awardForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const team = document.getElementById('winnerTeam').value.trim();
+    if (!team) return;
+    try {
+      const { message } = await api.predictions.awardChampion(team);
+      showToast(message);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  // Phase tabs
+  el.querySelectorAll('.admin-result-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      el.querySelectorAll('.admin-result-tab').forEach(t => t.classList.remove('admin-result-tab--active'));
+      el.querySelectorAll('.admin-result-panel').forEach(p => p.classList.add('admin-result-panel--hidden'));
+      tab.classList.add('admin-result-tab--active');
+      el.querySelector(`.admin-result-panel[data-phase="${tab.dataset.phase}"]`)
+        ?.classList.remove('admin-result-panel--hidden');
+    });
+  });
+
+  // Save per match
+  document.getElementById('resultPanels')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.admin-match-row__save');
+    if (!btn) return;
+    const row = btn.closest('.admin-match-row');
+    const matchId = parseInt(row.dataset.id);
+    const inputs = row.querySelectorAll('.admin-match-row__input');
+    const home = inputs[0].value;
+    const away = inputs[1].value;
+    if (home === '' || away === '') {
+      showToast('Introduce ambos marcadores', 'error');
+      return;
+    }
+    btn.disabled = true;
+    try {
+      await api.matches.setResult(matchId, parseInt(home), parseInt(away));
+      const badge = row.querySelector('.admin-match-badge');
+      if (badge) {
+        badge.className = 'admin-match-badge admin-match-badge--done';
+        badge.textContent = 'Terminado';
+      }
+      showToast(`Resultado ${home}-${away} guardado`);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Recalculate all
+  document.getElementById('btnRecalcAll')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btnRecalcAll');
+    const msg = document.getElementById('recalcResult');
+    btn.disabled = true;
+    msg.textContent = 'Recalculando…';
+    try {
+      const { message } = await api.matches.recalculate();
+      msg.textContent = `✓ ${message}`;
+      showToast(message);
+    } catch (err) {
+      msg.textContent = `Error: ${err.message}`;
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Push notifications
+  const pushTarget = document.getElementById('pushTarget');
+  const pushTargetIdGroup = document.getElementById('pushTargetIdGroup');
+  pushTarget?.addEventListener('change', () => {
+    pushTargetIdGroup.classList.toggle('hidden', pushTarget.value === 'all');
+  });
+
+  document.getElementById('pushForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const rawTitle = document.getElementById('pushTitle').value.trim() || 'Aviso';
+    const body = document.getElementById('pushBody').value.trim();
+    const target = pushTarget.value;
+    const targetId = parseInt(document.getElementById('pushTargetId').value) || null;
+    const resultEl = document.getElementById('pushResult');
+
+    const payload = { title: `📣 PickGoal — ${rawTitle}`, body };
+    if (target === 'league' && targetId) payload.league_id = targetId;
+    if (target === 'user' && targetId) payload.user_id = targetId;
+
+    resultEl.textContent = 'Enviando…';
+    try {
+      const { sent } = await api.notifications.send(payload);
+      resultEl.textContent = `✓ Enviada a ${sent} suscripción(es)`;
+      showToast(`Notificación enviada a ${sent} suscripción(es)`);
+    } catch (err) {
+      resultEl.textContent = `Error: ${err.message}`;
+      showToast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('usersTableBody')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.toggle-admin');
+    if (!btn) return;
+    const uid = parseInt(btn.dataset.id);
+    try {
+      const { user } = await api.auth.toggleAdmin(uid);
+      btn.closest('tr').querySelector('.admin-badge').textContent = user.is_admin ? 'Sí' : 'No';
+      showToast(`${user.username} ${user.is_admin ? 'ahora es admin' : 'ya no es admin'}`);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
 }
 
 function userRow(u) {
