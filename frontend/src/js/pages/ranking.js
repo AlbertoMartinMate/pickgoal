@@ -11,7 +11,6 @@ export async function renderRanking(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    // Gate: logged-in users must be in at least one league
     if (auth.isLoggedIn()) {
       const { leagues } = await api.leagues.my();
       if (leagues.length === 0) {
@@ -29,6 +28,8 @@ export async function renderRanking(el) {
     const activeLeague = leaguesRes.leagues.find(l => l.id === leagueId);
     const title = activeLeague ? activeLeague.name : 'Clasificación General';
 
+    const matchesPlayed = ranking[0]?.matches_played ?? 0;
+
     el.innerHTML = `
       <div class="container">
         <h1 class="page-title">${title}</h1>
@@ -38,27 +39,36 @@ export async function renderRanking(el) {
               <tr>
                 <th>#</th>
                 <th>Usuario</th>
-                <th>País</th>
+                <th>Status</th>
+                <th title="Predicciones hechas / partidos jugados">Pronósticos</th>
+                <th title="Resultados 1X2 acertados / predicciones hechas">1X2</th>
+                <th title="Marcadores exactos acertados / predicciones hechas">Exactos</th>
                 <th>Puntos</th>
-                <th title="Pronósticos 1X2 acertados">1X2</th>
-                <th title="Resultados exactos acertados">Exactos</th>
               </tr>
             </thead>
             <tbody>
-              ${ranking.map(u => `
-                <tr class="${currentUser && u.id === currentUser.id ? 'ranking-table__row--me' : ''}">
-                  <td class="ranking-table__pos" data-pos="${u.position}">${u.position}</td>
-                  <td>
-                    <a class="ranking-table__link" href="#/jugador/${u.id}">
-                      <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>${u.username}
-                    </a>
-                  </td>
-                  <td>${u.country || '—'}</td>
-                  <td class="ranking-table__pts">${u.total_points}</td>
-                  <td class="ranking-table__stat">${u.correct_results}</td>
-                  <td class="ranking-table__stat">${u.exact_scores}</td>
-                </tr>
-              `).join('')}
+              ${ranking.map(u => {
+                const pm = u.predictions_made ?? 0;
+                const pronosticos = `${pm}/${matchesPlayed}`;
+                const ox2 = `${u.correct_results ?? 0}/${pm}`;
+                const exactos = `${u.exact_scores ?? 0}/${pm}`;
+                const isMe = currentUser && u.id === currentUser.id;
+                return `
+                  <tr class="${isMe ? 'ranking-table__row--me' : ''}">
+                    <td class="ranking-table__pos" data-pos="${u.position}">${u.position}</td>
+                    <td>
+                      <a class="ranking-table__link" href="#/jugador/${u.id}">
+                        <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>${u.username}
+                      </a>
+                    </td>
+                    <td class="ranking-table__stat ranking-table__status">${u.status?.name || '—'}</td>
+                    <td class="ranking-table__stat">${pronosticos}</td>
+                    <td class="ranking-table__stat">${ox2}</td>
+                    <td class="ranking-table__stat">${exactos}</td>
+                    <td class="ranking-table__pts">${u.total_points}</td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>

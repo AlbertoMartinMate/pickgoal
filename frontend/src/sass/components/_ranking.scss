@@ -87,6 +87,11 @@
 
     &:hover { color: v.$accent; }
   }
+
+  &__status {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
 }
 
 .status-emoji {

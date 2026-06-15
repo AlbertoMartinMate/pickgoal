@@ -152,6 +152,9 @@ function leagueCard(s) {
          Todos los partidos predichos
        </div>`;
 
+  const pm = s.predictions_made ?? 0;
+  const mp = s.matches_played ?? 0;
+
   return `
     <div class="league-card">
       <div class="league-card__header">
@@ -164,13 +167,16 @@ function leagueCard(s) {
           <span class="league-card__stat-label">Puntos</span>
         </div>
         <div class="league-card__stat">
-          <span class="league-card__stat-val">${s.correct_results}/${s.predictions_made}</span>
+          <span class="league-card__stat-val">${s.correct_results}/${pm}</span>
           <span class="league-card__stat-label">1X2</span>
         </div>
         <div class="league-card__stat">
-          <span class="league-card__stat-val">${s.exact_scores}/${s.predictions_made}</span>
+          <span class="league-card__stat-val">${s.exact_scores}/${pm}</span>
           <span class="league-card__stat-label">Exactos</span>
         </div>
+      </div>
+      <div class="league-card__pred-row">
+        Pronósticos realizados: <strong>${pm}/${mp}</strong> partidos
       </div>
       ${nextHtml}
       <a class="league-card__cta btn btn--ghost btn--sm" href="#/ranking">Ver clasificación</a>

@@ -42,6 +42,8 @@ export const api = {
     list: (params = '') => request(`/matches/${params}`),
     get: (id) => request(`/matches/${id}`),
     sync: () => request('/matches/sync', { method: 'POST' }),
+    updateResult: (id, data) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify(data) }),
+    recalculateAll: () => request('/matches/recalculate-all', { method: 'POST' }),
   },
 
   predictions: {

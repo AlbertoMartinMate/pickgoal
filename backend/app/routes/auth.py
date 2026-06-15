@@ -137,6 +137,7 @@ def reset_password():
 
 @auth_bp.route('/ranking', methods=['GET'])
 def ranking():
+    from app.models import Match
     league_id = request.args.get('league_id', type=int)
 
     if league_id is not None:
@@ -146,6 +147,11 @@ def ranking():
         users = User.query.filter(User.id.in_(member_ids)).all()
     else:
         users = User.query.all()
+
+    finished_match_ids = set(
+        row[0] for row in db.session.query(Match.id).filter_by(status='finished').all()
+    )
+    matches_played = len(finished_match_ids)
 
     ranking_data = []
     for u in users:
@@ -161,12 +167,15 @@ def ranking():
         total_points = sum(p.total_points for p in preds) + (champ.points_earned if champ else 0)
         correct_results = sum(1 for p in preds if p.pts_result > 0)
         exact_scores = sum(1 for p in preds if p.pts_score > 0)
+        predictions_made = sum(1 for p in preds if p.match_id in finished_match_ids)
 
         ranking_data.append({
             **u.to_dict(),
             'total_points': total_points,
             'correct_results': correct_results,
             'exact_scores': exact_scores,
+            'predictions_made': predictions_made,
+            'matches_played': matches_played,
         })
 
     ranking_data.sort(key=lambda x: x['total_points'], reverse=True)

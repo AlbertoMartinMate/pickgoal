@@ -123,6 +123,150 @@
   }
 }
 
+// ─── Gestión de resultados ────────────────────────────────────────────────────
+.admin-result-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$sp-1;
+  margin-bottom: v.$sp-4;
+  border-bottom: 1px solid v.$border;
+  padding-bottom: v.$sp-3;
+}
+
+.admin-result-tab {
+  padding: v.$sp-2 v.$sp-3;
+  border-radius: v.$r-md;
+  background: transparent;
+  border: 1px solid v.$border;
+  color: v.$text-muted;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all v.$t-fast;
+
+  &:hover {
+    color: v.$text;
+    border-color: v.$border-light;
+  }
+
+  &--active {
+    background: v.$accent-dim;
+    border-color: rgba(v.$accent, 0.3);
+    color: v.$accent;
+  }
+}
+
+.admin-result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+  margin-bottom: v.$sp-5;
+
+  &--hidden { display: none; }
+}
+
+.admin-match-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-3;
+  padding: v.$sp-3 v.$sp-4;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+  flex-wrap: wrap;
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__teams {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-medium;
+    color: v.$text;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  &__score {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    width: 48px;
+    padding: v.$sp-2 v.$sp-2;
+    background: v.$bg-input;
+    border: 1px solid v.$border;
+    border-radius: v.$r-sm;
+    color: v.$text;
+    font-size: v.$fs-sm;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button { appearance: none; margin: 0; }
+
+    &:focus {
+      outline: none;
+      border-color: rgba(v.$accent, 0.5);
+    }
+  }
+
+  &__dash {
+    color: v.$text-muted;
+    font-weight: v.$fw-bold;
+  }
+}
+
+.admin-match-badge {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  padding: 2px 8px;
+  border-radius: v.$r-full;
+  flex-shrink: 0;
+
+  &--done {
+    background: v.$accent-dim;
+    color: v.$accent;
+  }
+
+  &--pending {
+    background: v.$warning-dim;
+    color: v.$warning;
+  }
+}
+
+.admin-result-footer {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-4;
+  padding-top: v.$sp-4;
+  border-top: 1px solid v.$border;
+
+  &__msg {
+    font-size: v.$fs-sm;
+    color: v.$accent;
+  }
+}
+
 .admin-badge {
   display: inline-flex;
   align-items: center;

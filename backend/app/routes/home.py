@@ -8,18 +8,16 @@ from sqlalchemy import func
 home_bp = Blueprint('home', __name__)
 
 
-def _league_summary(user_id, league):
+def _league_summary(user_id, league, finished_match_ids, matches_played):
     """Calcula stats del usuario en una liga específica."""
-    # Predicciones del usuario en esta liga
     preds = Prediction.query.filter_by(user_id=user_id, league_id=league.id).all()
     champ = ChampionPrediction.query.filter_by(user_id=user_id, league_id=league.id).first()
 
     user_pts = sum(p.total_points for p in preds) + (champ.points_earned if champ else 0)
     correct_results = sum(1 for p in preds if p.pts_result > 0)
     exact_scores = sum(1 for p in preds if p.pts_score > 0)
-    finished_preds = sum(1 for p in preds if p.total_points is not None)
+    predictions_made = sum(1 for p in preds if p.match_id in finished_match_ids)
 
-    # Ranking dentro de la liga
     members = LeagueMember.query.filter_by(league_id=league.id).all()
     member_count = len(members)
 
@@ -32,7 +30,6 @@ def _league_summary(user_id, league):
     scores.sort(key=lambda x: x[1], reverse=True)
     rank = next((i + 1 for i, (uid, _) in enumerate(scores) if uid == user_id), member_count)
 
-    # Próximo partido sin predecir
     now = datetime.now(timezone.utc)
     predicted_ids = {p.match_id for p in preds}
     next_to_predict = None
@@ -48,7 +45,8 @@ def _league_summary(user_id, league):
         'rank': rank,
         'member_count': member_count,
         'total_points': user_pts,
-        'predictions_made': len(preds),
+        'predictions_made': predictions_made,
+        'matches_played': matches_played,
         'correct_results': correct_results,
         'exact_scores': exact_scores,
         'next_to_predict': next_to_predict,
@@ -64,7 +62,12 @@ def home_summary():
     leagues = [League.query.get(m.league_id) for m in memberships if m.league_id]
     leagues = [l for l in leagues if l]
 
-    leagues_summary = [_league_summary(user_id, league) for league in leagues]
+    finished_match_ids = set(
+        row[0] for row in db.session.query(Match.id).filter_by(status='finished').all()
+    )
+    matches_played = len(finished_match_ids)
+
+    leagues_summary = [_league_summary(user_id, league, finished_match_ids, matches_played) for league in leagues]
 
     # Próximos 3 partidos globales
     now = datetime.now(timezone.utc)
