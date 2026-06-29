@@ -1,6 +1,10 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { showToast, formatDate, leagueGateHtml } from '../ui.js';
+import { showToast, formatDate, leagueGateHtml, pointsModalHtml, attachPointsModal } from '../ui.js';
+
+const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final']);
+
+let _openPointsModal = null;
 
 function getActiveLeagueId() {
   const raw = localStorage.getItem('activeLeagueId');
@@ -69,8 +73,10 @@ export async function renderQuiniela(el) {
         <nav class="date-nav" id="dateNav"></nav>
         <div id="matchesContent"></div>
       </div>
+      ${pointsModalHtml()}
     `;
 
+    _openPointsModal = attachPointsModal(el);
     renderDateNav(days, defaultDay, byDay, predMap, leagueId);
 
   } catch (err) {
@@ -112,6 +118,12 @@ function renderMatches(matches, predMap, leagueId) {
 
   content.innerHTML = `<div class="matches-grid">${matches.map(m => matchCard(m, predMap[m.id])).join('')}</div>`;
 
+  if (_openPointsModal) {
+    content.querySelectorAll('.knockout-info-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => { e.stopPropagation(); _openPointsModal(); });
+    });
+  }
+
   if (auth.isLoggedIn()) {
     content.querySelectorAll('.prediction-form').forEach(form => {
       attachPredictionForm(form, predMap, leagueId);
@@ -134,12 +146,16 @@ function matchCard(match, prediction) {
   const pts = prediction ? `<span class="pts-badge">${prediction.total_points} pts</span>` : '';
   const statusLabel = { scheduled: 'Programado', live: '🔴 En juego', finished: 'Finalizado' }[match.status];
 
+  const infoBtn = KNOCKOUT_PHASES.has(match.phase)
+    ? '<button class="knockout-info-btn" type="button" title="Sistema de puntos eliminatorias" aria-label="Sistema de puntos">ℹ️</button>'
+    : '';
+
   return `
     <div class="match-card ${locked ? 'match-card--locked' : ''}" data-match-id="${match.id}">
       <div class="match-card__header">
         <span class="match-card__status">${statusLabel}</span>
         <span class="match-card__date">${formatDate(match.match_datetime)}</span>
-        ${pts}
+        ${pts}${infoBtn}
       </div>
       <div class="match-card__teams">
         <span class="team team--home">${match.home_team}</span>
@@ -177,6 +193,7 @@ function predictionForm(match, prediction) {
     ? 'btn btn--saved btn--sm pred-save-btn'
     : 'btn btn--ghost btn--sm pred-save-btn';
   const btnText = saved ? '✓ Guardado' : 'Guardar';
+  const isKnockout = KNOCKOUT_PHASES.has(match.phase);
 
   return `
     <form class="prediction-form ${stateClass}" data-match-id="${match.id}" data-saved="${saved}">
@@ -189,6 +206,7 @@ function predictionForm(match, prediction) {
           </label>
         `).join('')}
       </div>
+      ${isKnockout ? '<span class="pred-hint">(90 min)</span>' : ''}
       <div class="prediction-form__inputs">
         <input type="number" name="predicted_home" class="score-input" min="0" max="30"
           value="${home}" placeholder="0" required />
@@ -196,6 +214,7 @@ function predictionForm(match, prediction) {
         <input type="number" name="predicted_away" class="score-input" min="0" max="30"
           value="${away}" placeholder="0" required />
       </div>
+      ${isKnockout ? '<span class="pred-hint">(partido completo)</span>' : ''}
       <button type="submit" class="${btnClass}">${btnText}</button>
     </form>
   `;
