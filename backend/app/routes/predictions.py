@@ -70,8 +70,14 @@ def save_prediction():
     if home < 0 or away < 0:
         return jsonify({'error': 'El marcador no puede ser negativo'}), 400
 
-    derived_result = '1' if home > away else ('X' if home == away else '2')
-    if derived_result != predicted_result:
+    is_knockout = match.phase != 'group'
+    invalid_result = (
+        (predicted_result == '1' and home <= away) or
+        (predicted_result == '2' and away <= home) or
+        (predicted_result == 'X' and is_knockout and home == away) or
+        (predicted_result == 'X' and not is_knockout and home != away)
+    )
+    if invalid_result:
         return jsonify({'error': 'El resultado 1X2 no coincide con el marcador predicho'}), 400
 
     existing = Prediction.query.filter_by(

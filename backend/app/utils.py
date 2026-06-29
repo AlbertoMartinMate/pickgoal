@@ -90,9 +90,10 @@ def calculate_prediction_points(prediction, match):
 
     if prediction.predicted_result == match.result_90:
         earned_result = pts_result_val
-        if (prediction.predicted_home == match.home_score_90 and
-                prediction.predicted_away == match.away_score_90):
-            earned_score = pts_score_val
+
+    if (prediction.predicted_home == match.home_score_final and
+            prediction.predicted_away == match.away_score_final):
+        earned_score = pts_score_val
 
     return earned_result, earned_score
 
