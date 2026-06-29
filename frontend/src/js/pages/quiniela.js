@@ -192,7 +192,7 @@ function predictionForm(match, prediction) {
   const isKnockout = KNOCKOUT_PHASES.has(match.phase);
 
   return `
-    <form class="prediction-form ${stateClass}" data-match-id="${match.id}" data-saved="${saved}">
+    <form class="prediction-form ${stateClass}" data-match-id="${match.id}" data-saved="${saved}" data-is-knockout="${isKnockout ? '1' : '0'}">
       ${statusHtml}
       <div class="result-selector">
         ${['1', 'X', '2'].map(r => `
@@ -218,6 +218,14 @@ function predictionForm(match, prediction) {
       <button type="submit" class="${btnClass}">${btnText}</button>
     </form>
   `;
+}
+
+function isValidPrediction(result, home, away, isKnockout) {
+  if (result === '1') return home > away;
+  if (result === '2') return away > home;
+  // X: en grupos el marcador debe ser empate; en eliminatorias debe haber ganador (+1 simbólico)
+  if (result === 'X') return isKnockout ? home !== away : home === away;
+  return true;
 }
 
 function attachPredictionForm(form, predMap, leagueId) {
@@ -263,6 +271,12 @@ function attachPredictionForm(form, predMap, leagueId) {
     const result = form.querySelector('[name=predicted_result]:checked')?.value;
 
     if (isNaN(home) || isNaN(away) || !result) return;
+
+    const isKnockout = form.dataset.isKnockout === '1';
+    if (!isValidPrediction(result, home, away, isKnockout)) {
+      showToast('El marcador no coincide con el resultado 1X2 seleccionado', 'error');
+      return;
+    }
 
     btn.disabled = true;
     btn.textContent = '…';
