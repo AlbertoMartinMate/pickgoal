@@ -39,7 +39,9 @@ def fetch_match_by_api_id(api_id):
 def map_api_phase(stage: str) -> str:
     mapping = {
         'GROUP_STAGE': 'group',
+        'LAST_32': 'r32',
         'ROUND_OF_32': 'r32',
+        'LAST_16': 'r16',
         'ROUND_OF_16': 'r16',
         'QUARTER_FINALS': 'quarters',
         'SEMI_FINALS': 'semis',
