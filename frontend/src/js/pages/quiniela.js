@@ -146,16 +146,12 @@ function matchCard(match, prediction) {
   const pts = prediction ? `<span class="pts-badge">${prediction.total_points} pts</span>` : '';
   const statusLabel = { scheduled: 'Programado', live: '🔴 En juego', finished: 'Finalizado' }[match.status];
 
-  const infoBtn = KNOCKOUT_PHASES.has(match.phase)
-    ? '<button class="knockout-info-btn" type="button" title="Sistema de puntos eliminatorias" aria-label="Sistema de puntos">ℹ️</button>'
-    : '';
-
   return `
     <div class="match-card ${locked ? 'match-card--locked' : ''}" data-match-id="${match.id}">
       <div class="match-card__header">
         <span class="match-card__status">${statusLabel}</span>
         <span class="match-card__date">${formatDate(match.match_datetime)}</span>
-        ${pts}${infoBtn}
+        ${pts}
       </div>
       <div class="match-card__teams">
         <span class="team team--home">${match.home_team}</span>
@@ -214,7 +210,11 @@ function predictionForm(match, prediction) {
         <input type="number" name="predicted_away" class="score-input" min="0" max="30"
           value="${away}" placeholder="0" required />
       </div>
-      ${isKnockout ? '<span class="pred-hint">(partido completo)</span>' : ''}
+      ${isKnockout ? `
+      <div class="pred-hint-row">
+        <span class="pred-hint">(partido completo)</span>
+        <button class="knockout-info-btn" type="button" title="Sistema de puntos eliminatorias" aria-label="Sistema de puntos">i</button>
+      </div>` : ''}
       <button type="submit" class="${btnClass}">${btnText}</button>
     </form>
   `;
