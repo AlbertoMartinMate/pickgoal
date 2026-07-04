@@ -42,7 +42,7 @@ export const api = {
     list: (params = '') => request(`/matches/${params}`),
     get: (id) => request(`/matches/${id}`),
     today: () => request('/matches/today'),
-    setResult: (id, home, away) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify({ home_score: home, away_score: away }) }),
+    setResult: (id, home, away, result90 = null) => request(`/matches/${id}/result`, { method: 'PATCH', body: JSON.stringify({ home_score: home, away_score: away, ...(result90 ? { result_90: result90 } : {}) }) }),
     sync: () => request('/matches/sync', { method: 'POST' }),
     recalculate: () => request('/matches/recalculate', { method: 'POST' }),
   },

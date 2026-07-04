@@ -104,6 +104,7 @@ def set_match_result(match_id):
     data = request.get_json() or {}
     home = data.get('home_score')
     away = data.get('away_score')
+    result_90_override = data.get('result_90')
     if home is None or away is None:
         return jsonify({'error': 'Se requieren home_score y away_score'}), 400
 
@@ -112,12 +113,15 @@ def set_match_result(match_id):
     except (TypeError, ValueError):
         return jsonify({'error': 'Los marcadores deben ser números enteros'}), 400
 
+    if result_90_override is not None and result_90_override not in ('1', 'X', '2'):
+        return jsonify({'error': 'result_90 debe ser 1, X o 2'}), 400
+
     match = Match.query.get_or_404(match_id)
     match.home_score_90 = home
     match.away_score_90 = away
     match.home_score_final = home
     match.away_score_final = away
-    match.result_90 = compute_result_90(home, away)
+    match.result_90 = result_90_override if result_90_override is not None else compute_result_90(home, away)
     match.status = 'finished'
     db.session.commit()
 

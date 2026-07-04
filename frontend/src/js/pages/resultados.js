@@ -57,13 +57,14 @@ export async function renderResultados(el) {
       const row = btn.closest('.res-match');
       const home = row.querySelector('.res-match__input-home').value;
       const away = row.querySelector('.res-match__input-away').value;
+      const result90 = row.querySelector('.res-match__result90')?.value || null;
       if (home === '' || away === '') {
         showToast('Introduce ambos marcadores', 'error');
         return;
       }
       btn.disabled = true;
       try {
-        await api.matches.setResult(matchId, parseInt(home), parseInt(away));
+        await api.matches.setResult(matchId, parseInt(home), parseInt(away), result90);
         showToast(`${home} - ${away} guardado`);
         // Update local data so re-render shows the new score
         if (activeItem) {
@@ -169,11 +170,18 @@ function renderMatchList(matches) {
     if (editMode) {
       const homeVal = m.home_score_90 ?? '';
       const awayVal = m.away_score_90 ?? '';
+      const result90Val = m.result_90 ?? '';
       scoreHtml = `
         <div class="res-match__edit-score">
           <input type="number" min="0" max="20" class="res-match__input-home" value="${homeVal}" placeholder="L" />
           <span class="res-match__edit-dash">-</span>
           <input type="number" min="0" max="20" class="res-match__input-away" value="${awayVal}" placeholder="V" />
+          <select class="res-match__result90" title="Resultado 90min (vacío = automático)">
+            <option value="">Auto</option>
+            <option value="1" ${result90Val === '1' ? 'selected' : ''}>1</option>
+            <option value="X" ${result90Val === 'X' ? 'selected' : ''}>X</option>
+            <option value="2" ${result90Val === '2' ? 'selected' : ''}>2</option>
+          </select>
           <button class="btn btn--primary btn--xs res-match__save" data-id="${m.id}">Guardar</button>
         </div>
       `;

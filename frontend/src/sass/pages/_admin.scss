@@ -234,6 +234,21 @@
     color: v.$text-muted;
     font-weight: v.$fw-bold;
   }
+
+  &__result90 {
+    padding: v.$sp-1 v.$sp-2;
+    background: v.$bg-input;
+    border: 1px solid v.$border;
+    border-radius: v.$r-sm;
+    color: v.$text;
+    font-size: v.$fs-sm;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(v.$accent, 0.5);
+    }
+  }
 }
 
 .admin-match-badge {

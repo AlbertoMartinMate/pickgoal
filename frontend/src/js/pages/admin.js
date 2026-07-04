@@ -145,6 +145,7 @@ function matchRow(m) {
   const isFinished = m.status === 'finished';
   const homeVal = isFinished && m.home_score_90 != null ? m.home_score_90 : '';
   const awayVal = isFinished && m.away_score_90 != null ? m.away_score_90 : '';
+  const result90Val = isFinished && m.result_90 ? m.result_90 : '';
   const badge = isFinished
     ? '<span class="admin-match-badge admin-match-badge--done">Terminado</span>'
     : '<span class="admin-match-badge admin-match-badge--pending">Pendiente</span>';
@@ -161,6 +162,12 @@ function matchRow(m) {
         <input type="number" min="0" max="20" class="admin-match-row__input" value="${homeVal}" placeholder="L" />
         <span class="admin-match-row__dash">-</span>
         <input type="number" min="0" max="20" class="admin-match-row__input" value="${awayVal}" placeholder="V" />
+        <select class="admin-match-row__result90" title="Resultado 90min (vacío = automático)">
+          <option value="">Auto</option>
+          <option value="1" ${result90Val === '1' ? 'selected' : ''}>1</option>
+          <option value="X" ${result90Val === 'X' ? 'selected' : ''}>X</option>
+          <option value="2" ${result90Val === '2' ? 'selected' : ''}>2</option>
+        </select>
         <button class="btn btn--primary btn--xs admin-match-row__save">Guardar</button>
       </div>
     </div>
@@ -219,13 +226,14 @@ function attachEvents(el) {
     const inputs = row.querySelectorAll('.admin-match-row__input');
     const home = inputs[0].value;
     const away = inputs[1].value;
+    const result90 = row.querySelector('.admin-match-row__result90')?.value || null;
     if (home === '' || away === '') {
       showToast('Introduce ambos marcadores', 'error');
       return;
     }
     btn.disabled = true;
     try {
-      await api.matches.setResult(matchId, parseInt(home), parseInt(away));
+      await api.matches.setResult(matchId, parseInt(home), parseInt(away), result90);
       const badge = row.querySelector('.admin-match-badge');
       if (badge) {
         badge.className = 'admin-match-badge admin-match-badge--done';

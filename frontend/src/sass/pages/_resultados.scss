@@ -176,6 +176,21 @@
   flex-shrink: 0;
 }
 
+.res-match__result90 {
+  padding: 4px 6px;
+  background: v.$bg-input;
+  border: 1px solid v.$border;
+  border-radius: v.$r-sm;
+  color: v.$text;
+  font-size: v.$fs-sm;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: rgba(v.$accent, 0.5);
+  }
+}
+
 // ─── Tabla de clasificación ───────────────────────────────────────────────────
 .standings {
   &__title {
