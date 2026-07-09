@@ -120,3 +120,186 @@ def recalculate_match_predictions(match):
             if user:
                 user.total_points_all_time = (user.total_points_all_time or 0) + delta
     db.session.commit()
+
+
+# ---------------------------------------------------------------------------
+# V2 helpers
+# ---------------------------------------------------------------------------
+
+_ODDS_MARGIN = 0.10
+_ODDS_MIN = 1.10
+_ODDS_MAX = 15.00
+
+# UEFA coefficient proxies: (home_pos, away_pos, recent_form) → raw win probability
+# Form weight vs position weight
+_FORM_WEIGHT = 0.4
+_POS_WEIGHT = 0.6
+
+
+def _form_score(results: list[str]) -> float:
+    """Convert last-5 results ['W','D','L',...] to a 0-1 score."""
+    points = {'W': 1.0, 'D': 0.5, 'L': 0.0}
+    if not results:
+        return 0.5
+    return sum(points.get(r, 0.5) for r in results) / len(results)
+
+
+def _position_score(pos: int, total_teams: int) -> float:
+    """1st place → 1.0, last place → 0.0."""
+    if total_teams <= 1:
+        return 0.5
+    return 1.0 - (pos - 1) / (total_teams - 1)
+
+
+def _fetch_team_stats(competition_code: str, team_id: int) -> tuple[int, int, list[str]]:
+    """Return (position, total_teams, last_5_results) for a team in a competition."""
+    headers = get_api_headers()
+    # Standing
+    url = f'{FOOTBALL_API_BASE}/competitions/{competition_code}/standings'
+    resp = requests.get(url, headers=headers, timeout=10)
+    resp.raise_for_status()
+    standings = resp.json().get('standings', [])
+    pos, total = 1, 20
+    for table in standings:
+        if table.get('type') == 'TOTAL':
+            rows = table.get('table', [])
+            total = len(rows)
+            for row in rows:
+                if row.get('team', {}).get('id') == team_id:
+                    pos = row['position']
+                    break
+            break
+
+    # Last 5 matches
+    matches_url = f'{FOOTBALL_API_BASE}/teams/{team_id}/matches?status=FINISHED&limit=5'
+    resp2 = requests.get(matches_url, headers=headers, timeout=10)
+    last5: list[str] = []
+    if resp2.ok:
+        for m in resp2.json().get('matches', [])[-5:]:
+            score = m.get('score', {})
+            ft = score.get('fullTime', {})
+            h, a = ft.get('home'), ft.get('away')
+            home_team_id = m.get('homeTeam', {}).get('id')
+            if h is None or a is None:
+                last5.append('D')
+                continue
+            if home_team_id == team_id:
+                last5.append('W' if h > a else ('D' if h == a else 'L'))
+            else:
+                last5.append('W' if a > h else ('D' if h == a else 'L'))
+
+    return pos, total, last5
+
+
+def _clamp_odds(raw: float) -> float:
+    return max(_ODDS_MIN, min(_ODDS_MAX, raw))
+
+
+def calculate_odds(match) -> tuple[float, float, float]:
+    """
+    Calculate 1X2 odds for a match using standing position and recent form.
+    Returns (odds_1, odds_x, odds_2).
+
+    Falls back to balanced 50/30/20 split when API data is unavailable.
+    """
+    comp_code = None
+    if match.competition_id:
+        from app.models import Competition
+        comp = Competition.query.get(match.competition_id)
+        if comp:
+            comp_code = comp.code
+
+    home_strength = 0.5
+    away_strength = 0.5
+
+    if comp_code:
+        try:
+            # Resolve team IDs from the API using the match api_id
+            match_url = f'{FOOTBALL_API_BASE}/matches/{match.api_id}'
+            resp = requests.get(match_url, headers=get_api_headers(), timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            home_id = data.get('homeTeam', {}).get('id')
+            away_id = data.get('awayTeam', {}).get('id')
+
+            if home_id and away_id:
+                h_pos, h_total, h_form = _fetch_team_stats(comp_code, home_id)
+                a_pos, a_total, a_form = _fetch_team_stats(comp_code, away_id)
+
+                home_strength = (
+                    _POS_WEIGHT * _position_score(h_pos, h_total) +
+                    _FORM_WEIGHT * _form_score(h_form)
+                )
+                away_strength = (
+                    _POS_WEIGHT * _position_score(a_pos, a_total) +
+                    _FORM_WEIGHT * _form_score(a_form)
+                )
+        except Exception:
+            pass  # fall back to 0.5 / 0.5 defaults
+
+    total = home_strength + away_strength or 1.0
+    h = home_strength / total
+    a = away_strength / total
+
+    # Home advantage bump
+    h = min(h + 0.05, 0.90)
+    a = max(a - 0.03, 0.05)
+
+    # Draw probability: higher when teams are evenly matched
+    balance = 1.0 - abs(h - a)
+    draw_raw = 0.25 * balance
+    scale = max(1.0 - draw_raw, 0.01)
+    h_adj = h * scale
+    a_adj = a * scale
+    d_adj = draw_raw
+
+    # Normalize
+    total_adj = h_adj + d_adj + a_adj
+    p1 = h_adj / total_adj
+    px = d_adj / total_adj
+    p2 = a_adj / total_adj
+
+    # Convert to decimal odds with margin
+    margin = 1 + _ODDS_MARGIN
+    odds_1 = _clamp_odds(margin / p1)
+    odds_x = _clamp_odds(margin / px)
+    odds_2 = _clamp_odds(margin / p2)
+
+    return round(odds_1, 2), round(odds_x, 2), round(odds_2, 2)
+
+
+# Codes of European competition competitions in football-data.org
+_EUROPEAN_COMP_CODES = {'CL', 'UCL', 'EL', 'UECL', 'EC', 'WC'}
+
+
+def select_jornada_matches(jornada, candidates: list) -> list[int]:
+    """
+    Select the 10 best match_ids for a jornada from a list of candidate Match objects.
+
+    Rules:
+    - Max 5 matches from European competitions (UCL/EL/etc.)
+    - Prioritise by importance_score descending (None treated as 0)
+    - Returns up to 10 match_ids
+    """
+    def is_european(match) -> bool:
+        if not match.competition_id:
+            return False
+        from app.models import Competition
+        comp = Competition.query.get(match.competition_id)
+        return comp is not None and comp.code.upper() in _EUROPEAN_COMP_CODES
+
+    sorted_matches = sorted(candidates, key=lambda m: m.importance_score or 0.0, reverse=True)
+
+    selected: list[int] = []
+    euro_count = 0
+
+    for match in sorted_matches:
+        if len(selected) >= 10:
+            break
+        if is_european(match):
+            if euro_count >= 5:
+                continue
+            euro_count += 1
+        selected.append(match.id)
+
+    return selected
