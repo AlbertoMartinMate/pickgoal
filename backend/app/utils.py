@@ -373,23 +373,54 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
         # Resolve winner if jornada is finished
         from app.models import Jornada
         jornada = Jornada.query.get(jornada_id)
+        is_bye = duelo.player1_id == duelo.player2_id
         if jornada and jornada.status == 'finished':
-            p1 = duelo.points_player1
-            p2 = duelo.points_player2
-            if p1 > p2:
-                duelo.winner_id = duelo.player1_id
-                duelo.div_points_p1 = 3
-                duelo.div_points_p2 = 0
-            elif p2 > p1:
-                duelo.winner_id = duelo.player2_id
-                duelo.div_points_p1 = 0
-                duelo.div_points_p2 = 3
-            else:
+            if is_bye:
+                # Bye player gets a draw (1 div point) against themselves
                 duelo.winner_id = None
                 duelo.div_points_p1 = 1
                 duelo.div_points_p2 = 1
+            else:
+                p1 = duelo.points_player1
+                p2 = duelo.points_player2
+                if p1 > p2:
+                    duelo.winner_id = duelo.player1_id
+                    duelo.div_points_p1 = 3
+                    duelo.div_points_p2 = 0
+                elif p2 > p1:
+                    duelo.winner_id = duelo.player2_id
+                    duelo.div_points_p1 = 0
+                    duelo.div_points_p2 = 3
+                else:
+                    duelo.winner_id = None
+                    duelo.div_points_p1 = 1
+                    duelo.div_points_p2 = 1
 
     if commit:
         db.session.commit()
 
     return total
+
+
+def recalculate_v2_for_match(match):
+    """Update PredictionV2 points and live duelo scores after a match finishes."""
+    from app.models import JornadaMatch, Jornada, PredictionV2
+    from app import db
+
+    jornada_matches = JornadaMatch.query.filter_by(match_id=match.id).all()
+    if not jornada_matches:
+        return
+
+    for jm in jornada_matches:
+        jornada = Jornada.query.get(jm.jornada_id)
+        if not jornada or jornada.status == 'upcoming':
+            continue
+
+        user_ids = {
+            p.user_id
+            for p in PredictionV2.query.filter_by(jornada_match_id=jm.id).all()
+        }
+        for uid in user_ids:
+            calculate_jornada_points(uid, jm.jornada_id, commit=False)
+
+    db.session.commit()

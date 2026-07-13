@@ -1,6 +1,9 @@
 import logging
+from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
 
 logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler()
@@ -119,6 +122,8 @@ def sync_live_matches(app):
                 if prev_status != 'finished' and existing.status == 'finished':
                     db.session.commit()
                     recalculate_match_predictions(existing)
+                    from app.utils import recalculate_v2_for_match
+                    recalculate_v2_for_match(existing)
                     # Continue — don't return; there may be other live matches to process
 
             db.session.commit()
@@ -250,6 +255,231 @@ def generate_bot_predictions(app):
             db.session.rollback()
 
 
+# ---------------------------------------------------------------------------
+# V2 scheduler jobs
+# ---------------------------------------------------------------------------
+
+def seleccionar_jornada_semanal(app):
+    logger.info('JOB seleccionar_jornada_semanal — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import Season, Jornada, Match, JornadaMatch, DivisionMember
+        from app.utils import calculate_odds, select_jornada_matches
+        from app.routes.duelos import assign_duelos
+
+        try:
+            season = Season.query.filter_by(status='active').first()
+            if not season:
+                logger.warning('seleccionar_jornada_semanal: no hay temporada activa')
+                return
+
+            now = datetime.now(timezone.utc)
+            # Next Tuesday (weekday 1); if today is Monday (0), that's tomorrow
+            days_to_tue = (1 - now.weekday()) % 7 or 7
+            tue_start = (now + timedelta(days=days_to_tue)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            sun_end = tue_start + timedelta(days=5, hours=23, minutes=59, seconds=59)
+
+            candidates = Match.query.filter(
+                Match.status == 'scheduled',
+                Match.match_datetime >= tue_start,
+                Match.match_datetime <= sun_end,
+            ).all()
+
+            if not candidates:
+                logger.warning('seleccionar_jornada_semanal: sin partidos candidatos')
+                return
+
+            last = Jornada.query.filter_by(season_id=season.id).order_by(
+                Jornada.number.desc()
+            ).first()
+            next_number = (last.number + 1) if last else 1
+
+            jornada = Jornada(
+                season_id=season.id,
+                number=next_number,
+                date_start=tue_start,
+                date_end=sun_end,
+                status='upcoming',
+            )
+            db.session.add(jornada)
+            db.session.flush()
+
+            selected_ids = select_jornada_matches(jornada, candidates)
+
+            for match_id in selected_ids:
+                match = Match.query.get(match_id)
+                try:
+                    o1, ox, o2 = calculate_odds(match)
+                except Exception:
+                    o1, ox, o2 = 2.50, 3.20, 2.80
+                db.session.add(JornadaMatch(
+                    jornada_id=jornada.id,
+                    match_id=match_id,
+                    odds_1=o1,
+                    odds_x=ox,
+                    odds_2=o2,
+                    calculated_at=datetime.now(timezone.utc),
+                ))
+
+            db.session.commit()
+
+            # Assign duelos for all active division leagues
+            active_league_ids = {
+                dm.league_id for dm in DivisionMember.query.all()
+            }
+            for lid in active_league_ids:
+                try:
+                    assign_duelos(jornada.id, lid)
+                except Exception as e:
+                    logger.error('Error asignando duelos para liga %d: %s', lid, e)
+
+            logger.info(
+                'Jornada %d creada: %d partidos, %d ligas con duelos',
+                next_number, len(selected_ids), len(active_league_ids)
+            )
+        except Exception as e:
+            logger.error('Error en seleccionar_jornada_semanal: %s', e)
+            db.session.rollback()
+
+
+def activar_jornada(app):
+    logger.info('JOB activar_jornada — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import Jornada
+
+        try:
+            jornada = (
+                Jornada.query.filter_by(status='upcoming')
+                .order_by(Jornada.number.asc())
+                .first()
+            )
+            if not jornada:
+                logger.info('activar_jornada: no hay jornada upcoming')
+                return
+
+            jornada.status = 'active'
+            db.session.commit()
+
+            _schedule_bot_predictions_for_jornada(app, jornada)
+            logger.info('Jornada %d activada', jornada.number)
+        except Exception as e:
+            logger.error('Error en activar_jornada: %s', e)
+            db.session.rollback()
+
+
+def _schedule_bot_predictions_for_jornada(app, jornada):
+    """Schedule one bot-prediction job per match, 1 hour before kick-off."""
+    from app.models import JornadaMatch
+
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
+    scheduled = set()
+
+    for jm in jm_list:
+        match = jm.match
+        dt_utc = match.match_datetime.replace(tzinfo=timezone.utc)
+        trigger_time = dt_utc - timedelta(hours=1)
+
+        if trigger_time <= datetime.now(timezone.utc):
+            continue
+
+        # One job per kick-off hour (avoids duplicates for same-time matches)
+        slot = trigger_time.replace(minute=0, second=0, microsecond=0)
+        if slot in scheduled:
+            continue
+        scheduled.add(slot)
+
+        job_id = f'bot_v2_{jornada.id}_{slot.strftime("%Y%m%d%H")}'
+        scheduler.add_job(
+            func=_run_bot_predictions_v2,
+            args=[app, jornada.id],
+            trigger=DateTrigger(run_date=trigger_time),
+            id=job_id,
+            replace_existing=True,
+        )
+        logger.info('Bot predictions V2 programadas: jornada %d a las %s', jornada.id, trigger_time)
+
+
+def _run_bot_predictions_v2(app, jornada_id):
+    logger.info('JOB bot_predictions_v2 — jornada %d', jornada_id)
+    with app.app_context():
+        from app.bots import generate_bot_predictions_v2
+        try:
+            generate_bot_predictions_v2(jornada_id)
+        except Exception as e:
+            logger.error('Error en bot_predictions_v2 jornada %d: %s', jornada_id, e)
+
+
+def cerrar_jornada(app):
+    logger.info('JOB cerrar_jornada — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import Jornada, PredictionV2, Duelo
+        from app.utils import calculate_jornada_points
+
+        try:
+            jornada = Jornada.query.filter_by(status='active').first()
+            if not jornada:
+                logger.info('cerrar_jornada: no hay jornada activa')
+                return
+
+            jornada.status = 'finished'
+            db.session.commit()
+
+            jm_ids = [jm.id for jm in jornada.jornada_matches.all()]
+
+            # All users with predictions or in duelos
+            user_ids = {
+                p.user_id for p in
+                PredictionV2.query.filter(
+                    PredictionV2.jornada_match_id.in_(jm_ids)
+                ).all()
+            }
+            for duelo in Duelo.query.filter_by(jornada_id=jornada.id).all():
+                user_ids.add(duelo.player1_id)
+                user_ids.add(duelo.player2_id)
+
+            for uid in user_ids:
+                try:
+                    calculate_jornada_points(uid, jornada.id, commit=False)
+                except Exception as e:
+                    logger.error('Error puntos user %d jornada %d: %s', uid, jornada.id, e)
+
+            db.session.commit()
+            _update_division_positions(jornada.id)
+            logger.info('Jornada %d cerrada', jornada.number)
+        except Exception as e:
+            logger.error('Error en cerrar_jornada: %s', e)
+            db.session.rollback()
+
+
+def _update_division_positions(jornada_id):
+    """Cache division standings positions and season accumulators after jornada close."""
+    from app import db
+    from app.models import Duelo, DivisionMember
+    from app.divisions import get_division_standings
+
+    league_ids = {
+        d.division_league_id
+        for d in Duelo.query.filter_by(jornada_id=jornada_id).all()
+    }
+
+    for lid in league_ids:
+        standings = get_division_standings(lid)
+        for row in standings:
+            dm = DivisionMember.query.filter_by(
+                league_id=lid, user_id=row['user_id']
+            ).first()
+            if dm:
+                dm.position = row['pos']
+                dm.season_div_points = row['pts_division']
+                dm.season_total_points = row['pts_general']
+
+    db.session.commit()
+
+
 def init_scheduler(app):
     if scheduler.running:
         return
@@ -275,5 +505,29 @@ def init_scheduler(app):
         id='generate_bot_predictions',
         replace_existing=True,
     )
+
+    # V2 weekly jobs
+    scheduler.add_job(
+        func=seleccionar_jornada_semanal,
+        args=[app],
+        trigger=CronTrigger(day_of_week='mon', hour=8, minute=0, timezone='UTC'),
+        id='seleccionar_jornada_semanal',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=activar_jornada,
+        args=[app],
+        trigger=CronTrigger(day_of_week='tue', hour=10, minute=0, timezone='UTC'),
+        id='activar_jornada',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=cerrar_jornada,
+        args=[app],
+        trigger=CronTrigger(day_of_week='sun', hour=23, minute=59, timezone='UTC'),
+        id='cerrar_jornada',
+        replace_existing=True,
+    )
+
     scheduler.start()
     logger.info('Scheduler iniciado — jobs registrados: %s', [j.id for j in scheduler.get_jobs()])
