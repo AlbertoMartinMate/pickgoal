@@ -303,3 +303,93 @@ def select_jornada_matches(jornada, candidates: list) -> list[int]:
         selected.append(match.id)
 
     return selected
+
+
+# ---------------------------------------------------------------------------
+# V2 points calculation
+# ---------------------------------------------------------------------------
+
+def calculate_v2_points(prediction, match) -> float:
+    """
+    Returns points earned for a single PredictionV2.
+    Correct result → units_wagered × corresponding odds.
+    Wrong result → 0.
+    Unused units (units_wagered=0) contribute 0 here; they're counted separately.
+    """
+    if match.result_90 is None or match.status != 'finished':
+        return 0.0
+
+    if prediction.predicted_result != match.result_90:
+        return 0.0
+
+    jm = prediction.jornada_match
+    odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
+    odds = odds_map.get(match.result_90) or 1.0
+    return prediction.units_wagered * odds
+
+
+def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True) -> float:
+    """
+    Calculates and persists total points for a user in a jornada:
+      - Sum of points_earned across all PredictionV2 rows
+      - Plus unused units (20 - sum of units_wagered)
+    Updates Duelo if one exists. Returns total points.
+    """
+    from app.models import JornadaMatch, PredictionV2, Duelo
+
+    MAX_UNITS = 20
+
+    jm_ids = [
+        jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada_id).all()
+    ]
+    preds = PredictionV2.query.filter_by(user_id=user_id).filter(
+        PredictionV2.jornada_match_id.in_(jm_ids)
+    ).all()
+
+    units_used = sum(p.units_wagered for p in preds)
+    points_from_bets = 0.0
+
+    for pred in preds:
+        earned = calculate_v2_points(pred, pred.jornada_match.match)
+        pred.points_earned = earned
+        points_from_bets += earned
+
+    unused_units = MAX_UNITS - units_used
+    total = points_from_bets + unused_units
+
+    # Update duelo live points
+    from app import db
+    from sqlalchemy import or_
+    duelo = Duelo.query.filter(
+        Duelo.jornada_id == jornada_id,
+        or_(Duelo.player1_id == user_id, Duelo.player2_id == user_id)
+    ).first()
+    if duelo:
+        if duelo.player1_id == user_id:
+            duelo.points_player1 = total
+        else:
+            duelo.points_player2 = total
+
+        # Resolve winner if jornada is finished
+        from app.models import Jornada
+        jornada = Jornada.query.get(jornada_id)
+        if jornada and jornada.status == 'finished':
+            p1 = duelo.points_player1
+            p2 = duelo.points_player2
+            if p1 > p2:
+                duelo.winner_id = duelo.player1_id
+                duelo.div_points_p1 = 3
+                duelo.div_points_p2 = 0
+            elif p2 > p1:
+                duelo.winner_id = duelo.player2_id
+                duelo.div_points_p1 = 0
+                duelo.div_points_p2 = 3
+            else:
+                duelo.winner_id = None
+                duelo.div_points_p1 = 1
+                duelo.div_points_p2 = 1
+
+    if commit:
+        db.session.commit()
+
+    return total
