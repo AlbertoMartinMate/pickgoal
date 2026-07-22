@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
-import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { formatDate, pointsModalHtml, attachPointsModal, showToast } from '../ui.js';
 
 export async function renderHome(el) {
   const user = auth.getUser();
@@ -32,14 +32,24 @@ export async function renderHome(el) {
         <div class="home-dashboard__topbar">
           <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
         </div>
+
+        ${pickgoalLeagueCard()}
+
+        <h3 class="home-dashboard__section-title">Ligas del Mundial</h3>
         <div class="home-dashboard__leagues">
           ${sorted.map(s => leagueCard(s)).join('')}
         </div>
+
+        <div class="home-dashboard__create">
+          <a href="#/ligas" class="btn btn--ghost btn--sm">+ Crear liga privada</a>
+        </div>
+
         ${upcomingSection(upcoming_matches)}
       </div>
       ${pointsModalHtml()}
     `;
     attachPointsModal(el);
+    attachPickgoalLeagueCard(el);
 
     el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
       card.style.cursor = 'pointer';
@@ -143,16 +153,59 @@ function renderGuest(el) {
 
 function renderNoLeague(el) {
   el.innerHTML = `
-    <section class="hero">
-      <div class="hero__content">
-        <img src="/assets/logo-completo.jpg" alt="PickGoal" class="hero__logo-img" />
-        <p class="hero__subtitle">Únete a una liga y empieza a predecir el Mundial 2026</p>
-        <div class="hero__cta">
-          <a href="#/ligas" class="btn btn--primary btn--lg">Unirse a una liga</a>
-        </div>
+    <div class="home-dashboard container">
+      ${pickgoalLeagueCard()}
+      <div class="home-dashboard__create">
+        <a href="#/ligas" class="btn btn--ghost btn--sm">+ Crear liga privada</a>
       </div>
-    </section>
+    </div>
   `;
+  attachPickgoalLeagueCard(el);
+}
+
+function daysUntil(targetDate) {
+  const now = new Date();
+  const target = new Date(targetDate);
+  const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
+function pickgoalLeagueCard() {
+  const days = daysUntil('2026-08-15');
+  const countdownHtml = days > 0
+    ? `<div class="pg-league-card__countdown">
+         <span class="pg-league-card__countdown-num">${days}</span>
+         <span class="pg-league-card__countdown-label">días para el inicio</span>
+       </div>`
+    : `<div class="pg-league-card__countdown pg-league-card__countdown--soon">
+         ¡Lanzamiento inminente!
+       </div>`;
+
+  return `
+    <div class="pg-league-card">
+      <div class="pg-league-card__header">
+        <div>
+          <span class="pg-league-card__badge">Temporada 26/27 · Próximamente</span>
+          <h2 class="pg-league-card__name">PickGoal League</h2>
+        </div>
+        ${countdownHtml}
+      </div>
+      <div class="pg-league-card__features">
+        <div class="pg-league-card__feature">⚽ LaLiga · Premier League · Champions League</div>
+        <div class="pg-league-card__feature">🏆 Sistema de divisiones y duelos 1vs1</div>
+        <div class="pg-league-card__feature">📅 Lanzamiento: agosto 2026</div>
+      </div>
+      <div class="pg-league-card__actions">
+        <button class="btn btn--primary btn--sm" id="btnWaitlist">Unirse a la lista de espera</button>
+      </div>
+    </div>
+  `;
+}
+
+function attachPickgoalLeagueCard(el) {
+  el.querySelector('#btnWaitlist')?.addEventListener('click', () => {
+    showToast('¡Ya estás dentro! Te avisaremos cuando empiece la temporada 🎉');
+  });
 }
 
 function ordinal(n) {
@@ -174,10 +227,10 @@ function leagueCard(s) {
   const mp = s.matches_played ?? 0;
 
   return `
-    <div class="league-card" data-league-id="${s.league_id}">
+    <div class="league-card league-card--finished" data-league-id="${s.league_id}">
       <div class="league-card__header">
         <h2 class="league-card__name">${s.league_name}</h2>
-        <span class="league-card__rank">${ordinal(s.rank)} de ${s.member_count}</span>
+        <span class="league-card__finished-badge">Finalizada 🏁</span>
       </div>
       <div class="league-card__stats">
         <div class="league-card__stat">

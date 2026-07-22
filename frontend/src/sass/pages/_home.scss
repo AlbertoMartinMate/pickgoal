@@ -684,3 +684,163 @@
     border-color: rgba(255, 215, 0, 0.25);
   }
 }
+
+// ─── League card — finalizada ─────────────────────────────────────────────────
+.league-card--finished {
+  background: rgba(13, 13, 13, 0.6);
+  border-color: v.$border;
+  opacity: 0.7;
+
+  &:hover { opacity: 0.85; border-color: v.$border-light; }
+
+  .league-card__name { font-size: v.$fs-base; color: v.$text-muted; }
+  .league-card__stat-val { font-size: v.$fs-base; color: v.$text-muted; }
+}
+
+.league-card__finished-badge {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  color: v.$text-dim;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  padding: 3px 10px;
+  border-radius: v.$r-full;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// ─── Dashboard section title ──────────────────────────────────────────────────
+.home-dashboard__section-title {
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  color: v.$text-muted;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: v.$sp-3;
+  margin-top: v.$sp-2;
+}
+
+// ─── Create league CTA ────────────────────────────────────────────────────────
+.home-dashboard__create {
+  display: flex;
+  justify-content: center;
+  margin-top: v.$sp-4;
+  margin-bottom: v.$sp-6;
+}
+
+// ─── PickGoal League card (v2 featured) ───────────────────────────────────────
+.pg-league-card {
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.05) 0%, rgba(13, 13, 13, 0.8) 60%);
+  border: 1px solid rgba(0, 255, 135, 0.3);
+  border-radius: v.$r-xl;
+  padding: v.$sp-6;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-5;
+  margin-bottom: v.$sp-6;
+  box-shadow: 0 0 32px rgba(0, 255, 135, 0.06), 0 4px 16px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(0, 255, 135, 0.07) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: v.$sp-4;
+
+    @media (max-width: v.$bp-sm) { flex-direction: column; gap: v.$sp-3; }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: v.$sp-1;
+    padding: 4px 12px;
+    background: rgba(0, 255, 135, 0.12);
+    border: 1px solid rgba(0, 255, 135, 0.25);
+    border-radius: v.$r-full;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$accent;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: v.$sp-2;
+  }
+
+  &__name {
+    font-size: v.$fs-xl;
+    font-weight: v.$fw-black;
+    color: v.$text;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  &__countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 255, 135, 0.08);
+    border: 1px solid rgba(0, 255, 135, 0.2);
+    border-radius: v.$r-lg;
+    padding: v.$sp-3 v.$sp-5;
+    flex-shrink: 0;
+    min-width: 90px;
+
+    &--soon {
+      flex-direction: row;
+      font-size: v.$fs-sm;
+      font-weight: v.$fw-semi;
+      color: v.$accent;
+      min-width: unset;
+    }
+  }
+
+  &__countdown-num {
+    font-size: v.$fs-2xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__countdown-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
+  &__features {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-2;
+  }
+
+  &__feature {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    line-height: 1.4;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$sp-3;
+    align-items: center;
+  }
+}
