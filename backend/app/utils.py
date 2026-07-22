@@ -130,10 +130,81 @@ _ODDS_MARGIN = 0.10
 _ODDS_MIN = 1.10
 _ODDS_MAX = 15.00
 
-# UEFA coefficient proxies: (home_pos, away_pos, recent_form) → raw win probability
-# Form weight vs position weight
 _FORM_WEIGHT = 0.4
 _POS_WEIGHT = 0.6
+
+ODDS_API_BASE = 'https://api.the-odds-api.com/v4'
+
+# competition code → The Odds API sport key
+_SPORT_KEY_MAP = {
+    'PD':  'soccer_spain_la_liga',
+    'PL':  'soccer_england_premier_league',
+    'CL':  'soccer_uefa_champs_league',
+}
+
+
+def _normalize(name: str) -> str:
+    """Lowercase, strip punctuation for fuzzy team-name matching."""
+    import unicodedata
+    nfkd = unicodedata.normalize('NFKD', name)
+    ascii_name = nfkd.encode('ascii', 'ignore').decode('ascii')
+    return ascii_name.lower().replace('.', '').replace('-', ' ').strip()
+
+
+def _teams_match(api_name: str, our_name: str) -> bool:
+    a, b = _normalize(api_name), _normalize(our_name)
+    return a == b or a in b or b in a
+
+
+def _fetch_real_odds(match, comp_code: str):
+    """
+    Try to fetch h2h odds from The Odds API (bet365, eu region).
+    Returns (odds_1, odds_x, odds_2) or None if not found / API unavailable.
+    """
+    sport_key = _SPORT_KEY_MAP.get(comp_code)
+    if not sport_key:
+        return None
+
+    api_key = os.environ.get('ODDS_API_KEY', '')
+    if not api_key:
+        return None
+
+    try:
+        resp = requests.get(
+            f'{ODDS_API_BASE}/sports/{sport_key}/odds',
+            params={'apiKey': api_key, 'regions': 'eu', 'markets': 'h2h',
+                    'bookmakers': 'bet365'},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        events = resp.json()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning('Odds API error (%s): %s', comp_code, e)
+        return None
+
+    for event in events:
+        if not (_teams_match(event.get('home_team', ''), match.home_team) and
+                _teams_match(event.get('away_team', ''), match.away_team)):
+            continue
+
+        for bookmaker in event.get('bookmakers', []):
+            for market in bookmaker.get('markets', []):
+                if market.get('key') != 'h2h':
+                    continue
+                outcomes = {o['name']: o['price'] for o in market.get('outcomes', [])}
+
+                price_home = outcomes.get(event['home_team'])
+                price_away = outcomes.get(event['away_team'])
+                price_draw = outcomes.get('Draw')
+
+                if price_home and price_away and price_draw:
+                    return (
+                        round(_clamp_odds(price_home), 2),
+                        round(_clamp_odds(price_draw), 2),
+                        round(_clamp_odds(price_away), 2),
+                    )
+    return None
 
 
 def _form_score(results: list[str]) -> float:
@@ -197,10 +268,12 @@ def _clamp_odds(raw: float) -> float:
 
 def calculate_odds(match) -> tuple[float, float, float]:
     """
-    Calculate 1X2 odds for a match using standing position and recent form.
     Returns (odds_1, odds_x, odds_2).
 
-    Falls back to balanced 50/30/20 split when API data is unavailable.
+    Priority:
+      1. Real odds from The Odds API (bet365, eu region)
+      2. Internal calculation from standings + recent form
+      3. Balanced fallback (2.50 / 3.20 / 2.80)
     """
     comp_code = None
     if match.competition_id:
@@ -209,6 +282,18 @@ def calculate_odds(match) -> tuple[float, float, float]:
         if comp:
             comp_code = comp.code
 
+    # 1 — Real odds
+    if comp_code:
+        real = _fetch_real_odds(match, comp_code)
+        if real:
+            import logging
+            logging.getLogger(__name__).info(
+                'Odds API: %s vs %s → %.2f / %.2f / %.2f',
+                match.home_team, match.away_team, *real,
+            )
+            return real
+
+    # 2 — Internal calculation
     home_strength = 0.5
     away_strength = 0.5
 
