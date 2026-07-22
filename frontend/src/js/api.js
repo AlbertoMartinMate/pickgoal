@@ -90,4 +90,12 @@ export const api = {
     subscribe: (subscription) => request('/notifications/subscribe', { method: 'POST', body: JSON.stringify(subscription) }),
     send: (data) => request('/notifications/send', { method: 'POST', body: JSON.stringify(data) }),
   },
+
+  adminV2: {
+    partidos: (semana) => request(`/v2/admin/partidos-disponibles?semana=${encodeURIComponent(semana)}`),
+    jornadas: () => request('/v2/admin/jornadas'),
+    createJornada: (data) => request('/v2/admin/jornada', { method: 'POST', body: JSON.stringify(data) }),
+    updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteJornada: (id) => request(`/v2/admin/jornada/${id}`, { method: 'DELETE' }),
+  },
 };

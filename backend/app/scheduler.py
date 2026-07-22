@@ -259,8 +259,87 @@ def generate_bot_predictions(app):
 # V2 scheduler jobs
 # ---------------------------------------------------------------------------
 
-def seleccionar_jornada_semanal(app):
-    logger.info('JOB seleccionar_jornada_semanal — inicio')
+def publicar_jornadas_draft(app):
+    """
+    Lunes 08:00 UTC — publica jornadas en draft cuya date_start cae
+    dentro de los próximos 7 días. Si no hay ninguna, ejecuta la
+    selección automática como fallback.
+    """
+    logger.info('JOB publicar_jornadas_draft — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import Jornada, JornadaMatch, DivisionMember
+        from app.utils import calculate_odds
+        from app.routes.duelos import assign_duelos
+
+        try:
+            now = datetime.now(timezone.utc)
+            deadline = now + timedelta(days=7)
+
+            drafts = Jornada.query.filter(
+                Jornada.status == 'draft',
+                Jornada.date_start <= deadline,
+            ).order_by(Jornada.number.asc()).all()
+
+            if not drafts:
+                logger.info('No hay jornadas draft → ejecutando selección automática')
+                _auto_seleccionar_jornada(app)
+                return
+
+            for jornada in drafts:
+                jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
+                for jm in jm_list:
+                    if jm.odds_1 is None:
+                        try:
+                            o1, ox, o2 = calculate_odds(jm.match)
+                        except Exception:
+                            o1, ox, o2 = 2.50, 3.20, 2.80
+                        jm.odds_1 = o1
+                        jm.odds_x = ox
+                        jm.odds_2 = o2
+                        jm.calculated_at = now
+
+                jornada.status = 'upcoming'
+                db.session.commit()
+
+                active_league_ids = {dm.league_id for dm in DivisionMember.query.all()}
+                for lid in active_league_ids:
+                    try:
+                        assign_duelos(jornada.id, lid)
+                    except Exception as e:
+                        logger.error('Error asignando duelos liga %d jornada %d: %s', lid, jornada.id, e)
+
+                _push_jornada_published(app, jornada)
+                logger.info('Jornada %d publicada (%d partidos)', jornada.number, len(jm_list))
+
+        except Exception as e:
+            logger.error('Error en publicar_jornadas_draft: %s', e)
+            db.session.rollback()
+
+
+def _push_jornada_published(app, jornada):
+    """Envía push a todos los usuarios notificando la nueva jornada."""
+    try:
+        from app.models import PushSubscription
+        from app.routes.notifications import _send_push
+
+        subs = PushSubscription.query.all()
+        payload = {
+            'title': '⚽ PickGoal League — Nueva jornada disponible',
+            'body': f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!',
+        }
+        for sub in subs:
+            try:
+                _send_push(sub, payload)
+            except Exception:
+                pass
+        logger.info('Push enviado a %d suscriptores', len(subs))
+    except Exception as e:
+        logger.warning('Error enviando push de jornada publicada: %s', e)
+
+
+def _auto_seleccionar_jornada(app):
+    """Fallback: selección automática de partidos para la semana siguiente."""
     with app.app_context():
         from app import db
         from app.models import Season, Jornada, Match, JornadaMatch, DivisionMember
@@ -270,11 +349,10 @@ def seleccionar_jornada_semanal(app):
         try:
             season = Season.query.filter_by(status='active').first()
             if not season:
-                logger.warning('seleccionar_jornada_semanal: no hay temporada activa')
+                logger.warning('_auto_seleccionar_jornada: no hay temporada activa')
                 return
 
             now = datetime.now(timezone.utc)
-            # Next Tuesday (weekday 1); if today is Monday (0), that's tomorrow
             days_to_tue = (1 - now.weekday()) % 7 or 7
             tue_start = (now + timedelta(days=days_to_tue)).replace(
                 hour=0, minute=0, second=0, microsecond=0
@@ -288,7 +366,7 @@ def seleccionar_jornada_semanal(app):
             ).all()
 
             if not candidates:
-                logger.warning('seleccionar_jornada_semanal: sin partidos candidatos')
+                logger.warning('_auto_seleccionar_jornada: sin partidos candidatos')
                 return
 
             last = Jornada.query.filter_by(season_id=season.id).order_by(
@@ -307,41 +385,36 @@ def seleccionar_jornada_semanal(app):
             db.session.flush()
 
             selected_ids = select_jornada_matches(jornada, candidates)
-
             for match_id in selected_ids:
-                match = Match.query.get(match_id)
+                match = db.session.get(Match, match_id)
                 try:
                     o1, ox, o2 = calculate_odds(match)
                 except Exception:
                     o1, ox, o2 = 2.50, 3.20, 2.80
                 db.session.add(JornadaMatch(
-                    jornada_id=jornada.id,
-                    match_id=match_id,
-                    odds_1=o1,
-                    odds_x=ox,
-                    odds_2=o2,
+                    jornada_id=jornada.id, match_id=match_id,
+                    odds_1=o1, odds_x=ox, odds_2=o2,
                     calculated_at=datetime.now(timezone.utc),
                 ))
 
             db.session.commit()
 
-            # Assign duelos for all active division leagues
-            active_league_ids = {
-                dm.league_id for dm in DivisionMember.query.all()
-            }
+            active_league_ids = {dm.league_id for dm in DivisionMember.query.all()}
             for lid in active_league_ids:
                 try:
                     assign_duelos(jornada.id, lid)
                 except Exception as e:
-                    logger.error('Error asignando duelos para liga %d: %s', lid, e)
+                    logger.error('Error asignando duelos liga %d: %s', lid, e)
 
-            logger.info(
-                'Jornada %d creada: %d partidos, %d ligas con duelos',
-                next_number, len(selected_ids), len(active_league_ids)
-            )
+            logger.info('Jornada %d auto-creada: %d partidos', next_number, len(selected_ids))
         except Exception as e:
-            logger.error('Error en seleccionar_jornada_semanal: %s', e)
+            logger.error('Error en _auto_seleccionar_jornada: %s', e)
             db.session.rollback()
+
+
+def seleccionar_jornada_semanal(app):
+    """Alias mantenido por compatibilidad — delega en publicar_jornadas_draft."""
+    publicar_jornadas_draft(app)
 
 
 def activar_jornada(app):
@@ -508,10 +581,10 @@ def init_scheduler(app):
 
     # V2 weekly jobs
     scheduler.add_job(
-        func=seleccionar_jornada_semanal,
+        func=publicar_jornadas_draft,
         args=[app],
         trigger=CronTrigger(day_of_week='mon', hour=8, minute=0, timezone='UTC'),
-        id='seleccionar_jornada_semanal',
+        id='publicar_jornadas_draft',
         replace_existing=True,
     )
     scheduler.add_job(

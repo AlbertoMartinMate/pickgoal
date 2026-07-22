@@ -80,6 +80,13 @@ export async function renderAdmin(el) {
           </form>
         </section>
 
+        <section class="section admin-section" id="jornadasV2Section">
+          <h2 class="admin-section__title">Gestión de Jornadas v2</h2>
+          <div id="jornadasV2Content">
+            <div class="loading"><div class="loading__spinner"></div></div>
+          </div>
+        </section>
+
         <section class="section admin-section">
           <h2 class="admin-section__title">Usuarios (${users.length})</h2>
           <div class="admin-table-wrapper">
@@ -99,6 +106,7 @@ export async function renderAdmin(el) {
     `;
 
     attachEvents(el);
+    loadJornadasV2(el);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
@@ -324,4 +332,297 @@ function userRow(u) {
       </td>
     </tr>
   `;
+}
+
+// ─── Gestión de Jornadas V2 ──────────────────────────────────────────────────
+
+const COMP_LABELS = { PD: '🇪🇸 LaLiga', PL: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League', CL: '⭐ Champions League' };
+let _selectedMatches = [];   // {api_id, home_team, away_team, match_datetime, competition_code}
+let _editingJornadaId = null;
+
+async function loadJornadasV2(el) {
+  const container = document.getElementById('jornadasV2Content');
+  if (!container) return;
+  try {
+    const { jornadas } = await api.adminV2.jornadas();
+    container.innerHTML = renderJornadasPanel(jornadas);
+    attachJornadasEvents(container);
+  } catch (err) {
+    container.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
+  }
+}
+
+function renderJornadasPanel(jornadas) {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const ww = String(isoWeek(today)).padStart(2, '0');
+  const nextWeek = nextIsoWeek(today);
+
+  return `
+    <div class="jv2-panel">
+      <div class="jv2-panel__actions">
+        <button class="btn btn--primary btn--sm" id="btnNuevaJornada">+ Nueva jornada</button>
+      </div>
+
+      <div class="jv2-list">
+        ${jornadas.length === 0
+          ? '<p class="admin-section__desc">No hay jornadas creadas.</p>'
+          : jornadas.map(jornadaRow).join('')}
+      </div>
+
+      <div class="jv2-form" id="jv2Form" style="display:none">
+        <h3 class="jv2-form__title" id="jv2FormTitle">Nueva jornada</h3>
+        <input type="hidden" id="jv2EditId" value="" />
+
+        <div class="jv2-form__row">
+          <div class="form__group">
+            <label class="form__label">Nº jornada</label>
+            <input class="form__input" type="number" id="jv2Number" min="1" placeholder="1" style="width:90px" />
+          </div>
+          <div class="form__group">
+            <label class="form__label">Fecha inicio</label>
+            <input class="form__input" type="datetime-local" id="jv2DateStart" />
+          </div>
+          <div class="form__group">
+            <label class="form__label">Fecha fin</label>
+            <input class="form__input" type="datetime-local" id="jv2DateEnd" />
+          </div>
+        </div>
+
+        <div class="jv2-form__week-row">
+          <label class="form__label">Semana de partidos</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input class="form__input" type="week" id="jv2Week" value="${nextWeek}" style="width:180px" />
+            <button class="btn btn--ghost btn--sm" id="btnBuscarPartidos" type="button">Buscar partidos</button>
+          </div>
+        </div>
+
+        <div id="jv2MatchPicker" style="display:none">
+          <div class="jv2-counter">
+            Seleccionados: <strong id="jv2Count">0</strong> / 10
+            <span id="jv2CountWarn" class="jv2-counter__warn" style="display:none">Selecciona exactamente 10</span>
+          </div>
+          <div id="jv2MatchList" class="jv2-match-list"></div>
+        </div>
+
+        <div class="jv2-form__footer">
+          <button class="btn btn--primary btn--sm" id="btnGuardarJornada">Guardar como borrador</button>
+          <button class="btn btn--ghost btn--sm" id="btnCancelarJornada">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function jornadaRow(j) {
+  const statusBadge = {
+    draft:    '<span class="admin-match-badge" style="background:rgba(61,145,255,0.15);color:#3d91ff;border:1px solid rgba(61,145,255,0.3)">Borrador</span>',
+    upcoming: '<span class="admin-match-badge admin-match-badge--pending">Próxima</span>',
+    active:   '<span class="admin-match-badge admin-match-badge--done">Activa</span>',
+    finished: '<span class="admin-match-badge" style="background:rgba(255,255,255,0.05);color:#6e6e6e;border:1px solid #222">Finalizada</span>',
+  }[j.status] || `<span class="admin-match-badge">${j.status}</span>`;
+
+  const d = (iso) => iso ? new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' }) : '—';
+
+  return `
+    <div class="jv2-row">
+      <div class="jv2-row__info">
+        <span class="jv2-row__num">J${j.number}</span>
+        <span class="jv2-row__dates">${d(j.date_start)} – ${d(j.date_end)}</span>
+        ${statusBadge}
+        <span class="jv2-row__matches">${j.match_count} partidos</span>
+      </div>
+      <div class="jv2-row__actions">
+        ${j.status === 'draft' ? `
+          <button class="btn btn--ghost btn--xs jv2-edit-btn" data-id="${j.id}">Editar</button>
+          <button class="btn btn--danger btn--xs jv2-del-btn" data-id="${j.id}" data-num="${j.number}">Eliminar</button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function attachJornadasEvents(container) {
+  container.querySelector('#btnNuevaJornada')?.addEventListener('click', () => {
+    _editingJornadaId = null;
+    _selectedMatches = [];
+    document.getElementById('jv2FormTitle').textContent = 'Nueva jornada';
+    document.getElementById('jv2EditId').value = '';
+    document.getElementById('jv2Number').value = '';
+    document.getElementById('jv2DateStart').value = '';
+    document.getElementById('jv2DateEnd').value = '';
+    document.getElementById('jv2MatchPicker').style.display = 'none';
+    document.getElementById('jv2Form').style.display = 'block';
+    updateCounter();
+  });
+
+  container.querySelector('#btnCancelarJornada')?.addEventListener('click', () => {
+    document.getElementById('jv2Form').style.display = 'none';
+    _selectedMatches = [];
+    _editingJornadaId = null;
+  });
+
+  container.querySelector('#btnBuscarPartidos')?.addEventListener('click', buscarPartidos);
+
+  container.querySelector('#btnGuardarJornada')?.addEventListener('click', guardarJornada);
+
+  container.querySelectorAll('.jv2-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => abrirEdicion(btn.dataset.id, container));
+  });
+
+  container.querySelectorAll('.jv2-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`¿Eliminar jornada ${btn.dataset.num}?`)) return;
+      try {
+        await api.adminV2.deleteJornada(btn.dataset.id);
+        showToast('Jornada eliminada');
+        loadJornadasV2(document.querySelector('#jornadasV2Content').parentElement.parentElement);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+  });
+}
+
+async function abrirEdicion(id) {
+  const { jornadas } = await api.adminV2.jornadas();
+  const j = jornadas.find(x => String(x.id) === String(id));
+  if (!j) return;
+
+  _editingJornadaId = j.id;
+  _selectedMatches = [];
+  document.getElementById('jv2FormTitle').textContent = `Editar jornada ${j.number}`;
+  document.getElementById('jv2EditId').value = j.id;
+  document.getElementById('jv2Number').value = j.number;
+  if (j.date_start) document.getElementById('jv2DateStart').value = j.date_start.slice(0, 16);
+  if (j.date_end)   document.getElementById('jv2DateEnd').value   = j.date_end.slice(0, 16);
+  document.getElementById('jv2MatchPicker').style.display = 'none';
+  document.getElementById('jv2Form').style.display = 'block';
+  updateCounter();
+}
+
+async function buscarPartidos() {
+  const btn = document.getElementById('btnBuscarPartidos');
+  const semana = document.getElementById('jv2Week').value;
+  if (!semana) { showToast('Selecciona una semana', 'error'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Buscando…';
+  try {
+    const { matches } = await api.adminV2.partidos(semana);
+    renderMatchPicker(matches);
+    document.getElementById('jv2MatchPicker').style.display = 'block';
+  } catch (err) {
+    showToast(`Error: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Buscar partidos';
+  }
+}
+
+function renderMatchPicker(matchesByComp) {
+  const list = document.getElementById('jv2MatchList');
+  const total = Object.values(matchesByComp).flat().length;
+
+  if (total === 0) {
+    list.innerHTML = '<p class="admin-section__desc">No hay partidos disponibles para esta semana.</p>';
+    return;
+  }
+
+  list.innerHTML = Object.entries(matchesByComp).map(([code, matches]) => {
+    if (!matches.length) return '';
+    return `
+      <div class="jv2-comp-group">
+        <div class="jv2-comp-group__title">${COMP_LABELS[code] || code}</div>
+        ${matches.map(m => `
+          <label class="jv2-match-item">
+            <input type="checkbox" class="jv2-match-check" data-match='${JSON.stringify(m)}' />
+            <span class="jv2-match-item__teams">${m.home_team} vs ${m.away_team}</span>
+            <span class="jv2-match-item__date">${shortDate(m.match_datetime)}</span>
+          </label>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+
+  list.querySelectorAll('.jv2-match-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const matchData = JSON.parse(cb.dataset.match);
+      if (cb.checked) {
+        if (_selectedMatches.length >= 10) {
+          cb.checked = false;
+          showToast('Máximo 10 partidos', 'error');
+          return;
+        }
+        _selectedMatches.push(matchData);
+      } else {
+        _selectedMatches = _selectedMatches.filter(m => m.api_id !== matchData.api_id);
+      }
+      updateCounter();
+    });
+  });
+}
+
+function updateCounter() {
+  const el = document.getElementById('jv2Count');
+  const warn = document.getElementById('jv2CountWarn');
+  if (el) el.textContent = _selectedMatches.length;
+  if (warn) warn.style.display = (_selectedMatches.length > 0 && _selectedMatches.length !== 10) ? 'inline' : 'none';
+}
+
+async function guardarJornada() {
+  const number = parseInt(document.getElementById('jv2Number').value);
+  const date_start = document.getElementById('jv2DateStart').value;
+  const date_end   = document.getElementById('jv2DateEnd').value;
+  const editId     = document.getElementById('jv2EditId').value;
+
+  if (!number || !date_start || !date_end) {
+    showToast('Completa número y fechas', 'error'); return;
+  }
+  if (_selectedMatches.length !== 10) {
+    showToast('Selecciona exactamente 10 partidos', 'error'); return;
+  }
+
+  const payload = {
+    number,
+    date_start: new Date(date_start).toISOString(),
+    date_end:   new Date(date_end).toISOString(),
+    matches: _selectedMatches,
+  };
+
+  const btn = document.getElementById('btnGuardarJornada');
+  btn.disabled = true;
+  try {
+    if (editId) {
+      await api.adminV2.updateJornada(editId, payload);
+      showToast(`Jornada ${number} actualizada`);
+    } else {
+      await api.adminV2.createJornada(payload);
+      showToast(`Jornada ${number} guardada como borrador`);
+    }
+    document.getElementById('jv2Form').style.display = 'none';
+    _selectedMatches = [];
+    _editingJornadaId = null;
+    await loadJornadasV2(document.getElementById('jornadasV2Section'));
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function isoWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function nextIsoWeek(date) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + 7);
+  const yyyy = next.getFullYear();
+  const ww = String(isoWeek(next)).padStart(2, '0');
+  return `${yyyy}-W${ww}`;
 }

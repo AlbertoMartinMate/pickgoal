@@ -282,6 +282,168 @@
   }
 }
 
+// ─── Jornadas V2 ─────────────────────────────────────────────────────────────
+.jv2-panel {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.jv2-list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+}
+
+.jv2-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-3;
+  padding: v.$sp-3 v.$sp-4;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+  }
+
+  &__num {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    min-width: 28px;
+  }
+
+  &__dates {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+
+  &__matches {
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$sp-2;
+    flex-shrink: 0;
+  }
+}
+
+.jv2-form {
+  background: v.$bg;
+  border: 1px solid rgba(v.$accent, 0.2);
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+
+  &__title {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+    margin: 0;
+  }
+
+  &__row {
+    display: flex;
+    gap: v.$sp-4;
+    flex-wrap: wrap;
+
+    .form__group { min-width: 120px; }
+  }
+
+  &__week-row {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-2;
+  }
+
+  &__footer {
+    display: flex;
+    gap: v.$sp-3;
+    padding-top: v.$sp-3;
+    border-top: 1px solid v.$border;
+  }
+}
+
+.jv2-counter {
+  font-size: v.$fs-sm;
+  color: v.$text-muted;
+  margin-bottom: v.$sp-3;
+
+  strong { color: v.$accent; font-variant-numeric: tabular-nums; }
+
+  &__warn {
+    margin-left: v.$sp-3;
+    color: v.$warning;
+    font-size: v.$fs-xs;
+  }
+}
+
+.jv2-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-3;
+}
+
+.jv2-comp-group {
+  &__title {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: v.$sp-2;
+    padding-bottom: v.$sp-2;
+    border-bottom: 1px solid v.$border;
+  }
+}
+
+.jv2-match-item {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-3;
+  padding: v.$sp-2 v.$sp-3;
+  border-radius: v.$r-sm;
+  cursor: pointer;
+  transition: background v.$t-fast;
+
+  &:hover { background: rgba(255, 255, 255, 0.03); }
+
+  input[type='checkbox'] {
+    accent-color: v.$accent;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  &__teams {
+    font-size: v.$fs-sm;
+    color: v.$text;
+    flex: 1;
+  }
+
+  &__date {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    flex-shrink: 0;
+  }
+}
+
 .admin-badge {
   display: inline-flex;
   align-items: center;
