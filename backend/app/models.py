@@ -41,6 +41,8 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     is_bot = db.Column(db.Boolean, default=False, nullable=False)
     total_points_all_time = db.Column(db.Integer, default=0, nullable=False)
+    current_division = db.Column(db.Integer, default=1, nullable=False)
+    current_league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     predictions = db.relationship('Prediction', backref='user', lazy='dynamic', cascade='all, delete-orphan')
@@ -95,6 +97,8 @@ class Match(db.Model):
     away_score_final = db.Column(db.Integer)
     result_90 = db.Column(db.String(1))  # 1, X, 2
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id'), nullable=True)
+    importance_score = db.Column(db.Float, nullable=True)
 
     predictions = db.relationship('Prediction', backref='match', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -279,3 +283,190 @@ class PushSubscription(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (db.UniqueConstraint('user_id', 'endpoint', name='uq_push_user_endpoint'),)
+
+
+class Season(db.Model):
+    __tablename__ = 'seasons'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(10), nullable=False)  # e.g. '26/27'
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(10), nullable=False, default='active')  # active/finished
+
+    jornadas = db.relationship('Jornada', backref='season', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'start_date': self.start_date.isoformat(),
+            'end_date': self.end_date.isoformat(),
+            'status': self.status,
+        }
+
+
+class Competition(db.Model):
+    __tablename__ = 'competitions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(10), unique=True, nullable=False)  # ESP/UCL/ENG/etc
+    name = db.Column(db.String(100), nullable=False)
+    weight = db.Column(db.Integer, nullable=False, default=1)
+    max_per_jornada = db.Column(db.Integer, nullable=False, default=5)
+
+    matches = db.relationship('Match', backref='competition', lazy='dynamic')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'code': self.code,
+            'name': self.name,
+            'weight': self.weight,
+            'max_per_jornada': self.max_per_jornada,
+        }
+
+
+class Jornada(db.Model):
+    __tablename__ = 'jornadas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    season_id = db.Column(db.Integer, db.ForeignKey('seasons.id'), nullable=False)
+    number = db.Column(db.Integer, nullable=False)
+    date_start = db.Column(db.DateTime, nullable=False)
+    date_end = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(10), nullable=False, default='upcoming')  # upcoming/active/finished
+
+    jornada_matches = db.relationship('JornadaMatch', backref='jornada', lazy='dynamic', cascade='all, delete-orphan')
+    duelos = db.relationship('Duelo', backref='jornada', lazy='dynamic', cascade='all, delete-orphan')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'season_id': self.season_id,
+            'number': self.number,
+            'date_start': self.date_start.replace(tzinfo=timezone.utc).isoformat(),
+            'date_end': self.date_end.replace(tzinfo=timezone.utc).isoformat(),
+            'status': self.status,
+        }
+
+
+class JornadaMatch(db.Model):
+    __tablename__ = 'jornada_matches'
+
+    id = db.Column(db.Integer, primary_key=True)
+    jornada_id = db.Column(db.Integer, db.ForeignKey('jornadas.id'), nullable=False)
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), nullable=False)
+    odds_1 = db.Column(db.Float, nullable=True)
+    odds_x = db.Column(db.Float, nullable=True)
+    odds_2 = db.Column(db.Float, nullable=True)
+    calculated_at = db.Column(db.DateTime, nullable=True)
+
+    match = db.relationship('Match', backref='jornada_matches')
+    predictions_v2 = db.relationship('PredictionV2', backref='jornada_match', lazy='dynamic', cascade='all, delete-orphan')
+
+    __table_args__ = (db.UniqueConstraint('jornada_id', 'match_id', name='uq_jornada_match'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'jornada_id': self.jornada_id,
+            'match_id': self.match_id,
+            'odds_1': self.odds_1,
+            'odds_x': self.odds_x,
+            'odds_2': self.odds_2,
+            'calculated_at': self.calculated_at.isoformat() if self.calculated_at else None,
+        }
+
+
+class PredictionV2(db.Model):
+    __tablename__ = 'predictions_v2'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    jornada_match_id = db.Column(db.Integer, db.ForeignKey('jornada_matches.id'), nullable=False)
+    predicted_result = db.Column(db.String(1), nullable=False)  # 1/X/2
+    units_wagered = db.Column(db.Integer, nullable=False, default=1)  # 0-5
+    points_earned = db.Column(db.Float, nullable=True)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'jornada_match_id', 'league_id', name='uq_v2_user_jmatch_league'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'jornada_match_id': self.jornada_match_id,
+            'predicted_result': self.predicted_result,
+            'units_wagered': self.units_wagered,
+            'points_earned': self.points_earned,
+            'league_id': self.league_id,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+        }
+
+
+class Duelo(db.Model):
+    __tablename__ = 'duelos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    jornada_id = db.Column(db.Integer, db.ForeignKey('jornadas.id'), nullable=False)
+    division_league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
+    player1_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    player2_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    points_player1 = db.Column(db.Float, default=0.0)
+    points_player2 = db.Column(db.Float, default=0.0)
+    winner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    div_points_p1 = db.Column(db.Integer, default=0)  # 3/1/0
+    div_points_p2 = db.Column(db.Integer, default=0)  # 3/1/0
+
+    player1 = db.relationship('User', foreign_keys=[player1_id])
+    player2 = db.relationship('User', foreign_keys=[player2_id])
+    winner = db.relationship('User', foreign_keys=[winner_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'jornada_id': self.jornada_id,
+            'division_league_id': self.division_league_id,
+            'player1_id': self.player1_id,
+            'player2_id': self.player2_id,
+            'points_player1': self.points_player1,
+            'points_player2': self.points_player2,
+            'winner_id': self.winner_id,
+            'div_points_p1': self.div_points_p1,
+            'div_points_p2': self.div_points_p2,
+        }
+
+
+class DivisionMember(db.Model):
+    __tablename__ = 'division_members'
+
+    id = db.Column(db.Integer, primary_key=True)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_bot = db.Column(db.Boolean, default=False, nullable=False)
+    division = db.Column(db.Integer, nullable=False, default=1)
+    season_div_points = db.Column(db.Integer, default=0, nullable=False)
+    season_total_points = db.Column(db.Float, default=0.0, nullable=False)
+    position = db.Column(db.Integer, nullable=True)
+    joined_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = db.relationship('User', backref='division_memberships')
+
+    __table_args__ = (db.UniqueConstraint('league_id', 'user_id', name='uq_division_member'),)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'league_id': self.league_id,
+            'user_id': self.user_id,
+            'is_bot': self.is_bot,
+            'division': self.division,
+            'season_div_points': self.season_div_points,
+            'season_total_points': self.season_total_points,
+            'position': self.position,
+            'joined_at': self.joined_at.isoformat(),
+        }
