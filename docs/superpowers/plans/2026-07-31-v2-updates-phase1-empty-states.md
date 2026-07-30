@@ -1,6 +1,6 @@
 # PickGoal v2 Updates — Phase 1: Empty States Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Unify the visual style of "sin datos" / empty states across jornada, duelo and tabla-v2, and centralize the hardcoded `#39FF14` neon-green literal into a proper SCSS variable.
 
@@ -27,7 +27,7 @@ No JS files change in this phase — `tabla-v2.js`'s empty state already uses th
 **Files:**
 - Modify: `frontend/src/sass/abstracts/_variables.scss:9-13`
 
-- [ ] **Step 1: Add the variable next to `$accent`**
+- [x] **Step 1: Add the variable next to `$accent`**
 
 Change lines 9-13 from:
 ```scss
@@ -47,7 +47,7 @@ $accent-glow:  rgba(0, 255, 135, 0.25);
 $accent-neon:  #39ff14;
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/sass/abstracts/_variables.scss
@@ -71,7 +71,7 @@ git commit -m "style: add \$accent-neon SCSS variable"
 - Modify: `frontend/src/sass/pages/_perfil.scss:112,149`
 - Modify: `frontend/src/sass/pages/_home.scss:376,433,466,555,603,638,662,676`
 
-- [ ] **Step 1: Run the mechanical replacement**
+- [x] **Step 1: Run the mechanical replacement**
 
 ```bash
 cd frontend/src/sass
@@ -89,14 +89,14 @@ sed -i '' -E 's/#39[Ff][Ff]14/v.$accent-neon/g' \
   pages/_home.scss
 ```
 
-- [ ] **Step 2: Verify no literal occurrences remain**
+- [x] **Step 2: Verify no literal occurrences remain**
 
 ```bash
 grep -rniE "#39ff14" frontend/src/sass
 ```
 Expected: no output (empty result).
 
-- [ ] **Step 3: Spot-check one replaced line looks right**
+- [x] **Step 3: Spot-check one replaced line looks right**
 
 ```bash
 grep -n "accent-neon" frontend/src/sass/components/_navbar.scss
@@ -107,7 +107,7 @@ Expected:
 47:    color: v.$accent-neon;
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/sass/components frontend/src/sass/pages
@@ -121,7 +121,7 @@ git commit -m "style: replace hardcoded #39FF14 literals with \$accent-neon"
 **Files:**
 - Modify: `frontend/src/sass/base/_reset.scss:1,113-119`
 
-- [ ] **Step 1: Add the mixins import**
+- [x] **Step 1: Add the mixins import**
 
 Change line 1 from:
 ```scss
@@ -133,7 +133,7 @@ to:
 @use '../abstracts/mixins' as m;
 ```
 
-- [ ] **Step 2: Restyle `.empty`**
+- [x] **Step 2: Restyle `.empty`**
 
 Change (current lines 113-119):
 ```scss
@@ -156,7 +156,7 @@ to:
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/sass/base/_reset.scss
@@ -170,7 +170,7 @@ git commit -m "style: restyle .empty as a dark card matching app visual language
 **Files:**
 - Modify: `frontend/src/sass/pages/_jornada.scss:1,122-144`
 
-- [ ] **Step 1: Add the mixins import**
+- [x] **Step 1: Add the mixins import**
 
 Change line 1 from:
 ```scss
@@ -182,7 +182,7 @@ to:
 @use '../abstracts/mixins' as m;
 ```
 
-- [ ] **Step 2: Restyle the block**
+- [x] **Step 2: Restyle the block**
 
 Change (current lines 122-144):
 ```scss
@@ -241,7 +241,7 @@ to:
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/sass/pages/_jornada.scss
@@ -255,7 +255,7 @@ git commit -m "style: restyle .jornada-empty as a dark card with neon icon"
 **Files:**
 - Modify: `frontend/src/sass/pages/_duelo.scss:90-100` (line numbers before Task 2's edit to line 73; re-check with `grep -n "duelo-empty" frontend/src/sass/pages/_duelo.scss` before editing since Task 2 only changes content on line 73, not line count)
 
-- [ ] **Step 1: Restyle the block**
+- [x] **Step 1: Restyle the block**
 
 Change:
 ```scss
@@ -289,7 +289,7 @@ to:
 
 (`_duelo.scss` already has `@use '../abstracts/mixins' as m;` on line 2 — no import change needed.)
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/sass/pages/_duelo.scss
@@ -302,14 +302,14 @@ git commit -m "style: restyle .duelo-empty as a dark card with neon icon"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the Vite build to catch Sass errors**
+- [x] **Step 1: Run the Vite build to catch Sass errors**
 
 ```bash
 cd frontend && npm run build
 ```
 Expected: build completes with exit code 0, no Sass compile errors (e.g. no "Undefined variable" or "Undefined mixin" errors referencing `_reset.scss`, `_jornada.scss`, or `_duelo.scss`).
 
-- [ ] **Step 2: Start the dev server and visually confirm in a browser**
+- [x] **Step 2: Start the dev server and visually confirm in a browser**
 
 ```bash
 cd frontend && npm run dev
