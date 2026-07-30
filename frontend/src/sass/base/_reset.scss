@@ -1,4 +1,5 @@
 @use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
 
@@ -111,11 +112,11 @@ input[type='number'] {
 }
 
 .empty {
+  @include m.card;
   text-align: center;
   color: v.$text-muted;
   font-size: v.$fs-sm;
-  padding: v.$sp-10 0;
-  font-style: italic;
+  padding: v.$sp-8 v.$sp-4;
 }
 
 .back-link {
