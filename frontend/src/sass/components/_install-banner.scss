@@ -11,7 +11,7 @@
   gap: v.$sp-4;
   padding: v.$sp-4 v.$sp-6;
   background: #000000;
-  border-top: 2px solid #39FF14;
+  border-top: 2px solid v.$accent-neon;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
 
   // Sit above the bottom nav when present
@@ -29,7 +29,7 @@
   &__text {
     font-size: v.$fs-sm;
     font-weight: v.$fw-semi;
-    color: #39FF14;
+    color: v.$accent-neon;
     white-space: nowrap;
 
     @media (max-width: v.$bp-sm) {
@@ -56,7 +56,7 @@
     &:hover { opacity: 0.85; }
 
     &--primary {
-      background: #39FF14;
+      background: v.$accent-neon;
       color: #000000;
     }
 

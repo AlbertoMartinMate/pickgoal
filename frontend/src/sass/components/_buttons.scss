@@ -133,7 +133,7 @@
 
   &--saved {
     background: rgba(57, 255, 20, 0.08);
-    color: #39FF14;
+    color: v.$accent-neon;
     border-color: rgba(57, 255, 20, 0.25);
 
     &:hover:not(:disabled) {

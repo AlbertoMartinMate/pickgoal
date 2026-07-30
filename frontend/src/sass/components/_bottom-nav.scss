@@ -9,7 +9,7 @@
   display: flex;
   align-items: stretch;
   background: #000000;
-  border-top: 2px solid #39FF14;
+  border-top: 2px solid v.$accent-neon;
 
   &__item {
     flex: 1;
@@ -36,7 +36,7 @@
     &:hover { color: v.$text-muted; }
 
     &--active {
-      color: #39FF14;
+      color: v.$accent-neon;
     }
   }
 

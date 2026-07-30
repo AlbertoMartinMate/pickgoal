@@ -161,7 +161,7 @@
   transition: color v.$t-fast, background v.$t-fast, border-color v.$t-fast;
 
   &--saved {
-    color: #39FF14;
+    color: v.$accent-neon;
     background: rgba(57, 255, 20, 0.08);
     border-color: rgba(57, 255, 20, 0.25);
   }
@@ -195,12 +195,12 @@
     border-top-color: rgba(57, 255, 20, 0.2);
 
     .score-input {
-      color: #39FF14;
+      color: v.$accent-neon;
       border-color: rgba(57, 255, 20, 0.2);
     }
 
     .result-selector__option:has(input:checked) {
-      color: #39FF14;
+      color: v.$accent-neon;
       background: rgba(57, 255, 20, 0.08);
       border-color: rgba(57, 255, 20, 0.3);
     }

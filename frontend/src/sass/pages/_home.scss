@@ -373,7 +373,7 @@
     border-radius: 50%;
     background: rgba(57, 255, 20, 0.1);
     border: 1px solid rgba(57, 255, 20, 0.25);
-    color: #39FF14;
+    color: v.$accent-neon;
     font-size: v.$fs-xs;
     font-weight: v.$fw-black;
     display: flex;
@@ -430,7 +430,7 @@
   }
 
   &__plus {
-    color: #39FF14;
+    color: v.$accent-neon;
     font-weight: v.$fw-bold;
   }
 }
@@ -463,7 +463,7 @@
   &__pts {
     font-size: v.$fs-base;
     font-weight: v.$fw-black;
-    color: #39FF14;
+    color: v.$accent-neon;
     font-variant-numeric: tabular-nums;
   }
 
@@ -552,7 +552,7 @@
   &__subheading {
     font-size: v.$fs-sm;
     font-weight: v.$fw-bold;
-    color: #39FF14;
+    color: v.$accent-neon;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-bottom: v.$sp-3;
@@ -600,7 +600,7 @@
     display: inline-block;
     font-size: v.$fs-xs;
     font-weight: v.$fw-bold;
-    color: #39FF14;
+    color: v.$accent-neon;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-right: v.$sp-2;
@@ -635,7 +635,7 @@
   &__phase-pts {
     font-size: v.$fs-base;
     font-weight: v.$fw-black;
-    color: #39FF14;
+    color: v.$accent-neon;
     font-variant-numeric: tabular-nums;
   }
 
@@ -659,7 +659,7 @@
   &__max-val {
     font-size: v.$fs-xl;
     font-weight: v.$fw-black;
-    color: #39FF14;
+    color: v.$accent-neon;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
@@ -673,7 +673,7 @@
   font-size: v.$fs-xs;
   font-weight: v.$fw-black;
   background: rgba(57, 255, 20, 0.1);
-  color: #39FF14;
+  color: v.$accent-neon;
   border: 1px solid rgba(57, 255, 20, 0.25);
   margin-right: v.$sp-1;
   font-variant-numeric: tabular-nums;

@@ -10,8 +10,8 @@
 
   &--set {
     background: rgba(57, 255, 20, 0.1);
-    border: 1px solid #39FF14;
-    color: #39FF14;
+    border: 1px solid v.$accent-neon;
+    color: v.$accent-neon;
 
     a {
       color: inherit;
@@ -116,7 +116,7 @@
     }
 
     &--active {
-      color: #39FF14;
+      color: v.$accent-neon;
       background: rgba(57, 255, 20, 0.08);
       border-color: rgba(57, 255, 20, 0.35);
     }

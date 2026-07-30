@@ -70,7 +70,7 @@
 
   &--ganado {
     background: rgba(57, 255, 20, 0.1);
-    color: #39FF14;
+    color: v.$accent-neon;
     border: 1px solid rgba(57, 255, 20, 0.3);
   }
 
@@ -88,6 +88,7 @@
 }
 
 .duelo-empty {
+  @include m.card;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -95,6 +96,6 @@
   text-align: center;
   padding: v.$sp-16 v.$sp-4;
 
-  &__icon { font-size: 3rem; }
+  &__icon { font-size: 3rem; color: v.$accent-neon; }
   &__text { font-size: v.$fs-sm; color: v.$text-muted; }
 }
