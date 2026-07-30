@@ -1,6 +1,6 @@
 # PickGoal v2 Updates — Phase 2: Tabla-v2 Tabs Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add "General" / "Mi División" tabs to the `#/tabla-v2` page, reusing the existing `.league-tabs` CSS pattern and the existing `GET /v2/clasificacion/division` endpoint (already consumed by `duelo.js` for its standings table).
 
@@ -23,7 +23,7 @@ No SCSS changes — `.league-tabs`/`.league-tab`/`.league-tab--active` (from `fr
 **Files:**
 - Modify: `frontend/src/js/pages/tabla-v2.js` (full file, currently 49 lines)
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 ```js
 import { api } from '../api.js';
@@ -172,7 +172,7 @@ Notes on this implementation, so a reviewer isn't left guessing:
 - The `ranking-table` markup/columns for Mi División are copied verbatim from `duelo.js:78-107` (`renderDivisionStandings`), including the `ranking-table__row--me` highlight class — same visual component, just relocated into a tab.
 - `#/tabla-v2` is already a protected route requiring login (`frontend/src/js/router.js:89`), and `GET /v2/clasificacion/division` requires a JWT — no new auth gating needed.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/js/pages/tabla-v2.js
@@ -185,14 +185,14 @@ git commit -m "feat: add General/Mi División tabs to tabla-v2"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the Vite build**
+- [x] **Step 1: Run the Vite build**
 
 ```bash
 cd frontend && npm run build
 ```
 Expected: exit code 0, no errors.
 
-- [ ] **Step 2: Manual check in the browser**
+- [x] **Step 2: Manual check in the browser**
 
 ```bash
 cd frontend && npm run dev
