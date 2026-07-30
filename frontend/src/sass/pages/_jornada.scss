@@ -1,4 +1,5 @@
 @use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
 
 // ─── Contador de unidades ────────────────────────────────────────────────────
 .units-counter {
@@ -120,6 +121,7 @@
 
 // ─── Estado sin jornada activa ───────────────────────────────────────────────
 .jornada-empty {
+  @include m.card;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -129,6 +131,7 @@
 
   &__icon {
     font-size: 3rem;
+    color: v.$accent-neon;
   }
 
   &__title {
