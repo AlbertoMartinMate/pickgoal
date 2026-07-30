@@ -15,6 +15,9 @@ import { renderResetPassword } from './pages/reset-password.js';
 import { renderResultados } from './pages/resultados.js';
 import { renderUnirse } from './pages/unirse.js';
 import { renderJugador } from './pages/jugador.js';
+import { renderJornada } from './pages/jornada.js';
+import { renderDuelo } from './pages/duelo.js';
+import { renderTablaV2 } from './pages/tabla-v2.js';
 
 const routes = {
   '/': renderHome,
@@ -33,6 +36,9 @@ const routes = {
   '/reset-password': renderResetPassword,
   '/unirse': renderUnirse,
   '/jugador/:id': renderJugador,
+  '/jornada': renderJornada,
+  '/duelo': renderDuelo,
+  '/tabla-v2': renderTablaV2,
 };
 
 function matchRoute(path) {
@@ -80,7 +86,7 @@ export const router = {
     const { handler, params } = matched;
 
     // Rutas protegidas
-    const protectedRoutes = ['/perfil', '/campeon', '/admin'];
+    const protectedRoutes = ['/perfil', '/campeon', '/admin', '/jornada', '/duelo', '/tabla-v2'];
     if (protectedRoutes.includes(path) && !auth.isLoggedIn()) {
       this.navigate('/login');
       return;

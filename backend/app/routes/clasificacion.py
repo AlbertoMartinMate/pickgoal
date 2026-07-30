@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func
 from app import db
-from app.models import User, DivisionMember, get_user_status
+from app.models import User, DivisionMember, Jornada, get_user_status
 
 clasificacion_bp = Blueprint('clasificacion_v2', __name__)
 
@@ -52,11 +52,19 @@ def general_standings():
         .all()
     )
 
+    active_jornada = Jornada.query.filter_by(status='active').first()
+
     standings = []
     for i, row in enumerate(results):
         user = User.query.get(row.user_id)
         if not user:
             continue
+
+        pts_jornada_actual = 0.0
+        if active_jornada:
+            from app.utils import calculate_jornada_points
+            pts_jornada_actual = calculate_jornada_points(user.id, active_jornada.id, commit=False)
+
         standings.append({
             'pos': i + 1,
             'user_id': user.id,
@@ -64,6 +72,7 @@ def general_standings():
             'country': user.country,
             'pts_general': round(row.total or 0, 2),
             'pts_division': int(row.div_pts or 0),
+            'pts_jornada_actual': round(pts_jornada_actual, 2),
             'status': get_user_status(user.total_points_all_time or 0),
         })
 

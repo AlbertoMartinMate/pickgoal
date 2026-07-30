@@ -33,7 +33,15 @@ def get_current_jornada():
     user_id = int(get_jwt_identity())
     jornada = _get_active_jornada()
     if not jornada:
-        return jsonify({'jornada': None}), 200
+        next_jornada = (
+            Jornada.query.filter_by(status='upcoming')
+            .order_by(Jornada.date_start.asc())
+            .first()
+        )
+        return jsonify({
+            'jornada': None,
+            'next_jornada': next_jornada.to_dict() if next_jornada else None,
+        }), 200
 
     jornada_matches = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
 

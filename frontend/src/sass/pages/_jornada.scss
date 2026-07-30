@@ -1,0 +1,144 @@
+@use '../abstracts/variables' as v;
+
+// ─── Contador de unidades ────────────────────────────────────────────────────
+.units-counter {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-6;
+  padding: v.$sp-3 v.$sp-4;
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+
+  &__bar {
+    flex: 1;
+    height: 8px;
+    border-radius: v.$r-full;
+    background: v.$bg-surface;
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    background: v.$accent;
+    border-radius: v.$r-full;
+    transition: width v.$t-base;
+
+    &--over { background: v.$danger; }
+  }
+
+  &__label {
+    flex-shrink: 0;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    white-space: nowrap;
+
+    &--over { color: v.$danger; }
+  }
+}
+
+// ─── Cuotas ──────────────────────────────────────────────────────────────────
+.jornada-odds {
+  display: flex;
+  justify-content: center;
+  gap: v.$sp-4;
+  padding: v.$sp-2 0 v.$sp-4;
+  font-size: v.$fs-sm;
+  color: v.$text-muted;
+
+  &__item {
+    b { color: v.$accent; margin-right: 2px; }
+  }
+}
+
+.tag--locked {
+  background: v.$danger-dim;
+  color: v.$danger;
+  border-color: rgba(v.$danger, 0.3);
+}
+
+// ─── Lista de partidos ───────────────────────────────────────────────────────
+.jornada-matches {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-6;
+}
+
+.jornada-match {
+  &__controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: v.$sp-3;
+    padding-top: v.$sp-4;
+    border-top: 1px solid v.$border;
+
+    &--disabled { opacity: 0.5; }
+  }
+}
+
+.jornada-units {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-2;
+
+  &__label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__input {
+    width: 56px;
+    padding: 8px;
+    text-align: center;
+    font-weight: v.$fw-bold;
+    font-size: v.$fs-base;
+    color: v.$text;
+    background: v.$bg-input;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+
+    &:focus {
+      outline: none;
+      border-color: v.$accent;
+    }
+
+    &:disabled { opacity: 0.5; }
+  }
+}
+
+.jornada-save-btn {
+  position: sticky;
+  bottom: calc(v.$bottom-nav-h + v.$sp-4);
+  margin-top: v.$sp-2;
+}
+
+// ─── Estado sin jornada activa ───────────────────────────────────────────────
+.jornada-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.$sp-3;
+  text-align: center;
+  padding: v.$sp-16 v.$sp-4;
+
+  &__icon {
+    font-size: 3rem;
+  }
+
+  &__title {
+    font-size: v.$fs-lg;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+  }
+
+  &__text {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+  }
+}

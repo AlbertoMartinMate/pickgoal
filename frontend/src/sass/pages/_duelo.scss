@@ -1,0 +1,100 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.section-title {
+  @include m.section-title;
+}
+
+.duelo-card {
+  @include m.card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.$sp-5;
+  padding: v.$sp-6;
+  margin-bottom: v.$sp-10;
+
+  &__matchup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: v.$sp-6;
+    width: 100%;
+  }
+
+  &__player {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: v.$sp-2;
+    text-align: center;
+  }
+
+  &__name {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-bold;
+    color: v.$text;
+  }
+
+  &__pts {
+    font-size: v.$fs-2xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__vs {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-dim;
+    letter-spacing: 0.1em;
+  }
+}
+
+.duelo-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+
+  &--curso {
+    background: rgba(61, 145, 255, 0.12);
+    color: v.$info;
+    border: 1px solid rgba(61, 145, 255, 0.3);
+  }
+
+  &--ganado {
+    background: rgba(57, 255, 20, 0.1);
+    color: #39FF14;
+    border: 1px solid rgba(57, 255, 20, 0.3);
+  }
+
+  &--perdido {
+    background: v.$danger-dim;
+    color: v.$danger;
+    border: 1px solid rgba(v.$danger, 0.3);
+  }
+
+  &--empate {
+    background: v.$warning-dim;
+    color: v.$warning;
+    border: 1px solid rgba(v.$warning, 0.3);
+  }
+}
+
+.duelo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.$sp-3;
+  text-align: center;
+  padding: v.$sp-16 v.$sp-4;
+
+  &__icon { font-size: 3rem; }
+  &__text { font-size: v.$fs-sm; color: v.$text-muted; }
+}

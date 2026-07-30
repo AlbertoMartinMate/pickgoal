@@ -98,4 +98,19 @@ export const api = {
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteJornada: (id) => request(`/v2/admin/jornada/${id}`, { method: 'DELETE' }),
   },
+
+  jornada: {
+    current: () => request('/v2/jornada/current'),
+    predict: (predictions) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify({ predictions }) }),
+    history: () => request('/v2/jornada/history'),
+  },
+
+  duelo: {
+    current: () => request('/v2/duelo/current'),
+  },
+
+  clasificacion: {
+    division: (leagueId) => request(`/v2/clasificacion/division${leagueId ? `?league_id=${leagueId}` : ''}`),
+    general: () => request('/v2/clasificacion/general'),
+  },
 };
