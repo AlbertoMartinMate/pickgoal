@@ -82,6 +82,9 @@ def save_prediction():
     predicted_result = data.get('predicted_result')
     units = data.get('units', 1)
 
+    if not isinstance(jornada_match_id, int):
+        return jsonify({'error': 'jornada_match_id inválido'}), 400
+
     jornada = _get_active_jornada()
     if not jornada:
         return jsonify({'error': 'No hay jornada activa'}), 400
