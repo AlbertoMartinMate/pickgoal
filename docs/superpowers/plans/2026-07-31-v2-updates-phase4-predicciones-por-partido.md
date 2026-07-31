@@ -1,6 +1,6 @@
 # PickGoal v2 Updates — Phase 4: Predicciones por partido Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Replace the jornada-wide "lock at first kickoff, save everything in one batch" prediction flow with a per-match model: each match opens/closes independently (closes 30 minutes before its own kickoff), and is saved individually with its own button, while the 20-unit/5-per-match jornada budget is still enforced globally.
 
@@ -26,7 +26,7 @@ No new SCSS classes needed beyond that one swap — `.tag`/`.tag--locked`, `.not
 **Files:**
 - Modify: `backend/app/routes/jornadas.py`
 
-- [ ] **Step 1: Replace the whole file**
+- [x] **Step 1: Replace the whole file**
 
 Replace the entire contents of `backend/app/routes/jornadas.py` with:
 
@@ -198,7 +198,7 @@ Notes on this implementation, so a reviewer isn't left guessing:
 - `POST /predict`'s budget check ("Suma de unidades ya usadas en la jornada (excluyendo esta predicción si ya existía) + units de esta petición <= 20") is implemented by summing every other `PredictionV2` this user has in this jornada (`if p.jornada_match_id != jornada_match_id`) and adding the incoming `units` — this correctly handles both a brand-new prediction and an edit of an existing one without double-counting the match being saved.
 - Validation order matches the spec's own ordering: jornada exists → match belongs to jornada → match not locked → `predicted_result` valid → `units` valid → budget not exceeded.
 
-- [ ] **Step 2: Sanity-check the change**
+- [x] **Step 2: Sanity-check the change**
 
 No automated test suite exists in this repo (backend or frontend) — manual/mechanical verification only, per the project's established convention. Do not attempt to start a full local server + real DB for this step.
 
@@ -214,12 +214,14 @@ grep -rn "_first_match_datetime\|'locked'\|first_match_datetime" backend/app/ fr
 ```
 Expected: no remaining references (frontend still has zero at this point since Task 2/3 haven't run yet — if you see a hit in `frontend/src/js/pages/jornada.js`, that's expected and will be fixed by a separate task, not yours to fix here).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/app/routes/jornadas.py
 git commit -m "feat: lock and save jornada predictions per match instead of jornada-wide"
 ```
+
+Code quality review flagged an additional issue (a non-integer `jornada_match_id` could crash `POST /predict` with an unhandled 500 instead of a clean 400), fixed in a follow-up commit `9e46bb5` ("fix: validate jornada_match_id type in predict endpoint") — a 3-line `isinstance` guard, re-reviewed and approved.
 
 ---
 
@@ -229,7 +231,7 @@ git commit -m "feat: lock and save jornada predictions per match instead of jorn
 - Modify: `frontend/src/js/api.js`
 - Modify: `frontend/src/js/pages/jornada.js`
 
-- [ ] **Step 1: Update `api.js`'s `jornada.predict`**
+- [x] **Step 1: Update `api.js`'s `jornada.predict`**
 
 In `frontend/src/js/api.js`, find:
 
@@ -251,7 +253,7 @@ Replace with:
   },
 ```
 
-- [ ] **Step 2: Replace the whole `jornada.js` file**
+- [x] **Step 2: Replace the whole `jornada.js` file**
 
 Replace the entire contents of `frontend/src/js/pages/jornada.js` with:
 
@@ -485,14 +487,14 @@ Notes on this implementation:
 - `.tag` (no modifier) is reused as-is for the "Abierto hasta HH:MM" state — it already has accent-colored styling from `frontend/src/sass/base/_reset.scss:133-143`, no new SCSS needed for that state; `.tag--locked` (already in `_jornada.scss`) is reused unchanged for "Bloqueado".
 - `.notice` (no modifier) is reused as-is for the warning banner — it already exists in `frontend/src/sass/base/_reset.scss:101-111` and needs no changes.
 
-- [ ] **Step 3: Verify with `node --check` (no test suite in this repo)**
+- [x] **Step 3: Verify with `node --check` (no test suite in this repo)**
 
 ```bash
 cd frontend && node --check src/js/pages/jornada.js && node --check src/js/api.js
 ```
 Expected: both exit 0, no output.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/js/api.js frontend/src/js/pages/jornada.js
@@ -506,7 +508,7 @@ git commit -m "feat: save and lock jornada predictions per match in the UI"
 **Files:**
 - Modify: `frontend/src/sass/pages/_jornada.scss`
 
-- [ ] **Step 1: Replace `.jornada-save-btn` with `.jornada-match__save-btn`**
+- [x] **Step 1: Replace `.jornada-save-btn` with `.jornada-match__save-btn`**
 
 In `frontend/src/sass/pages/_jornada.scss`, find:
 
@@ -528,7 +530,7 @@ Replace with:
 
 This class is now dead — the markup that used it (the single jornada-wide "Guardar predicciones" button, `#jornadaSaveBtn`/`.jornada-save-btn`) was removed from `frontend/src/js/pages/jornada.js` in Task 2, replaced by one `.jornada-match__save-btn` per match card, which needs plain top spacing (not sticky-to-viewport positioning — with one button per match card, a sticky button per card would overlap every other card while scrolling).
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/sass/pages/_jornada.scss
@@ -541,7 +543,7 @@ git commit -m "style: replace sticky global save button with per-match save butt
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the Vite build**
+- [x] **Step 1: Run the Vite build**
 
 ```bash
 cd frontend && npm run build
@@ -550,7 +552,7 @@ Expected: exit code 0, no errors.
 
 - [ ] **Step 2: Manual check in the browser**
 
-The project owner will perform this step once the change is deployed (per their explicit instruction). Leave this step unchecked until they confirm; do not attempt to fabricate or assume a result.
+The project owner will perform this step once the change is deployed (per their explicit instruction — see chat: "La verificación manual del duelo la haré yo cuando esté todo desplegado," which applies to phase 4 too). Leave this step unchecked until they confirm; do not attempt to fabricate or assume a result.
 
 ```bash
 cd frontend && npm run dev
