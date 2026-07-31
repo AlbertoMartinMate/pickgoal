@@ -99,3 +99,62 @@
   &__icon { font-size: 3rem; color: v.$accent-neon; }
   &__text { font-size: v.$fs-sm; color: v.$text-muted; }
 }
+
+// ─── Partido a partido (picks) ────────────────────────────────────────────────
+.duelo-matches {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-10;
+}
+
+.duelo-pick-row {
+  display: flex;
+  justify-content: space-around;
+  gap: v.$sp-4;
+  padding-top: v.$sp-4;
+  border-top: 1px solid v.$border;
+}
+
+.duelo-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.$sp-2;
+
+  &__label {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__value {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 v.$sp-2;
+    border-radius: v.$r-md;
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-bold;
+    background: v.$accent-dim;
+    color: v.$accent;
+
+    &--hidden {
+      background: v.$bg-surface;
+      color: v.$text-dim;
+    }
+
+    &--empty {
+      background: v.$bg-surface;
+      color: v.$text-dim;
+    }
+  }
+}
