@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
@@ -12,19 +12,6 @@ MAX_UNITS_PER_MATCH = 5
 
 def _get_active_jornada():
     return Jornada.query.filter_by(status='active').first()
-
-
-def _first_match_datetime(jornada):
-    from app.models import Match
-    from sqlalchemy import asc
-    jm = (
-        JornadaMatch.query
-        .filter_by(jornada_id=jornada.id)
-        .join(JornadaMatch.match)
-        .order_by(asc(Match.match_datetime))
-        .first()
-    )
-    return jm.match.match_datetime.replace(tzinfo=timezone.utc) if jm else None
 
 
 @jornadas_bp.route('/current', methods=['GET'])
@@ -72,18 +59,13 @@ def get_current_jornada():
             'odds_1': jm.odds_1,
             'odds_x': jm.odds_x,
             'odds_2': jm.odds_2,
+            'predict_locked': match.is_locked(),
+            'opens_until': (dt_utc - timedelta(minutes=30)).isoformat(),
             'prediction': pred.to_dict() if pred else None,
         })
 
-    first_dt = _first_match_datetime(jornada)
-    locked = first_dt is not None and datetime.now(timezone.utc) >= first_dt
-
     return jsonify({
-        'jornada': {
-            **jornada.to_dict(),
-            'locked': locked,
-            'first_match_datetime': first_dt.isoformat() if first_dt else None,
-        },
+        'jornada': jornada.to_dict(),
         'matches': matches_data,
         'units_used': units_used,
         'units_disponibles': MAX_UNITS - units_used,
@@ -92,68 +74,57 @@ def get_current_jornada():
 
 @jornadas_bp.route('/predict', methods=['POST'])
 @jwt_required()
-def save_predictions():
+def save_prediction():
     user_id = int(get_jwt_identity())
     data = request.get_json()
-    predictions_input = data.get('predictions', [])
 
-    if not predictions_input:
-        return jsonify({'error': 'No se enviaron predicciones'}), 400
+    jornada_match_id = data.get('jornada_match_id')
+    predicted_result = data.get('predicted_result')
+    units = data.get('units', 1)
 
     jornada = _get_active_jornada()
     if not jornada:
         return jsonify({'error': 'No hay jornada activa'}), 400
 
-    first_dt = _first_match_datetime(jornada)
-    if first_dt and datetime.now(timezone.utc) >= first_dt:
-        return jsonify({'error': 'El plazo de predicción ha cerrado (ya empezó el primer partido)'}), 403
+    jm = JornadaMatch.query.filter_by(id=jornada_match_id, jornada_id=jornada.id).first()
+    if not jm:
+        return jsonify({'error': f'Partido {jornada_match_id} no pertenece a la jornada activa'}), 400
 
-    # Validate all jornada_match_ids belong to this jornada
-    valid_jm_ids = {
-        jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
-    }
+    if jm.match.is_locked():
+        return jsonify({'error': 'Este partido ya está bloqueado'}), 403
 
-    total_units = 0
-    validated = []
-    for item in predictions_input:
-        jm_id = item.get('jornada_match_id') or item.get('match_id')
-        predicted_result = item.get('predicted_result')
-        units = item.get('units', 1)
+    if predicted_result not in ('1', 'X', '2'):
+        return jsonify({'error': 'Resultado inválido'}), 400
 
-        if jm_id not in valid_jm_ids:
-            return jsonify({'error': f'Partido {jm_id} no pertenece a la jornada activa'}), 400
-        if predicted_result not in ('1', 'X', '2'):
-            return jsonify({'error': f'Resultado inválido en partido {jm_id}'}), 400
-        if not isinstance(units, int) or units < 0 or units > MAX_UNITS_PER_MATCH:
-            return jsonify({'error': f'Unidades inválidas en partido {jm_id} (0-{MAX_UNITS_PER_MATCH})'}), 400
+    if not isinstance(units, int) or units < 0 or units > MAX_UNITS_PER_MATCH:
+        return jsonify({'error': f'Unidades inválidas (0-{MAX_UNITS_PER_MATCH})'}), 400
 
-        total_units += units
-        validated.append({'jm_id': jm_id, 'predicted_result': predicted_result, 'units': units})
-
-    if total_units > MAX_UNITS:
+    jm_ids = [m.id for m in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()]
+    other_units = sum(
+        p.units_wagered
+        for p in PredictionV2.query.filter_by(user_id=user_id)
+            .filter(PredictionV2.jornada_match_id.in_(jm_ids)).all()
+        if p.jornada_match_id != jornada_match_id
+    )
+    if other_units + units > MAX_UNITS:
         return jsonify({'error': f'Total de unidades supera el máximo de {MAX_UNITS}'}), 400
 
-    saved = []
-    for v in validated:
-        existing = PredictionV2.query.filter_by(
-            user_id=user_id, jornada_match_id=v['jm_id']
-        ).first()
-        if existing:
-            existing.predicted_result = v['predicted_result']
-            existing.units_wagered = v['units']
-            saved.append(existing)
-        else:
-            pred = PredictionV2(
-                user_id=user_id,
-                jornada_match_id=v['jm_id'],
-                predicted_result=v['predicted_result'],
-                units_wagered=v['units'],
-            )
-            db.session.add(pred)
-            saved.append(pred)
+    existing = PredictionV2.query.filter_by(user_id=user_id, jornada_match_id=jornada_match_id).first()
+    if existing:
+        existing.predicted_result = predicted_result
+        existing.units_wagered = units
+        pred = existing
+    else:
+        pred = PredictionV2(
+            user_id=user_id,
+            jornada_match_id=jornada_match_id,
+            predicted_result=predicted_result,
+            units_wagered=units,
+        )
+        db.session.add(pred)
 
     db.session.commit()
-    return jsonify({'predictions': [p.to_dict() for p in saved]}), 200
+    return jsonify({'prediction': pred.to_dict()}), 200
 
 
 @jornadas_bp.route('/history', methods=['GET'])
