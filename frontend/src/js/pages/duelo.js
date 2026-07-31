@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { formatDate } from '../ui.js';
 
 const STATUS_META = {
   en_curso: { label: 'En curso', cls: 'duelo-status--curso' },
@@ -51,6 +52,13 @@ export async function renderDuelo(el) {
           </div>
         </div>
 
+        ${!isBye && duelo.matches?.length > 0 ? `
+          <h2 class="section-title">Partido a partido</h2>
+          <div class="duelo-matches">
+            ${duelo.matches.map(m => matchPickCard(m, rivalName)).join('')}
+          </div>
+        ` : ''}
+
         <h2 class="section-title">Clasificación divisional</h2>
         <div id="divisionStandings"><div class="loading"><div class="loading__spinner"></div></div></div>
       </div>
@@ -61,6 +69,50 @@ export async function renderDuelo(el) {
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando el duelo: ${err.message}</p></div>`;
   }
+}
+
+function matchPickCard(m, rivalName) {
+  const myPick = m.my_prediction?.predicted_result;
+
+  let rivalDisplay, rivalCls;
+  if (!m.started) {
+    rivalDisplay = '?';
+    rivalCls = 'duelo-pick__value--hidden';
+  } else if (m.rival_prediction) {
+    rivalDisplay = m.rival_prediction.predicted_result;
+    rivalCls = '';
+  } else {
+    rivalDisplay = '—';
+    rivalCls = 'duelo-pick__value--empty';
+  }
+
+  return `
+    <div class="match-card duelo-pick-card">
+      <div class="match-card__header">
+        <span class="match-card__date">${formatDate(m.match_datetime)}</span>
+      </div>
+      <div class="match-card__teams">
+        <span class="team team--home">${m.home_team}</span>
+        <div class="match-card__score">
+          ${m.status !== 'scheduled'
+            ? `<span class="score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`
+            : '<span class="score score--dash">vs</span>'
+          }
+        </div>
+        <span class="team team--away">${m.away_team}</span>
+      </div>
+      <div class="duelo-pick-row">
+        <div class="duelo-pick">
+          <span class="duelo-pick__label">Tú</span>
+          <span class="duelo-pick__value ${myPick ? '' : 'duelo-pick__value--empty'}">${myPick ?? '—'}</span>
+        </div>
+        <div class="duelo-pick">
+          <span class="duelo-pick__label">${rivalName}</span>
+          <span class="duelo-pick__value ${rivalCls}">${rivalDisplay}</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function renderDivisionStandings(leagueId, myUserId) {
