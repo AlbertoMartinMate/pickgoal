@@ -101,7 +101,7 @@ export const api = {
 
   jornada: {
     current: () => request('/v2/jornada/current'),
-    predict: (predictions) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify({ predictions }) }),
+    predict: (prediction) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify(prediction) }),
     history: () => request('/v2/jornada/history'),
   },
 
