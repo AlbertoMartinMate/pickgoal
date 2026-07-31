@@ -113,10 +113,8 @@
   }
 }
 
-.jornada-save-btn {
-  position: sticky;
-  bottom: calc(v.$bottom-nav-h + v.$sp-4);
-  margin-top: v.$sp-2;
+.jornada-match__save-btn {
+  margin-top: v.$sp-4;
 }
 
 // ─── Estado sin jornada activa ───────────────────────────────────────────────
