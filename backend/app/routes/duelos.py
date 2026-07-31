@@ -76,7 +76,6 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
     return result
 
 
-
 @duelos_bp.route('/current', methods=['GET'])
 @jwt_required()
 def get_current_duelo():
