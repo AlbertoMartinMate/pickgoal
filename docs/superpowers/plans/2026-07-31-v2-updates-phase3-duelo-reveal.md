@@ -1,6 +1,6 @@
 # PickGoal v2 Updates — Phase 3: Duelo Match-by-Match Pick Reveal Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** On the `#/duelo` page, show a per-match list below the duelo card with each jornada match, "my" pick (always visible) and the rival's pick (revealed only once that specific match has started).
 
@@ -25,7 +25,7 @@ No new routes, no `api.js` changes needed — `api.duelo.current()` already call
 **Files:**
 - Modify: `backend/app/routes/duelos.py`
 
-- [ ] **Step 1: Add the missing imports and a `_match_started` helper**
+- [x] **Step 1: Add the missing imports and a `_match_started` helper**
 
 In `backend/app/routes/duelos.py`, replace the top of the file:
 
@@ -129,7 +129,7 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
     return result
 ```
 
-- [ ] **Step 2: Use the helper in `get_current_duelo()`, skip it for the bye case**
+- [x] **Step 2: Use the helper in `get_current_duelo()`, skip it for the bye case**
 
 Replace the return statement of `get_current_duelo()`:
 
@@ -188,7 +188,7 @@ Expected in the JSON:
 - `my_prediction` is populated whenever the logged-in user has a saved `PredictionV2` for that match, started or not.
 - If the logged-in test user has a bye this jornada (`duelo.player1_id == duelo.player2_id` — check via `duelo.rival.id == <own id>` in the response, or query the DB), `duelo.matches` is `[]`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/app/routes/duelos.py
@@ -202,7 +202,7 @@ git commit -m "feat: reveal rival picks per match once each match starts"
 **Files:**
 - Modify: `frontend/src/js/pages/duelo.js`
 
-- [ ] **Step 1: Replace the file contents**
+- [x] **Step 1: Replace the file contents**
 
 ```js
 import { api } from '../api.js';
@@ -376,7 +376,7 @@ Notes on this implementation:
 - `rivalDisplay`/`rivalCls` distinguish three states using the `started` flag the backend now sends: not started yet (`?`, dimmed/hidden style), started but rival has no pick for that match (`—`), started with a real pick (the letter itself, normal style). This mirrors the backend's three-way `rival_prediction` semantics (`null` pre-kickoff for privacy vs. `null` post-kickoff meaning "no pick was made").
 - The whole "Partido a partido" section (title + list) is omitted entirely when `isBye` is true or when `duelo.matches` is empty, per spec section 3 ("Caso bye ... se omite la sección de comparación de picks").
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/js/pages/duelo.js
@@ -390,7 +390,7 @@ git commit -m "feat: show rival picks match-by-match on the duelo page"
 **Files:**
 - Modify: `frontend/src/sass/pages/_duelo.scss`
 
-- [ ] **Step 1: Append the new styles**
+- [x] **Step 1: Append the new styles**
 
 Add to the end of `frontend/src/sass/pages/_duelo.scss`:
 
@@ -455,7 +455,7 @@ Add to the end of `frontend/src/sass/pages/_duelo.scss`:
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add frontend/src/sass/pages/_duelo.scss
@@ -468,7 +468,7 @@ git commit -m "style: add pick badges for duelo match-by-match reveal"
 
 **Files:** none (verification only)
 
-- [ ] **Step 1: Run the Vite build**
+- [x] **Step 1: Run the Vite build**
 
 ```bash
 cd frontend && npm run build
