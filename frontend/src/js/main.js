@@ -1,4 +1,3 @@
-// build: 2026-08-07
 import '../sass/main.scss';
 import { router } from './router.js';
 import { auth } from './auth.js';
@@ -9,6 +8,7 @@ let deferredInstallPrompt = null;
 let unreadPollInterval = null;
 
 async function bootstrap() {
+  document.documentElement.dataset.build = __BUILD_DATE__;
   await auth.init();
   router.init();
   setupNavbar();

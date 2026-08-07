@@ -4,6 +4,9 @@ export default defineConfig({
   root: 'src',
   publicDir: '../public',
   base: '/',
+  define: {
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 13)),
+  },
   build: {
     outDir: '../dist',
     emptyOutDir: true,
