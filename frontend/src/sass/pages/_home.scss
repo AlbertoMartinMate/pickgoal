@@ -844,3 +844,126 @@
     align-items: center;
   }
 }
+
+// ─── Division Card (v2 home) ──────────────────────────────────────────────────
+.div-card {
+  background: v.$bg-card;
+  border: 1px solid v.$border;
+  border-radius: v.$r-lg;
+  padding: v.$sp-5;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-4;
+  margin-bottom: v.$sp-5;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: v.$sp-4;
+  }
+
+  &__league {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: block;
+    margin-bottom: v.$sp-1;
+  }
+
+  &__pos-row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    flex-wrap: wrap;
+  }
+
+  &__pos {
+    font-size: 2rem;
+    font-weight: 700;
+    color: v.$text;
+    line-height: 1;
+  }
+
+  &__of {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+  }
+
+  &__zone {
+    font-size: v.$fs-xs;
+    font-weight: 600;
+    padding: 2px v.$sp-2;
+    border-radius: v.$r-sm;
+
+    &--promotion {
+      background: rgba(0, 255, 135, 0.15);
+      color: v.$accent;
+    }
+
+    &--relegation {
+      background: rgba(255, 56, 96, 0.15);
+      color: v.$danger;
+    }
+  }
+
+  &__pts-block {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  &__pts-val {
+    display: block;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: v.$accent;
+    line-height: 1;
+  }
+
+  &__pts-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__record {
+    display: flex;
+    gap: v.$sp-3;
+    padding: v.$sp-3 0;
+    border-top: 1px solid v.$border;
+    border-bottom: 1px solid v.$border;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 36px;
+
+    span {
+      font-size: v.$fs-base;
+      font-weight: 600;
+      color: v.$text;
+    }
+
+    small {
+      font-size: v.$fs-xs;
+      color: v.$text-muted;
+      text-transform: uppercase;
+    }
+
+    &--general {
+      margin-left: auto;
+
+      span { color: v.$accent; }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$sp-3;
+  }
+}

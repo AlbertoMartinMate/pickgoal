@@ -14,15 +14,29 @@ export async function renderHome(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const { leagues_summary, upcoming_matches } = await api.home.summary();
+    const { leagues_summary, division_summary, upcoming_matches } = await api.home.summary();
 
-    if (leagues_summary.length === 0) {
+    if (division_summary) {
+      el.innerHTML = `
+        <div class="home-dashboard container">
+          <div class="home-dashboard__topbar">
+            <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
+          </div>
+          ${divisionCard(division_summary)}
+          ${upcomingSection(upcoming_matches)}
+        </div>
+        ${pointsModalHtml()}
+      `;
+      attachPointsModal(el);
+      return;
+    }
+
+    if (!leagues_summary || leagues_summary.length === 0) {
       renderNoLeague(el);
       return;
     }
 
     const activeId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
-    // Ordenar: liga activa primero
     const sorted = [...leagues_summary].sort((a, b) =>
       a.league_id === activeId ? -1 : b.league_id === activeId ? 1 : 0
     );
@@ -32,8 +46,6 @@ export async function renderHome(el) {
         <div class="home-dashboard__topbar">
           <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
         </div>
-
-        ${pickgoalLeagueCard()}
 
         <h3 class="home-dashboard__section-title">Mis ligas</h3>
         <div class="home-dashboard__leagues">
@@ -49,7 +61,6 @@ export async function renderHome(el) {
       ${pointsModalHtml()}
     `;
     attachPointsModal(el);
-    attachPickgoalLeagueCard(el);
 
     el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
       card.style.cursor = 'pointer';
@@ -126,6 +137,43 @@ function renderNoLeague(el) {
     </div>
   `;
   attachPickgoalLeagueCard(el);
+}
+
+function divisionCard(div) {
+  const zoneLabels = { promotion: '⬆️ Zona ascenso', relegation: '⬇️ Zona descenso', mid: '' };
+  const zoneBadge = zoneLabels[div.zone]
+    ? `<span class="div-card__zone div-card__zone--${div.zone}">${zoneLabels[div.zone]}</span>`
+    : '';
+
+  return `
+    <div class="div-card">
+      <div class="div-card__header">
+        <div>
+          <span class="div-card__league">${div.league_name}</span>
+          <div class="div-card__pos-row">
+            <span class="div-card__pos">${div.rank ?? '—'}º</span>
+            <span class="div-card__of">de ${div.member_count}</span>
+            ${zoneBadge}
+          </div>
+        </div>
+        <div class="div-card__pts-block">
+          <span class="div-card__pts-val">${div.pts_division}</span>
+          <span class="div-card__pts-label">pts división</span>
+        </div>
+      </div>
+      <div class="div-card__record">
+        <div class="div-card__stat"><span>${div.pj}</span><small>PJ</small></div>
+        <div class="div-card__stat"><span>${div.g}</span><small>G</small></div>
+        <div class="div-card__stat"><span>${div.e}</span><small>E</small></div>
+        <div class="div-card__stat"><span>${div.p}</span><small>P</small></div>
+        <div class="div-card__stat div-card__stat--general"><span>${div.pts_general}</span><small>Pts total</small></div>
+      </div>
+      <div class="div-card__actions">
+        <a href="#/jornada" class="btn btn--primary btn--sm">Predecir jornada</a>
+        <a href="#/tabla-v2" class="btn btn--ghost btn--sm">Ver tabla</a>
+      </div>
+    </div>
+  `;
 }
 
 function daysUntil(targetDate) {

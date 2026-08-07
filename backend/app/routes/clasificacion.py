@@ -45,7 +45,6 @@ def general_standings():
             func.sum(DivisionMember.season_div_points).label('div_pts'),
         )
         .join(User, User.id == DivisionMember.user_id)
-        .filter(User.is_bot == False)
         .group_by(DivisionMember.user_id)
         .order_by(func.sum(DivisionMember.season_total_points).desc())
         .limit(100)
@@ -70,6 +69,7 @@ def general_standings():
             'user_id': user.id,
             'username': user.username,
             'country': user.country,
+            'is_bot': user.is_bot,
             'pts_general': round(row.total or 0, 2),
             'pts_division': int(row.div_pts or 0),
             'pts_jornada_actual': round(pts_jornada_actual, 2),

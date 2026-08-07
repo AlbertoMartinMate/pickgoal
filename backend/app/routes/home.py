@@ -1,56 +1,10 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import User, Match, Prediction, ChampionPrediction, LeagueMember, League
-from sqlalchemy import func
+from app.models import DivisionMember, League, Jornada, JornadaMatch, PredictionV2
 
 home_bp = Blueprint('home', __name__)
-
-
-def _league_summary(user_id, league, finished_match_ids, matches_played):
-    """Calcula stats del usuario en una liga específica."""
-    preds = Prediction.query.filter_by(user_id=user_id, league_id=league.id).all()
-    champ = ChampionPrediction.query.filter_by(user_id=user_id, league_id=league.id).first()
-
-    user_pts = sum(p.total_points for p in preds) + (champ.points_earned if champ else 0)
-    correct_results = sum(1 for p in preds if p.pts_result > 0)
-    exact_scores = sum(1 for p in preds if p.pts_score > 0)
-    predictions_made = sum(1 for p in preds if p.match_id in finished_match_ids)
-
-    members = LeagueMember.query.filter_by(league_id=league.id).all()
-    member_count = len(members)
-
-    scores = []
-    for m in members:
-        m_preds = Prediction.query.filter_by(user_id=m.user_id, league_id=league.id).all()
-        m_champ = ChampionPrediction.query.filter_by(user_id=m.user_id, league_id=league.id).first()
-        pts = sum(p.total_points for p in m_preds) + (m_champ.points_earned if m_champ else 0)
-        scores.append((m.user_id, pts))
-    scores.sort(key=lambda x: x[1], reverse=True)
-    rank = next((i + 1 for i, (uid, _) in enumerate(scores) if uid == user_id), member_count)
-
-    now = datetime.now(timezone.utc)
-    predicted_ids = {p.match_id for p in preds}
-    next_to_predict = None
-    for m in Match.query.filter_by(status='scheduled').order_by(Match.match_datetime).all():
-        dt_utc = m.match_datetime.replace(tzinfo=timezone.utc)
-        if m.id not in predicted_ids and now < dt_utc - timedelta(minutes=30):
-            next_to_predict = m.to_dict()
-            break
-
-    return {
-        'league_id': league.id,
-        'league_name': league.name,
-        'rank': rank,
-        'member_count': member_count,
-        'total_points': user_pts,
-        'predictions_made': predictions_made,
-        'matches_played': matches_played,
-        'correct_results': correct_results,
-        'exact_scores': exact_scores,
-        'next_to_predict': next_to_predict,
-    }
 
 
 @home_bp.route('/summary', methods=['GET'])
@@ -58,47 +12,82 @@ def _league_summary(user_id, league, finished_match_ids, matches_played):
 def home_summary():
     user_id = int(get_jwt_identity())
 
-    memberships = LeagueMember.query.filter_by(user_id=user_id).all()
-    leagues = [League.query.get(m.league_id) for m in memberships if m.league_id]
-    leagues = [l for l in leagues if l]
-
-    finished_match_ids = set(
-        row[0] for row in db.session.query(Match.id).filter_by(status='finished').all()
-    )
-    matches_played = len(finished_match_ids)
-
-    leagues_summary = [_league_summary(user_id, league, finished_match_ids, matches_played) for league in leagues]
-
-    # Próximos 3 partidos globales
-    now = datetime.now(timezone.utc)
-    upcoming_raw = (
-        Match.query
-        .filter_by(status='scheduled')
-        .filter(Match.match_datetime > now)
-        .order_by(Match.match_datetime)
-        .limit(3)
-        .all()
+    # Check v2 division membership first
+    dm = (
+        DivisionMember.query
+        .filter_by(user_id=user_id)
+        .order_by(DivisionMember.joined_at.desc())
+        .first()
     )
 
-    # IDs de partidos ya predichos en cualquier liga del usuario
-    league_ids = [l.id for l in leagues]
-    predicted_any = set(
-        p.match_id for p in
-        Prediction.query.filter(
-            Prediction.user_id == user_id,
-            Prediction.league_id.in_(league_ids) if league_ids else False,
-        ).all()
-    ) if league_ids else set()
+    if not dm:
+        return jsonify({'leagues_summary': [], 'upcoming_matches': []}), 200
 
-    upcoming_matches = [
-        {
-            'match': m.to_dict(),
-            'has_prediction': m.id in predicted_any,
-        }
-        for m in upcoming_raw
-    ]
+    league_id = dm.league_id
+    league = db.session.get(League, league_id)
+
+    # Build standings for this division
+    from app.divisions import get_division_standings
+    standings = get_division_standings(league_id)
+    my_row = next((r for r in standings if r['user_id'] == user_id), None)
+
+    division_summary = {
+        'league_id': league_id,
+        'league_name': league.name if league else 'PickGoal Liga',
+        'is_v2': True,
+        'rank': my_row['pos'] if my_row else None,
+        'member_count': len(standings),
+        'pts_division': my_row['pts_division'] if my_row else 0,
+        'pts_general': my_row['pts_general'] if my_row else 0,
+        'pj': my_row['pj'] if my_row else 0,
+        'g': my_row['g'] if my_row else 0,
+        'e': my_row['e'] if my_row else 0,
+        'p': my_row['p'] if my_row else 0,
+        'zone': my_row.get('zone', 'mid') if my_row else 'mid',
+    }
+
+    # Next upcoming jornada match for this user
+    upcoming_matches = _upcoming_jornada_matches(user_id)
 
     return jsonify({
-        'leagues_summary': leagues_summary,
+        'leagues_summary': [],
+        'division_summary': division_summary,
         'upcoming_matches': upcoming_matches,
     }), 200
+
+
+def _upcoming_jornada_matches(user_id):
+    now = datetime.now(timezone.utc)
+    jornada = (
+        Jornada.query
+        .filter(Jornada.status.in_(['active', 'upcoming']))
+        .order_by(Jornada.date_start.asc())
+        .first()
+    )
+    if not jornada:
+        return []
+
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
+    predicted_jm_ids = {
+        p.jornada_match_id
+        for p in PredictionV2.query.filter_by(user_id=user_id).filter(
+            PredictionV2.jornada_match_id.in_([jm.id for jm in jm_list])
+        ).all()
+    }
+
+    result = []
+    for jm in jm_list:
+        m = jm.match
+        dt_utc = m.match_datetime.replace(tzinfo=timezone.utc)
+        result.append({
+            'match': {
+                'id': m.id,
+                'home_team': m.home_team,
+                'away_team': m.away_team,
+                'match_datetime': dt_utc.isoformat(),
+                'status': m.status,
+            },
+            'has_prediction': jm.id in predicted_jm_ids,
+        })
+
+    return result
