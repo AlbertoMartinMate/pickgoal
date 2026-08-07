@@ -229,3 +229,25 @@
     font-size: v.$fs-base;
   }
 }
+
+.admin-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$sp-2;
+  padding: v.$sp-3 v.$sp-4;
+  margin-bottom: v.$sp-4;
+  background: v.$accent-dim;
+  border: 1px solid v.$accent-dark;
+  border-radius: v.$r-lg;
+  color: v.$accent;
+  font-weight: 600;
+  font-size: v.$fs-base;
+  text-decoration: none;
+  transition: background 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background: v.$accent-glow;
+    box-shadow: v.$shadow-accent;
+  }
+}

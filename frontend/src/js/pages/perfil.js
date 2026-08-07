@@ -27,6 +27,12 @@ export async function renderPerfil(el) {
       <div class="container">
         <h1 class="page-title">Mi Perfil</h1>
 
+        ${user?.is_admin ? `
+          <a href="#/admin" class="admin-shortcut">
+            🛠️ Panel de Administración
+          </a>
+        ` : ''}
+
         <section class="profile-card section">
           <div class="profile-card__info">
             <div class="profile-card__avatar">${user.username[0].toUpperCase()}</div>
