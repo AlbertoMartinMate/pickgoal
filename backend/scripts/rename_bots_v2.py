@@ -11,21 +11,21 @@ from app import create_app, db
 from app.models import User
 
 RENAME_MAP = {
-    'Xavi_Bot':     'Carlos_87.',
-    'Iniesta_Bot':  'Miguel_23.',
-    'Zidane_Bot':   'Pablo_91.',
-    'Ronaldo_Bot':  'Alejandro_14.',
-    'Messi_Bot':    'Sergio_06.',
-    'Cruyff_Bot':   'David_99.',
-    'Pele_Bot':     'Antonio_77.',
-    'Maradona_Bot': 'Javier_45.',
-    'Beckham_Bot':  'Roberto_33.',
-    'Rooney_Bot':   'Fernando_88.',
-    'Henry_Bot':    'Ricardo_55.',
-    'Lampard_Bot':  'Diego_19.',
-    'Gerrard_Bot':  'Manuel_62.',
-    'Pirlo_Bot':    'Alvaro_38.',
-    'Buffon_Bot':   'Marcos_71.',
+    'Xavi':     'Carlos_87.',
+    'Iniesta':  'Miguel_23.',
+    'Zidane':   'Pablo_91.',
+    'Ronaldo':  'Alejandro_14.',
+    'Messi':    'Sergio_06.',
+    'Cruyff':   'David_99.',
+    'Pelé':     'Antonio_77.',
+    'Maradona': 'Javier_45.',
+    'Beckham':  'Roberto_33.',
+    'Rooney':   'Fernando_88.',
+    'Henry':    'Ricardo_55.',
+    'Lampard':  'Diego_19.',
+    'Gerrard':  'Manuel_62.',
+    'Pirlo':    'Alvaro_38.',
+    'Buffon':   'Marcos_71.',
 }
 
 
