@@ -185,7 +185,15 @@ function userRow(u) {
 
 // ─── Gestión de Jornadas V2 ──────────────────────────────────────────────────
 
-const COMP_LABELS = { PD: '🇪🇸 LaLiga', PL: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League', CL: '⭐ Champions League' };
+const COMP_LABELS = {
+  PD:  '🇪🇸 LaLiga',
+  PL:  '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League',
+  CL:  '⭐ Champions League',
+  SA:  '🇮🇹 Serie A',
+  BL1: '🇩🇪 Bundesliga',
+  FL1: '🇫🇷 Ligue 1',
+  PPL: '🇵🇹 Primeira Liga',
+};
 let _selectedMatches = [];   // {api_id, home_team, away_team, match_datetime, competition_code}
 let _editingJornadaId = null;
 

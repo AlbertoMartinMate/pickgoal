@@ -12,9 +12,13 @@ from app.models import User, Match, Jornada, JornadaMatch, Season, Competition
 admin_v2_bp = Blueprint('admin_v2', __name__)
 
 COMP_META = {
-    'PD': {'name': 'LaLiga',           'weight': 8, 'max_per_jornada': 4},
-    'PL': {'name': 'Premier League',   'weight': 8, 'max_per_jornada': 4},
-    'CL': {'name': 'Champions League', 'weight': 10, 'max_per_jornada': 4},
+    'PD':  {'name': 'LaLiga',             'weight': 8,  'max_per_jornada': 4},
+    'PL':  {'name': 'Premier League',     'weight': 8,  'max_per_jornada': 4},
+    'CL':  {'name': 'Champions League',   'weight': 10, 'max_per_jornada': 4, 'max_display': 5},
+    'SA':  {'name': 'Serie A',            'weight': 7,  'max_per_jornada': 4},
+    'BL1': {'name': 'Bundesliga',         'weight': 7,  'max_per_jornada': 4},
+    'FL1': {'name': 'Ligue 1',            'weight': 6,  'max_per_jornada': 4},
+    'PPL': {'name': 'Primeira Liga',      'weight': 6,  'max_per_jornada': 4},
 }
 
 
@@ -79,7 +83,9 @@ def partidos_disponibles():
             )
             resp.raise_for_status()
             matches = resp.json().get('matches', [])
-            result[code] = [_serialize_api_match(m, code) for m in matches]
+            serialized = [_serialize_api_match(m, code) for m in matches]
+            max_display = COMP_META.get(code, {}).get('max_display')
+            result[code] = serialized[:max_display] if max_display else serialized
         except Exception as e:
             result[code] = []
             import logging
