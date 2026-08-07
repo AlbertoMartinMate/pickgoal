@@ -289,6 +289,7 @@ function jornadaRow(j) {
       </div>
       <div class="jv2-row__actions">
         ${j.status === 'draft' ? `
+          <button class="btn btn--primary btn--xs jv2-pub-btn" data-id="${j.id}" data-num="${j.number}">Publicar</button>
           <button class="btn btn--ghost btn--xs jv2-edit-btn" data-id="${j.id}">Editar</button>
           <button class="btn btn--danger btn--xs jv2-del-btn" data-id="${j.id}" data-num="${j.number}">Eliminar</button>
         ` : ''}
@@ -320,6 +321,23 @@ function attachJornadasEvents(container) {
   container.querySelector('#btnBuscarPartidos')?.addEventListener('click', buscarPartidos);
 
   container.querySelector('#btnGuardarJornada')?.addEventListener('click', guardarJornada);
+
+  container.querySelectorAll('.jv2-pub-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`¿Publicar jornada ${btn.dataset.num}? Se calcularán cuotas, se asignarán duelos y se notificará a los usuarios.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Publicando…';
+      try {
+        const res = await api.adminV2.publishJornada(btn.dataset.id);
+        showToast(`Jornada ${btn.dataset.num} publicada — push enviado a ${res.push_sent} suscriptores`);
+        await loadJornadasV2(document.getElementById('jornadasV2Section'));
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Publicar';
+      }
+    });
+  });
 
   container.querySelectorAll('.jv2-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => abrirEdicion(btn.dataset.id, container));

@@ -27,25 +27,9 @@ def _first_match_datetime(jornada):
     return jm.match.match_datetime.replace(tzinfo=timezone.utc) if jm else None
 
 
-@jornadas_bp.route('/current', methods=['GET'])
-@jwt_required()
-def get_current_jornada():
-    user_id = int(get_jwt_identity())
-    jornada = _get_active_jornada()
-    if not jornada:
-        next_jornada = (
-            Jornada.query.filter_by(status='upcoming')
-            .order_by(Jornada.date_start.asc())
-            .first()
-        )
-        return jsonify({
-            'jornada': None,
-            'next_jornada': next_jornada.to_dict() if next_jornada else None,
-        }), 200
-
+def _build_jornada_payload(jornada, user_id):
+    """Builds the full payload for a single jornada (matches + odds + predictions)."""
     jornada_matches = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
-
-    # Units used by this user in this jornada
     user_preds = {
         p.jornada_match_id: p
         for p in PredictionV2.query.filter_by(user_id=user_id).filter(
@@ -78,7 +62,7 @@ def get_current_jornada():
     first_dt = _first_match_datetime(jornada)
     locked = first_dt is not None and datetime.now(timezone.utc) >= first_dt
 
-    return jsonify({
+    return {
         'jornada': {
             **jornada.to_dict(),
             'locked': locked,
@@ -87,7 +71,36 @@ def get_current_jornada():
         'matches': matches_data,
         'units_used': units_used,
         'units_disponibles': MAX_UNITS - units_used,
-    }), 200
+    }
+
+
+@jornadas_bp.route('/list', methods=['GET'])
+@jwt_required()
+def list_jornadas():
+    user_id = int(get_jwt_identity())
+    jornadas = (
+        Jornada.query
+        .filter(Jornada.status.in_(['upcoming', 'active']))
+        .order_by(Jornada.date_start.asc())
+        .all()
+    )
+    return jsonify({'jornadas': [_build_jornada_payload(j, user_id) for j in jornadas]}), 200
+
+
+@jornadas_bp.route('/current', methods=['GET'])
+@jwt_required()
+def get_current_jornada():
+    user_id = int(get_jwt_identity())
+    jornada = _get_active_jornada()
+    if not jornada:
+        jornada = (
+            Jornada.query.filter_by(status='upcoming')
+            .order_by(Jornada.date_start.asc())
+            .first()
+        )
+    if not jornada:
+        return jsonify({'jornada': None, 'next_jornada': None}), 200
+    return jsonify(_build_jornada_payload(jornada, user_id)), 200
 
 
 @jornadas_bp.route('/predict', methods=['POST'])

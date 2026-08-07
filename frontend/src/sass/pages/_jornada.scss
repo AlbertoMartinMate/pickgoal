@@ -145,3 +145,47 @@
     color: v.$text-muted;
   }
 }
+
+// ─── Tabs de jornadas ────────────────────────────────────────────────────────
+.jornada-tabs {
+  display: flex;
+  gap: v.$sp-2;
+  flex-wrap: wrap;
+  margin-bottom: v.$sp-4;
+}
+
+.jornada-tab {
+  padding: v.$sp-2 v.$sp-3;
+  border-radius: v.$r-md;
+  border: 1px solid v.$border;
+  background: v.$bg-card;
+  color: v.$text-muted;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover {
+    border-color: v.$accent-dark;
+    color: v.$text;
+  }
+
+  &--active {
+    border-color: v.$accent;
+    color: v.$accent;
+    background: v.$accent-dim;
+  }
+}
+
+// ─── Tags de estado de partido ───────────────────────────────────────────────
+.tag--open {
+  background: v.$accent-dim;
+  color: v.$accent;
+  border-color: rgba(v.$accent, 0.3);
+}
+
+.tag--done {
+  background: rgba(255, 255, 255, 0.05);
+  color: v.$text-muted;
+  border-color: v.$border;
+}

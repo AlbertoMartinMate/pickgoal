@@ -97,10 +97,12 @@ export const api = {
     createJornada: (data) => request('/v2/admin/jornada', { method: 'POST', body: JSON.stringify(data) }),
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteJornada: (id) => request(`/v2/admin/jornada/${id}`, { method: 'DELETE' }),
+    publishJornada: (id) => request(`/v2/admin/jornada/${id}/publish`, { method: 'POST' }),
   },
 
   jornada: {
     current: () => request('/v2/jornada/current'),
+    list: () => request('/v2/jornada/list'),
     predict: (predictions) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify({ predictions }) }),
     history: () => request('/v2/jornada/history'),
   },
