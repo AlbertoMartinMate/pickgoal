@@ -33,6 +33,7 @@ export const api = {
     forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     resetPassword: (token, password) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
     ranking: (leagueId) => request(`/auth/ranking${leagueId ? `?league_id=${leagueId}` : ''}`),
+    deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
     users: () => request('/auth/users'),
     toggleAdmin: (uid) => request(`/auth/users/${uid}/toggle-admin`, { method: 'PATCH' }),
   },

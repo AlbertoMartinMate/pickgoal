@@ -528,6 +528,109 @@ def cerrar_jornada(app):
             db.session.rollback()
 
 
+def check_inactive_users(app):
+    """
+    Run after each jornada closes. Users with 4+ consecutive jornadas
+    without predictions are replaced by a bot and their account deleted.
+    Users with exactly 3 consecutive misses receive a push warning.
+    """
+    logger.info('JOB check_inactive_users — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import User, DivisionMember, Jornada, JornadaMatch, PredictionV2, PushSubscription
+
+        try:
+            # Last 4 finished jornadas, most recent first
+            recent = (
+                Jornada.query
+                .filter_by(status='finished')
+                .order_by(Jornada.number.desc())
+                .limit(4)
+                .all()
+            )
+            if not recent:
+                logger.info('check_inactive_users: sin jornadas terminadas')
+                return
+
+            # Precompute jm_ids per jornada
+            jornada_jm_ids = {}
+            for j in recent:
+                jornada_jm_ids[j.id] = [
+                    jm.id for jm in JornadaMatch.query.filter_by(jornada_id=j.id).all()
+                ]
+
+            real_user_ids = {
+                dm.user_id
+                for dm in DivisionMember.query.filter_by(is_bot=False).all()
+            }
+
+            for user_id in real_user_ids:
+                consecutive_misses = 0
+                for j in recent:
+                    jm_ids = jornada_jm_ids.get(j.id, [])
+                    if not jm_ids:
+                        continue
+                    has_pred = PredictionV2.query.filter(
+                        PredictionV2.user_id == user_id,
+                        PredictionV2.jornada_match_id.in_(jm_ids),
+                    ).first() is not None
+                    if has_pred:
+                        break
+                    consecutive_misses += 1
+
+                if consecutive_misses >= 4:
+                    user = db.session.get(User, user_id)
+                    if user and not user.is_bot:
+                        logger.info(
+                            'Eliminando usuario %d (%s) por %d jornadas inactivo',
+                            user_id, user.username, consecutive_misses,
+                        )
+                        try:
+                            from app.bots import replace_user_with_bot
+                            from app.routes.auth import _purge_user
+                            replace_user_with_bot(user_id)
+                            _purge_user(user_id)
+                        except Exception as e:
+                            logger.error('Error eliminando usuario %d: %s', user_id, e)
+                            db.session.rollback()
+
+                elif consecutive_misses == 3:
+                    user = db.session.get(User, user_id)
+                    if user:
+                        _push_inactivity_warning(user)
+
+        except Exception as e:
+            logger.error('Error en check_inactive_users: %s', e)
+            db.session.rollback()
+
+
+def _push_inactivity_warning(user):
+    """Send a push notification warning the user they are about to be removed."""
+    try:
+        from app.models import PushSubscription
+        from app.routes.notifications import _send_push
+
+        subs = PushSubscription.query.filter_by(user_id=user.id).all()
+        if not subs:
+            return
+
+        payload = {
+            'title': '⚠️ PickGoal — Aviso de inactividad',
+            'body': (
+                f'Hola {user.username}, llevas 3 jornadas sin predecir. '
+                'Si no participas en la próxima serás reemplazado.'
+            ),
+        }
+        for sub in subs:
+            try:
+                _send_push(sub, payload)
+            except Exception:
+                pass
+        logger.info('Push inactividad enviado a usuario %d', user.id)
+    except Exception as e:
+        logger.warning('Error enviando push inactividad a usuario %d: %s', user.id, e)
+
+
 def _update_division_positions(jornada_id):
     """Cache division standings positions and season accumulators after jornada close."""
     from app import db
@@ -599,6 +702,14 @@ def init_scheduler(app):
         args=[app],
         trigger=CronTrigger(day_of_week='sun', hour=23, minute=59, timezone='UTC'),
         id='cerrar_jornada',
+        replace_existing=True,
+    )
+    # Runs 5 min after cerrar_jornada so positions are already updated
+    scheduler.add_job(
+        func=check_inactive_users,
+        args=[app],
+        trigger=CronTrigger(day_of_week='mon', hour=0, minute=5, timezone='UTC'),
+        id='check_inactive_users',
         replace_existing=True,
     )
 

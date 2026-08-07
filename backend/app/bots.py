@@ -1,4 +1,6 @@
+import os
 import random
+import string
 import logging
 
 logger = logging.getLogger(__name__)
@@ -228,3 +230,88 @@ def displace_bot(league_id, new_user_id=None):
         'league_id': league_id,
         'new_user_id': new_user_id,
     }
+
+
+def replace_user_with_bot(user_id):
+    """
+    Replace a departing user with a new bot in all their division memberships.
+    Transfers Duelo and PredictionV2 records to the bot so division standings
+    remain visually unchanged. Returns list of new bot user_ids created.
+    Call this BEFORE deleting the user account.
+    """
+    from app import db
+    from app.models import User, DivisionMember, Duelo, PredictionV2
+    from werkzeug.security import generate_password_hash
+    from sqlalchemy import or_
+
+    user = db.session.get(User, user_id)
+    if not user or user.is_bot:
+        logger.warning('replace_user_with_bot: usuario %d no válido', user_id)
+        return []
+
+    memberships = DivisionMember.query.filter_by(user_id=user_id).all()
+    created_bot_ids = []
+    first_bot_id = None
+
+    for dm in memberships:
+        # Generate a unique bot name derived from the replaced user
+        base = (user.username[:8]).rstrip('_').rstrip('.')
+        while True:
+            suffix = ''.join(random.choices(string.digits, k=2))
+            bot_name = f'{base}_{suffix}.'
+            if not User.query.filter_by(username=bot_name).first():
+                break
+
+        bot = User(
+            username=bot_name,
+            email=f'{bot_name.lower().rstrip(".")}@bots.pickgoal.es',
+            password_hash=generate_password_hash(os.urandom(24).hex()),
+            is_bot=True,
+        )
+        db.session.add(bot)
+        db.session.flush()
+
+        # Bot inherits the user's stored position and accumulated points
+        new_dm = DivisionMember(
+            league_id=dm.league_id,
+            user_id=bot.id,
+            is_bot=True,
+            division=dm.division,
+            position=dm.position,
+            season_div_points=dm.season_div_points,
+            season_total_points=dm.season_total_points,
+        )
+        db.session.add(new_dm)
+
+        # Transfer Duelo records so computed standings don't change
+        for duelo in Duelo.query.filter(
+            Duelo.division_league_id == dm.league_id,
+            Duelo.player1_id == user_id,
+        ).all():
+            duelo.player1_id = bot.id
+
+        for duelo in Duelo.query.filter(
+            Duelo.division_league_id == dm.league_id,
+            Duelo.player2_id == user_id,
+        ).all():
+            duelo.player2_id = bot.id
+
+        db.session.delete(dm)
+        created_bot_ids.append(bot.id)
+
+        if first_bot_id is None:
+            first_bot_id = bot.id
+
+        logger.info(
+            'Bot %d (%s) reemplaza a usuario %d en liga %d',
+            bot.id, bot_name, user_id, dm.league_id,
+        )
+
+    # Transfer all PredictionV2 records to the first (usually only) bot
+    if first_bot_id is not None:
+        for pred in PredictionV2.query.filter_by(user_id=user_id).all():
+            pred.user_id = first_bot_id
+
+    db.session.commit()
+    logger.info('replace_user_with_bot: usuario %d → %d bots creados', user_id, len(created_bot_ids))
+    return created_bot_ids

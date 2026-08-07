@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { showToast } from '../ui.js';
 
 export async function renderPerfil(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -99,6 +100,11 @@ export async function renderPerfil(el) {
           </section>
         ` : ''}
 
+        <section class="section section--danger">
+          <h2>Zona de peligro</h2>
+          <button class="btn btn--danger btn--sm" id="btnDeleteAccount">Cerrar cuenta</button>
+        </section>
+
         ${user?.is_admin && adminLeaguesRes.leagues.length ? `
           <section class="section">
             <h2>Ligas gestionadas</h2>
@@ -119,6 +125,10 @@ export async function renderPerfil(el) {
     el.querySelector('#btnLogoutPerfil')?.addEventListener('click', () => {
       auth.logout();
       window.location.hash = '/';
+    });
+
+    el.querySelector('#btnDeleteAccount')?.addEventListener('click', () => {
+      showDeleteConfirm();
     });
 
   } catch (err) {
@@ -159,4 +169,67 @@ function predRow(p) {
       <span class="pred-row__pts">${p.total_points} pts</span>
     </div>
   `;
+}
+
+function showDeleteConfirm() {
+  const modal = document.createElement('div');
+  modal.className = 'delete-modal';
+  modal.innerHTML = `
+    <div class="delete-modal__overlay" id="deleteOverlay"></div>
+    <div class="delete-modal__box">
+      <h3 class="delete-modal__title">⚠️ Cerrar cuenta</h3>
+      <p class="delete-modal__text">
+        Esta acción es irreversible. Tu posición en la división será ocupada por un bot.
+      </p>
+      <p class="delete-modal__confirm-label">Escribe <strong>CERRAR</strong> para confirmar:</p>
+      <input class="form__input" id="deleteConfirmInput" type="text" placeholder="CERRAR" autocomplete="off" />
+      <div class="delete-modal__actions">
+        <button class="btn btn--ghost btn--sm" id="deleteCancelBtn">Cancelar</button>
+        <button class="btn btn--danger btn--sm" id="deleteConfirmBtn" disabled>Cerrar mi cuenta</button>
+      </div>
+      <p id="deleteError" class="form__error hidden"></p>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => modal.classList.add('delete-modal--open'));
+
+  const input = modal.querySelector('#deleteConfirmInput');
+  const confirmBtn = modal.querySelector('#deleteConfirmBtn');
+  const cancelBtn = modal.querySelector('#deleteCancelBtn');
+  const overlay = modal.querySelector('#deleteOverlay');
+  const errorEl = modal.querySelector('#deleteError');
+
+  function close() {
+    modal.classList.remove('delete-modal--open');
+    document.body.style.overflow = '';
+    modal.addEventListener('transitionend', () => modal.remove(), { once: true });
+  }
+
+  input.addEventListener('input', () => {
+    confirmBtn.disabled = input.value.trim() !== 'CERRAR';
+  });
+
+  cancelBtn.addEventListener('click', close);
+  overlay.addEventListener('click', close);
+
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Cerrando…';
+    errorEl.classList.add('hidden');
+
+    try {
+      await api.auth.deleteAccount();
+      close();
+      auth.logout();
+      showToast('Cuenta cerrada. Hasta pronto.');
+      window.location.hash = '/';
+    } catch (err) {
+      errorEl.textContent = err.message || 'Error al cerrar la cuenta';
+      errorEl.classList.remove('hidden');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Cerrar mi cuenta';
+    }
+  });
 }

@@ -6,7 +6,7 @@ from flask_jwt_extended import (create_access_token, jwt_required,
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask import current_app
 from app import db, bcrypt
-from app.models import User, Prediction, LeagueMember, ChampionPrediction
+from app.models import User, Prediction, LeagueMember, ChampionPrediction, PushSubscription
 from sqlalchemy import func
 
 logger = logging.getLogger(__name__)
@@ -200,6 +200,46 @@ def list_users():
         return jsonify({'error': 'Sin permisos'}), 403
     users = User.query.all()
     return jsonify({'users': [u.to_dict(include_email=True) for u in users]}), 200
+
+
+@auth_bp.route('/account', methods=['DELETE'])
+@jwt_required()
+def delete_account():
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    if not user or user.is_bot:
+        return jsonify({'error': 'No autorizado'}), 403
+
+    try:
+        from app.bots import replace_user_with_bot
+        replace_user_with_bot(user_id)
+        _purge_user(user_id)
+    except Exception as e:
+        logger.error('Error cerrando cuenta de usuario %d: %s', user_id, e)
+        db.session.rollback()
+        return jsonify({'error': 'Error al cerrar la cuenta'}), 500
+
+    return jsonify({'message': 'Cuenta cerrada'}), 200
+
+
+def _purge_user(user_id):
+    """Delete remaining user data after replace_user_with_bot() has run."""
+    LeagueMember.query.filter_by(user_id=user_id).delete()
+    Prediction.query.filter_by(user_id=user_id).delete()
+    ChampionPrediction.query.filter_by(user_id=user_id).delete()
+    PushSubscription.query.filter_by(user_id=user_id).delete()
+
+    # Reassign leagues created by this user to admin (FK is NOT NULL)
+    from app.models import League
+    admin = User.query.filter_by(is_admin=True).first()
+    if admin:
+        League.query.filter_by(created_by=user_id).update({'created_by': admin.id})
+
+    user = db.session.get(User, user_id)
+    if user:
+        db.session.delete(user)
+    db.session.commit()
+    logger.info('Cuenta de usuario %d eliminada', user_id)
 
 
 @auth_bp.route('/users/<int:uid>/toggle-admin', methods=['PATCH'])
