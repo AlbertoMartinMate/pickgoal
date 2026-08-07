@@ -10,34 +10,34 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
       <div class="welcome-modal__overlay" id="welcomeOverlay"></div>
       <div class="welcome-modal__box">
         <h2 class="welcome-modal__title">¡Bienvenido a PickGoal! ⚽</h2>
-        <p class="welcome-modal__subtitle">La quiniela del Mundial 2026</p>
+        <p class="welcome-modal__subtitle">La liga de predicciones · Temporada 26/27</p>
 
         <ol class="welcome-modal__steps">
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">1️⃣</span>
             <div>
-              <strong>Únete a una liga</strong>
-              <span>— pública o privada</span>
+              <strong>Únete a la PickGoal League</strong>
+              <span>— o crea tu propia liga privada</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">2️⃣</span>
             <div>
               <strong>Predice los partidos</strong>
-              <span>— 1X2 y marcador exacto</span>
+              <span>— LaLiga, Premier League y Champions</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">3️⃣</span>
             <div>
-              <strong>Acumula puntos</strong>
-              <span>— y sube en la clasificación</span>
+              <strong>Gana duelos y sube de división</strong>
+              <span>— sistema de divisiones y ascensos</span>
             </div>
           </li>
         </ol>
 
         <div class="welcome-modal__highlight">
-          🏆 Predice el campeón antes del 11 de junio y gana <strong>10 puntos extra</strong>
+          🏆 Sistema de divisiones con duelos 1vs1 cada jornada
         </div>
 
         <button class="btn btn--primary btn--full btn--lg" id="welcomeCta">

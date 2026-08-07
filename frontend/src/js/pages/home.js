@@ -35,7 +35,7 @@ export async function renderHome(el) {
 
         ${pickgoalLeagueCard()}
 
-        <h3 class="home-dashboard__section-title">Ligas del Mundial</h3>
+        <h3 class="home-dashboard__section-title">Mis ligas</h3>
         <div class="home-dashboard__leagues">
           ${sorted.map(s => leagueCard(s)).join('')}
         </div>
@@ -97,55 +97,20 @@ function renderGuest(el) {
           <span class="how-step__icon">⚽</span>
           <div class="how-step__num">2</div>
           <h3 class="how-step__title">Predice los partidos</h3>
-          <p class="how-step__desc">Elige el resultado 1X2 y el marcador exacto de cada partido del Mundial</p>
+          <p class="how-step__desc">Elige el resultado 1X2 de LaLiga, Premier League y Champions League cada jornada</p>
         </div>
         <div class="how-step">
-          <span class="how-step__icon">🎯</span>
+          <span class="how-step__icon">⚔️</span>
           <div class="how-step__num">3</div>
-          <h3 class="how-step__title">Acumula puntos</h3>
-          <p class="how-step__desc">Gana puntos por cada acierto. Más puntos cuanto más avanza el torneo</p>
+          <h3 class="how-step__title">Gana duelos 1vs1</h3>
+          <p class="how-step__desc">Cada jornada te enfrentas a un rival en tu división. Gana para subir posiciones</p>
         </div>
         <div class="how-step">
           <span class="how-step__icon">👑</span>
           <div class="how-step__num">4</div>
-          <h3 class="how-step__title">Gana el Mundial</h3>
-          <p class="how-step__desc">El mejor pronosticador de tu liga gana. Liga oficial con premio camiseta</p>
+          <h3 class="how-step__title">Sube de división</h3>
+          <p class="how-step__desc">Los mejores ascienden, los peores descienden. ¿Llegarás a División 1?</p>
         </div>
-      </div>
-
-      <div class="points-table">
-        <h3 class="points-table__title">Sistema de puntos</h3>
-        <div class="points-table__grid">
-          <div class="points-pill">
-            <span class="points-pill__phase">Grupos</span>
-            <span class="points-pill__pts">1<span class="points-pill__sep">+</span>1</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Dieciseisavos</span>
-            <span class="points-pill__pts">2<span class="points-pill__sep">+</span>2</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Octavos</span>
-            <span class="points-pill__pts">3<span class="points-pill__sep">+</span>3</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Cuartos</span>
-            <span class="points-pill__pts">4<span class="points-pill__sep">+</span>4</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Semis</span>
-            <span class="points-pill__pts">5<span class="points-pill__sep">+</span>5</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Final</span>
-            <span class="points-pill__pts">6<span class="points-pill__sep">+</span>6</span>
-          </div>
-          <div class="points-pill points-pill--champion">
-            <span class="points-pill__phase">Campeón</span>
-            <span class="points-pill__pts">+10</span>
-          </div>
-        </div>
-        <p class="points-table__legend">Puntos por resultado 1X2 <span class="points-table__plus">+</span> puntos extra por marcador exacto</p>
       </div>
     </section>
   `;
@@ -279,7 +244,7 @@ function upcomingSection(matches) {
           </div>
         `).join('')}
       </div>
-      <a class="btn btn--ghost btn--sm" href="#/quiniela">Ver todos los pronósticos</a>
+      <a class="btn btn--ghost btn--sm" href="#/jornada">Ver jornada actual</a>
     </section>
   `;
 }
