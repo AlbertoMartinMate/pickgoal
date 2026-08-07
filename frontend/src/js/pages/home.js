@@ -23,6 +23,7 @@ export async function renderHome(el) {
             <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
           </div>
           ${divisionCard(division_summary)}
+          ${prizeBanner()}
           ${upcomingSection(upcoming_matches)}
         </div>
         ${pointsModalHtml()}
@@ -304,5 +305,17 @@ function upcomingSection(matches) {
       </div>
       <a class="btn btn--ghost btn--sm" href="#/jornada">Ver jornada actual</a>
     </section>
+  `;
+}
+
+function prizeBanner() {
+  return `
+    <div class="prize-banner">
+      <span class="prize-banner__icon">🏆</span>
+      <div>
+        <strong>Premio temporada 26/27</strong>
+        <p>Camiseta de tu equipo favorito para el campeón de la clasificación general</p>
+      </div>
+    </div>
   `;
 }

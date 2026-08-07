@@ -27,10 +27,12 @@ def division_standings():
         league_id = dm.league_id
 
     from app.divisions import get_division_standings
+    league = db.session.get(League, league_id)
     standings = get_division_standings(league_id)
 
     return jsonify({
         'league_id': league_id,
+        'league_name': league.name if league else 'PickGoal División',
         'standings': standings,
     }), 200
 

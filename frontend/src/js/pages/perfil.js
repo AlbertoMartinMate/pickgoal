@@ -1,27 +1,22 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { formatDate } from '../ui.js';
 
 export async function renderPerfil(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
   const user = auth.getUser();
 
   try {
-    const leagueId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
-    const [predsRes, champRes, leaguesRes, meRes, adminLeaguesRes] = await Promise.all([
-      api.predictions.mine(leagueId),
-      api.predictions.getChampion(leagueId),
-      api.leagues.my(),
+    const [predsRes, divRes, meRes, adminLeaguesRes] = await Promise.all([
+      api.predictions.mine(null),
+      api.clasificacion.division(),
       api.auth.me(),
       user?.is_admin ? api.leagues.adminAll() : Promise.resolve({ leagues: [] }),
     ]);
 
-    const totalPts = predsRes.predictions.reduce((acc, p) => acc + p.total_points, 0)
-      + (champRes.champion_prediction?.points_earned || 0);
-
     const meUser = meRes.user;
     const status = meUser.status;
     const allTimePts = meUser.total_points_all_time;
+    const myDivRow = divRes.standings?.find(r => r.user_id === meUser.id);
 
     el.innerHTML = `
       <div class="container">
@@ -46,51 +41,63 @@ export async function renderPerfil(el) {
           <button class="btn btn--danger" id="btnLogoutPerfil">Cerrar sesión</button>
           <div class="profile-card__stats">
             <div class="stat">
-              <span class="stat__value">${totalPts}</span>
-              <span class="stat__label">Puntos totales</span>
-            </div>
-            <div class="stat">
               <span class="stat__value">${predsRes.predictions.length}</span>
               <span class="stat__label">Predicciones</span>
             </div>
             <div class="stat">
-              <span class="stat__value">${leaguesRes.leagues.length}</span>
-              <span class="stat__label">Ligas</span>
+              <span class="stat__value">${myDivRow ? `${myDivRow.pos}º` : '—'}</span>
+              <span class="stat__label">Posición div.</span>
+            </div>
+            <div class="stat">
+              <span class="stat__value">${myDivRow?.pts_division ?? '—'}</span>
+              <span class="stat__label">Pts división</span>
             </div>
           </div>
         </section>
 
-        ${champRes.champion_prediction
-          ? `<section class="section">
-               <h2>Predicción Campeón</h2>
-               <p class="champion-pick">
-                 🏆 <strong>${champRes.champion_prediction.team_name}</strong>
-                 — ${champRes.champion_prediction.points_earned} puntos
-               </p>
-             </section>`
-          : `<section class="section">
-               <h2>Predicción Campeón</h2>
-               <p class="notice">Aún no has predicho el campeón. <a href="#/campeon">Hacerlo ahora</a></p>
-             </section>`
-        }
-
-        <section class="section">
-          <h2>Mis predicciones</h2>
-          ${predsRes.predictions.length
-            ? `<div class="predictions-list">${predsRes.predictions.map(predRow).join('')}</div>`
-            : '<p class="empty">Sin predicciones aún. <a href="#/quiniela">Ir a la quiniela</a></p>'
-          }
+        <section class="section prize-banner">
+          <span class="prize-banner__icon">🏆</span>
+          <div>
+            <strong>Premio temporada 26/27</strong>
+            <p>Camiseta de tu equipo favorito para el campeón de la clasificación general</p>
+          </div>
         </section>
 
         <section class="section">
-          <h2>Mis ligas</h2>
-          ${leaguesRes.leagues.length
-            ? `<ul class="leagues-list">${leaguesRes.leagues.map(l =>
-                `<li><a href="#/ligas/${l.id}">${l.name}</a> <span class="tag">${l.is_public ? 'Pública' : 'Privada'}</span></li>`
-              ).join('')}</ul>`
-            : '<p class="empty">No perteneces a ninguna liga. <a href="#/ligas">Ver ligas</a></p>'
+          <h2>Mi División</h2>
+          ${myDivRow
+            ? `<div class="division-info">
+                 <p class="division-info__name">${divRes.league_name || 'PickGoal División'}</p>
+                 <div class="division-info__stats">
+                   <div class="division-info__stat">
+                     <span>${myDivRow.pos}º</span>
+                     <small>de ${divRes.standings.length}</small>
+                   </div>
+                   <div class="division-info__stat">
+                     <span>${myDivRow.pts_division}</span>
+                     <small>pts división</small>
+                   </div>
+                   <div class="division-info__stat">
+                     <span>${myDivRow.pts_general}</span>
+                     <small>pts total</small>
+                   </div>
+                   <div class="division-info__stat">
+                     <span>${myDivRow.pj}</span>
+                     <small>partidos</small>
+                   </div>
+                 </div>
+                 <a href="#/tabla-v2" class="btn btn--ghost btn--sm">Ver tabla completa</a>
+               </div>`
+            : '<p class="empty">No perteneces a ninguna división todavía.</p>'
           }
         </section>
+
+        ${predsRes.predictions.length > 0 ? `
+          <section class="section">
+            <h2>Mis predicciones</h2>
+            <div class="predictions-list">${predsRes.predictions.map(predRow).join('')}</div>
+          </section>
+        ` : ''}
 
         ${user?.is_admin && adminLeaguesRes.leagues.length ? `
           <section class="section">
@@ -108,6 +115,7 @@ export async function renderPerfil(el) {
         ` : ''}
       </div>
     `;
+
     el.querySelector('#btnLogoutPerfil')?.addEventListener('click', () => {
       auth.logout();
       window.location.hash = '/';

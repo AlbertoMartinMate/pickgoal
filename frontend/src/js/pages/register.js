@@ -73,8 +73,8 @@ export function renderRegister(el) {
           router.navigate('/ligas');
         }
       } else {
-        router.navigate('/campeon');
-        maybeShowWelcome('/ligas');
+        router.navigate('/');
+        maybeShowWelcome('/');
       }
     } catch (err) {
       errEl.textContent = err.message || 'Error al registrarse';

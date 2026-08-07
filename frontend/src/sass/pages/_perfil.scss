@@ -251,3 +251,44 @@
     box-shadow: v.$shadow-accent;
   }
 }
+
+// ─── Division Info ────────────────────────────────────────────────────────────
+.division-info {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-3;
+
+  &__name {
+    font-size: v.$fs-base;
+    font-weight: 600;
+    color: v.$text;
+    margin: 0;
+  }
+
+  &__stats {
+    display: flex;
+    gap: v.$sp-5;
+    flex-wrap: wrap;
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+
+    span {
+      font-size: v.$fs-lg;
+      font-weight: 700;
+      color: v.$accent;
+      line-height: 1;
+    }
+
+    small {
+      font-size: v.$fs-xs;
+      color: v.$text-muted;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+}

@@ -1,0 +1,32 @@
+@use '../abstracts/variables' as v;
+
+.prize-banner {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-4;
+  background: rgba(255, 184, 48, 0.08);
+  border: 1px solid rgba(255, 184, 48, 0.25);
+  border-radius: v.$r-md;
+  padding: v.$sp-4 v.$sp-5;
+  margin-bottom: v.$sp-4;
+
+  &__icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: v.$fs-sm;
+    font-weight: 700;
+    color: v.$warning;
+    margin-bottom: 2px;
+  }
+
+  p {
+    font-size: v.$fs-sm;
+    color: v.$text-muted;
+    margin: 0;
+    line-height: 1.4;
+  }
+}

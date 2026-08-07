@@ -201,7 +201,7 @@ function divisionRow(row, me) {
     ${separatorBefore}
     <tr class="${isMe ? 'ranking-table__row--me' : ''}" style="${zoneStyle}">
       <td class="ranking-table__pos" data-pos="${row.pos}">${row.pos}</td>
-      <td>${row.username}${row.is_bot ? ' 🤖' : ''}</td>
+      <td>${row.username}</td>
       <td class="ranking-table__stat">${row.pj}</td>
       <td class="ranking-table__stat">${row.g}</td>
       <td class="ranking-table__stat">${row.e}</td>
