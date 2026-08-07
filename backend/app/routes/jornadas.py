@@ -74,6 +74,20 @@ def _build_jornada_payload(jornada, user_id):
     }
 
 
+@jornadas_bp.route('/info', methods=['GET'])
+def public_jornada_info():
+    """Public endpoint — returns current active/upcoming jornada number (no auth required)."""
+    jornada = (
+        Jornada.query
+        .filter(Jornada.status.in_(['active', 'upcoming']))
+        .order_by(Jornada.date_start.asc())
+        .first()
+    )
+    if not jornada:
+        return jsonify({'jornada_number': None, 'status': None}), 200
+    return jsonify({'jornada_number': jornada.number, 'status': jornada.status}), 200
+
+
 @jornadas_bp.route('/list', methods=['GET'])
 @jwt_required()
 def list_jornadas():

@@ -823,6 +823,35 @@
     white-space: nowrap;
   }
 
+  &__jornada {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 255, 135, 0.08);
+    border: 1px solid rgba(0, 255, 135, 0.2);
+    border-radius: v.$r-lg;
+    padding: v.$sp-3 v.$sp-5;
+    flex-shrink: 0;
+    min-width: 90px;
+  }
+
+  &__jornada-num {
+    font-size: v.$fs-2xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__jornada-label {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+
   &__features {
     display: flex;
     flex-direction: column;

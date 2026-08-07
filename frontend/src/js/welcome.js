@@ -1,6 +1,6 @@
 const WELCOME_KEY = 'pickgoal_welcome_shown';
 
-export function maybeShowWelcome(ctaDestination = '/ligas') {
+export function maybeShowWelcome(ctaDestination = '/jornada') {
   if (localStorage.getItem(WELCOME_KEY)) return;
   localStorage.setItem(WELCOME_KEY, '1');
 
@@ -16,22 +16,22 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">1️⃣</span>
             <div>
-              <strong>Únete a la PickGoal League</strong>
-              <span>— o crea tu propia liga privada</span>
+              <strong>Predice los partidos</strong>
+              <span>— LaLiga, Premier League y Champions cada jornada</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">2️⃣</span>
             <div>
-              <strong>Predice los partidos</strong>
-              <span>— LaLiga, Premier League y Champions</span>
+              <strong>Gana duelos 1vs1</strong>
+              <span>— cada jornada te enfrentas a un rival de tu división</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">3️⃣</span>
             <div>
-              <strong>Gana duelos y sube de división</strong>
-              <span>— sistema de divisiones y ascensos</span>
+              <strong>Sube de división</strong>
+              <span>— compite por el título de la PickGoal League</span>
             </div>
           </li>
         </ol>
@@ -41,7 +41,7 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
         </div>
 
         <button class="btn btn--primary btn--full btn--lg" id="welcomeCta">
-          ¡Empezar a predecir!
+          ¡Empezar a jugar!
         </button>
       </div>
     </div>
@@ -51,7 +51,6 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
 
-  // Forzar reflow para que la animación de entrada arranque
   requestAnimationFrame(() => modal.classList.add('welcome-modal--open'));
 
   function close(destination) {

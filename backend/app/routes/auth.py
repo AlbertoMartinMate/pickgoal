@@ -40,6 +40,13 @@ def register():
     db.session.add(user)
     db.session.commit()
 
+    # Auto-assign new user to División 1 (league_id=4), displacing a bot
+    try:
+        from app.bots import displace_bot
+        displace_bot(league_id=4, new_user_id=user.id)
+    except Exception as e:
+        logger.warning('No se pudo asignar división al usuario %d: %s', user.id, e)
+
     token = create_access_token(identity=str(user.id))
     return jsonify({'token': token, 'user': user.to_dict(include_email=True)}), 201
 

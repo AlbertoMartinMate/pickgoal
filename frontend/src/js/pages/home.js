@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
-import { formatDate, pointsModalHtml, attachPointsModal, showToast } from '../ui.js';
+import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 export async function renderHome(el) {
   const user = auth.getUser();
@@ -83,7 +83,15 @@ export async function renderHome(el) {
   }
 }
 
-function renderGuest(el) {
+async function renderGuest(el) {
+  const LAUNCH_DATE = new Date('2026-08-15T00:00:00Z');
+  const isLaunched = new Date() >= LAUNCH_DATE;
+
+  let jornadaInfo = null;
+  if (isLaunched) {
+    try { jornadaInfo = await api.jornada.info(); } catch (_) {}
+  }
+
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
@@ -95,32 +103,30 @@ function renderGuest(el) {
       </div>
     </section>
 
+    <div class="container">
+      ${pickgoalLeagueCard(jornadaInfo, isLaunched)}
+    </div>
+
     <section class="how-it-works container">
       <h2 class="how-it-works__title">¿Cómo funciona?</h2>
       <div class="how-it-works__grid">
         <div class="how-step">
-          <span class="how-step__icon">🏆</span>
-          <div class="how-step__num">1</div>
-          <h3 class="how-step__title">Únete a una liga</h3>
-          <p class="how-step__desc">Crea tu propia liga o únete a una pública o privada</p>
-        </div>
-        <div class="how-step">
           <span class="how-step__icon">⚽</span>
-          <div class="how-step__num">2</div>
+          <div class="how-step__num">1</div>
           <h3 class="how-step__title">Predice los partidos</h3>
-          <p class="how-step__desc">Elige el resultado 1X2 de LaLiga, Premier League y Champions League cada jornada</p>
+          <p class="how-step__desc">Elige el resultado 1X2 de LaLiga, Premier League y Champions cada jornada</p>
         </div>
         <div class="how-step">
           <span class="how-step__icon">⚔️</span>
-          <div class="how-step__num">3</div>
+          <div class="how-step__num">2</div>
           <h3 class="how-step__title">Gana duelos 1vs1</h3>
-          <p class="how-step__desc">Cada jornada te enfrentas a un rival en tu división. Gana para subir posiciones</p>
+          <p class="how-step__desc">Cada jornada te enfrentas a un rival de tu división para sumar puntos</p>
         </div>
         <div class="how-step">
           <span class="how-step__icon">👑</span>
-          <div class="how-step__num">4</div>
+          <div class="how-step__num">3</div>
           <h3 class="how-step__title">Sube de división</h3>
-          <p class="how-step__desc">Los mejores ascienden, los peores descienden. ¿Llegarás a División 1?</p>
+          <p class="how-step__desc">Los mejores ascienden. ¿Llegarás a lo más alto de la PickGoal League?</p>
         </div>
       </div>
     </section>
@@ -131,12 +137,8 @@ function renderNoLeague(el) {
   el.innerHTML = `
     <div class="home-dashboard container">
       ${pickgoalLeagueCard()}
-      <div class="home-dashboard__create">
-        <a href="#/ligas" class="btn btn--ghost btn--sm">+ Crear liga privada</a>
-      </div>
     </div>
   `;
-  attachPickgoalLeagueCard(el);
 }
 
 function divisionCard(div) {
@@ -183,42 +185,50 @@ function daysUntil(targetDate) {
   return Math.max(0, diff);
 }
 
-function pickgoalLeagueCard() {
-  const days = daysUntil('2026-08-15');
-  const countdownHtml = days > 0
-    ? `<div class="pg-league-card__countdown">
-         <span class="pg-league-card__countdown-num">${days}</span>
-         <span class="pg-league-card__countdown-label">días para el inicio</span>
-       </div>`
-    : `<div class="pg-league-card__countdown pg-league-card__countdown--soon">
-         ¡Lanzamiento inminente!
-       </div>`;
+function pickgoalLeagueCard(jornadaInfo = null, isLaunched = false) {
+  let headerRight;
+  let badge;
+
+  if (isLaunched && jornadaInfo?.jornada_number) {
+    badge = 'Temporada 26/27 · En curso';
+    headerRight = `
+      <div class="pg-league-card__jornada">
+        <span class="pg-league-card__jornada-num">J${jornadaInfo.jornada_number}</span>
+        <span class="pg-league-card__jornada-label">jornada actual</span>
+      </div>`;
+  } else if (isLaunched) {
+    badge = 'Temporada 26/27 · En curso';
+    headerRight = `<div class="pg-league-card__countdown pg-league-card__countdown--soon">Temporada en curso</div>`;
+  } else {
+    const days = daysUntil('2026-08-15');
+    badge = 'Temporada 26/27 · Próximamente';
+    headerRight = days > 0
+      ? `<div class="pg-league-card__countdown">
+           <span class="pg-league-card__countdown-num">${days}</span>
+           <span class="pg-league-card__countdown-label">días para el inicio</span>
+         </div>`
+      : `<div class="pg-league-card__countdown pg-league-card__countdown--soon">¡Lanzamiento inminente!</div>`;
+  }
 
   return `
     <div class="pg-league-card">
       <div class="pg-league-card__header">
         <div>
-          <span class="pg-league-card__badge">Temporada 26/27 · Próximamente</span>
+          <span class="pg-league-card__badge">${badge}</span>
           <h2 class="pg-league-card__name">PickGoal League</h2>
         </div>
-        ${countdownHtml}
+        ${headerRight}
       </div>
       <div class="pg-league-card__features">
         <div class="pg-league-card__feature">⚽ LaLiga · Premier League · Champions League</div>
         <div class="pg-league-card__feature">🏆 Sistema de divisiones y duelos 1vs1</div>
-        <div class="pg-league-card__feature">📅 Lanzamiento: agosto 2026</div>
+        <div class="pg-league-card__feature">📅 Temporada 26/27 · agosto 2026</div>
       </div>
       <div class="pg-league-card__actions">
-        <button class="btn btn--primary btn--sm" id="btnWaitlist">Unirse a la lista de espera</button>
+        <a href="#/register" class="btn btn--primary btn--sm">Inscribirme</a>
       </div>
     </div>
   `;
-}
-
-function attachPickgoalLeagueCard(el) {
-  el.querySelector('#btnWaitlist')?.addEventListener('click', () => {
-    showToast('¡Ya estás dentro! Te avisaremos cuando empiece la temporada 🎉');
-  });
 }
 
 function ordinal(n) {

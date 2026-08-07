@@ -174,10 +174,12 @@ def generate_bot_predictions_v2(jornada_id):
     logger.info('Bot V2 predictions: %d generadas para jornada %d', saved, jornada_id)
 
 
-def displace_bot(league_id):
+def displace_bot(league_id, new_user_id=None):
     """
     Remove the lowest-ranked bot from league_id when a real user joins.
-    Returns the displaced user_id, or None if no bots found.
+    If new_user_id is provided, creates a DivisionMember for them inheriting
+    the bot's division and position.
+    Returns a dict with displacement info, or None if no bots found.
     """
     from app import db
     from app.models import DivisionMember
@@ -197,7 +199,32 @@ def displace_bot(league_id):
         return None
 
     displaced_id = worst_bot.user_id
+    inherited_division = worst_bot.division
+    inherited_position = worst_bot.position
+
     db.session.delete(worst_bot)
+
+    if new_user_id:
+        already = DivisionMember.query.filter_by(
+            league_id=league_id, user_id=new_user_id
+        ).first()
+        if not already:
+            dm = DivisionMember(
+                league_id=league_id,
+                user_id=new_user_id,
+                is_bot=False,
+                division=inherited_division,
+                position=inherited_position,
+            )
+            db.session.add(dm)
+
     db.session.commit()
-    logger.info('Bot %d desplazado de liga %d', displaced_id, league_id)
-    return displaced_id
+    logger.info(
+        'Bot %d desplazado de liga %d; nuevo usuario: %s',
+        displaced_id, league_id, new_user_id,
+    )
+    return {
+        'displaced_bot_id': displaced_id,
+        'league_id': league_id,
+        'new_user_id': new_user_id,
+    }
