@@ -1,3 +1,4 @@
+// build: 2026-08-07
 import '../sass/main.scss';
 import { router } from './router.js';
 import { auth } from './auth.js';
