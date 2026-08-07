@@ -4,6 +4,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 BOT_NAMES_V2 = [
+    'Carlos_87.', 'Miguel_23.', 'Pablo_91.', 'Alejandro_14.', 'Sergio_06.',
+    'David_99.', 'Antonio_77.', 'Javier_45.', 'Roberto_33.', 'Fernando_88.',
+    'Ricardo_55.', 'Diego_19.', 'Manuel_62.', 'Alvaro_38.', 'Marcos_71.',
+]
+
+_OLD_BOT_NAMES = [
     'Xavi_Bot', 'Iniesta_Bot', 'Zidane_Bot', 'Ronaldo_Bot', 'Messi_Bot',
     'Cruyff_Bot', 'Pele_Bot', 'Maradona_Bot', 'Beckham_Bot', 'Rooney_Bot',
     'Henry_Bot', 'Lampard_Bot', 'Gerrard_Bot', 'Pirlo_Bot', 'Buffon_Bot',
@@ -14,11 +20,20 @@ MAX_PER_MATCH = 5
 
 
 def _ensure_bots_exist():
-    """Creates all V2 bot users if they don't exist yet. Returns list of Users."""
+    """Creates/renames all V2 bot users. Returns list of Users."""
     import os
     from app import db
     from app.models import User
     from werkzeug.security import generate_password_hash
+
+    # Rename old bots to new names in case they already exist
+    for old, new in zip(_OLD_BOT_NAMES, BOT_NAMES_V2):
+        old_user = User.query.filter_by(username=old).first()
+        if old_user:
+            old_user.username = new
+            old_user.email = f'{new.lower().rstrip(".")}@bots.pickgoal.es'
+            db.session.flush()
+            logger.info('Bot renombrado: %s → %s', old, new)
 
     bots = []
     for name in BOT_NAMES_V2:
@@ -26,7 +41,7 @@ def _ensure_bots_exist():
         if not user:
             user = User(
                 username=name,
-                email=f'{name.lower()}@bots.pickgoal.es',
+                email=f'{name.lower().rstrip(".")}@bots.pickgoal.es',
                 password_hash=generate_password_hash(os.urandom(24).hex()),
                 is_bot=True,
             )

@@ -81,7 +81,14 @@ def get_division_standings(league_id):
 
     standings.sort(key=lambda x: (-x['pts_division'], -x['pts_general']))
     for i, row in enumerate(standings):
-        row['pos'] = i + 1
+        pos = i + 1
+        row['pos'] = pos
+        if pos <= 4:
+            row['zone'] = 'promotion'
+        elif pos >= 13:
+            row['zone'] = 'relegation'
+        else:
+            row['zone'] = 'mid'
 
     return standings
 

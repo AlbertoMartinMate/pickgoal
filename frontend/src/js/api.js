@@ -114,5 +114,6 @@ export const api = {
   clasificacion: {
     division: (leagueId) => request(`/v2/clasificacion/division${leagueId ? `?league_id=${leagueId}` : ''}`),
     general: () => request('/v2/clasificacion/general'),
+    allDivisions: () => request('/v2/clasificacion/all-divisions'),
   },
 };
