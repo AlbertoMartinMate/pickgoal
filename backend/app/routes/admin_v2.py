@@ -3,6 +3,7 @@ Admin V2 — gestión manual de jornadas semanales.
 Todos los endpoints requieren JWT y usuario admin.
 """
 
+import logging
 from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -10,6 +11,7 @@ from app import db
 from app.models import User, Match, Jornada, JornadaMatch, Season, Competition
 
 admin_v2_bp = Blueprint('admin_v2', __name__)
+logger = logging.getLogger(__name__)
 
 COMP_META = {
     'PD':  {'name': 'LaLiga',             'weight': 8,  'max_per_jornada': 4},
@@ -122,52 +124,65 @@ def publish_jornada(jornada_id):
     if jornada.status != 'draft':
         return jsonify({'error': f'La jornada ya está en estado {jornada.status}'}), 400
 
-    from datetime import timezone as tz
     from app.utils import calculate_odds
     from app.routes.duelos import assign_duelos
     from app.models import DivisionMember, PushSubscription
-    from app.routes.notifications import _send_push
+    from app.routes.notifications import send_push_notification
 
-    now = datetime.now(timezone.utc)
+    step = 'init'
+    try:
+        now = datetime.now(timezone.utc)
 
-    # Calculate odds for matches that don't have them yet
-    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
-    for jm in jm_list:
-        if jm.odds_1 is None:
+        step = 'calcular_cuotas'
+        jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
+        logger.info('[publish] jornada %d: calculando cuotas para %d partidos', jornada.id, len(jm_list))
+        for jm in jm_list:
+            if jm.odds_1 is None:
+                try:
+                    o1, ox, o2 = calculate_odds(jm.match)
+                except Exception as odds_exc:
+                    logger.warning('[publish] jornada %d: calculate_odds falló para match %d (%s), uso cuotas por defecto',
+                                    jornada.id, jm.match_id, odds_exc)
+                    o1, ox, o2 = 2.50, 3.20, 2.80
+                jm.odds_1 = o1
+                jm.odds_x = ox
+                jm.odds_2 = o2
+                jm.calculated_at = now
+        logger.info('[publish] jornada %d: cuotas calculadas OK', jornada.id)
+
+        step = 'actualizar_status'
+        jornada.status = 'upcoming'
+        db.session.commit()
+        logger.info('[publish] jornada %d: status -> upcoming', jornada.id)
+
+        step = 'asignar_duelos'
+        active_league_ids = {dm.league_id for dm in DivisionMember.query.all()}
+        logger.info('[publish] jornada %d: %d ligas activas', jornada.id, len(active_league_ids))
+        duelos_errors = []
+        for lid in active_league_ids:
             try:
-                o1, ox, o2 = calculate_odds(jm.match)
+                assign_duelos(jornada.id, lid)
+                logger.info('[publish] jornada %d: duelos asignados OK liga %d', jornada.id, lid)
+            except Exception as e:
+                logger.exception('[publish] jornada %d: fallo asignando duelos liga %d', jornada.id, lid)
+                duelos_errors.append(f'Liga {lid}: {e}')
+
+        step = 'enviar_push'
+        user_ids = {uid for (uid,) in db.session.query(PushSubscription.user_id).distinct().all()}
+        title = '⚽ PickGoal — Nueva jornada disponible'
+        body = f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!'
+        logger.info('[publish] jornada %d: enviando push a %d usuarios', jornada.id, len(user_ids))
+        push_sent = 0
+        for uid in user_ids:
+            try:
+                push_sent += send_push_notification(uid, title, body)
             except Exception:
-                o1, ox, o2 = 2.50, 3.20, 2.80
-            jm.odds_1 = o1
-            jm.odds_x = ox
-            jm.odds_2 = o2
-            jm.calculated_at = now
+                logger.exception('[publish] jornada %d: fallo enviando push a usuario %d', jornada.id, uid)
+        logger.info('[publish] jornada %d: push enviado a %d/%d usuarios', jornada.id, push_sent, len(user_ids))
 
-    jornada.status = 'upcoming'
-    db.session.commit()
-
-    # Assign duelos for all active leagues
-    active_league_ids = {dm.league_id for dm in DivisionMember.query.all()}
-    duelos_errors = []
-    for lid in active_league_ids:
-        try:
-            assign_duelos(jornada.id, lid)
-        except Exception as e:
-            duelos_errors.append(str(e))
-
-    # Send push to all subscribers
-    subs = PushSubscription.query.all()
-    payload = {
-        'title': '⚽ PickGoal — Nueva jornada disponible',
-        'body': f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!',
-    }
-    push_sent = 0
-    for sub in subs:
-        try:
-            _send_push(sub, payload)
-            push_sent += 1
-        except Exception:
-            pass
+    except Exception as e:
+        logger.exception('[publish] jornada %d: fallo en paso "%s"', jornada.id, step)
+        return jsonify({'error': str(e), 'step': step}), 500
 
     return jsonify({
         'message': f'Jornada {jornada.number} publicada',

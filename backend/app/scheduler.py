@@ -321,19 +321,18 @@ def _push_jornada_published(app, jornada):
     """Envía push a todos los usuarios notificando la nueva jornada."""
     try:
         from app.models import PushSubscription
-        from app.routes.notifications import _send_push
+        from app.routes.notifications import send_push_notification
 
-        subs = PushSubscription.query.all()
-        payload = {
-            'title': '⚽ PickGoal League — Nueva jornada disponible',
-            'body': f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!',
-        }
-        for sub in subs:
+        user_ids = {uid for (uid,) in db.session.query(PushSubscription.user_id).distinct().all()}
+        title = '⚽ PickGoal League — Nueva jornada disponible'
+        body = f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!'
+        sent = 0
+        for uid in user_ids:
             try:
-                _send_push(sub, payload)
+                sent += send_push_notification(uid, title, body)
             except Exception:
                 pass
-        logger.info('Push enviado a %d suscriptores', len(subs))
+        logger.info('Push enviado a %d suscriptores', sent)
     except Exception as e:
         logger.warning('Error enviando push de jornada publicada: %s', e)
 
@@ -607,26 +606,15 @@ def check_inactive_users(app):
 def _push_inactivity_warning(user):
     """Send a push notification warning the user they are about to be removed."""
     try:
-        from app.models import PushSubscription
-        from app.routes.notifications import _send_push
+        from app.routes.notifications import send_push_notification
 
-        subs = PushSubscription.query.filter_by(user_id=user.id).all()
-        if not subs:
-            return
-
-        payload = {
-            'title': '⚠️ PickGoal — Aviso de inactividad',
-            'body': (
-                f'Hola {user.username}, llevas 3 jornadas sin predecir. '
-                'Si no participas en la próxima serás reemplazado.'
-            ),
-        }
-        for sub in subs:
-            try:
-                _send_push(sub, payload)
-            except Exception:
-                pass
-        logger.info('Push inactividad enviado a usuario %d', user.id)
+        title = '⚠️ PickGoal — Aviso de inactividad'
+        body = (
+            f'Hola {user.username}, llevas 3 jornadas sin predecir. '
+            'Si no participas en la próxima serás reemplazado.'
+        )
+        sent = send_push_notification(user.id, title, body)
+        logger.info('Push inactividad enviado a usuario %d (%d suscripciones)', user.id, sent)
     except Exception as e:
         logger.warning('Error enviando push inactividad a usuario %d: %s', user.id, e)
 
