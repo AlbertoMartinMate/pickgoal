@@ -11,7 +11,14 @@ MAX_UNITS_PER_MATCH = 5
 
 
 def _get_active_jornada():
-    return Jornada.query.filter_by(status='active').first()
+    """Earliest jornada open for predictions. 'upcoming' and 'active' are
+    equivalent for the user — the real per-match lock is `match.is_locked()`."""
+    return (
+        Jornada.query
+        .filter(Jornada.status.in_(['active', 'upcoming']))
+        .order_by(Jornada.date_start.asc())
+        .first()
+    )
 
 
 def _first_match_datetime(jornada):
@@ -109,12 +116,6 @@ def get_current_jornada():
     user_id = int(get_jwt_identity())
     jornada = _get_active_jornada()
     if not jornada:
-        jornada = (
-            Jornada.query.filter_by(status='upcoming')
-            .order_by(Jornada.date_start.asc())
-            .first()
-        )
-    if not jornada:
         return jsonify({'jornada': None, 'next_jornada': None}), 200
     return jsonify(_build_jornada_payload(jornada, user_id)), 200
 
@@ -132,13 +133,11 @@ def save_prediction():
     if not isinstance(jornada_match_id, int):
         return jsonify({'error': 'jornada_match_id inválido'}), 400
 
-    jornada = _get_active_jornada()
-    if not jornada:
-        return jsonify({'error': 'No hay jornada activa'}), 400
+    jm = JornadaMatch.query.get(jornada_match_id)
+    if not jm or jm.jornada.status not in ('active', 'upcoming'):
+        return jsonify({'error': f'Partido {jornada_match_id} no pertenece a una jornada abierta'}), 400
 
-    jm = JornadaMatch.query.filter_by(id=jornada_match_id, jornada_id=jornada.id).first()
-    if not jm:
-        return jsonify({'error': f'Partido {jornada_match_id} no pertenece a la jornada activa'}), 400
+    jornada = jm.jornada
 
     if jm.match.is_locked():
         return jsonify({'error': 'Este partido ya está bloqueado'}), 403

@@ -9,7 +9,14 @@ duelos_bp = Blueprint('duelos_v2', __name__)
 
 
 def _get_active_jornada():
-    return Jornada.query.filter_by(status='active').first()
+    """Earliest jornada open for predictions. 'upcoming' and 'active' are
+    equivalent for the user — the real per-match lock is `match.is_locked()`."""
+    return (
+        Jornada.query
+        .filter(Jornada.status.in_(['active', 'upcoming']))
+        .order_by(Jornada.date_start.asc())
+        .first()
+    )
 
 
 def _get_user_jornada_points(user_id, jornada_id):
