@@ -1,9 +1,17 @@
+import os
 import random
+import string
 import logging
 
 logger = logging.getLogger(__name__)
 
 BOT_NAMES_V2 = [
+    'Carlos_87.', 'Miguel_23.', 'Pablo_91.', 'Alejandro_14.', 'Sergio_06.',
+    'David_99.', 'Antonio_77.', 'Javier_45.', 'Roberto_33.', 'Fernando_88.',
+    'Ricardo_55.', 'Diego_19.', 'Manuel_62.', 'Alvaro_38.', 'Marcos_71.',
+]
+
+_OLD_BOT_NAMES = [
     'Xavi_Bot', 'Iniesta_Bot', 'Zidane_Bot', 'Ronaldo_Bot', 'Messi_Bot',
     'Cruyff_Bot', 'Pele_Bot', 'Maradona_Bot', 'Beckham_Bot', 'Rooney_Bot',
     'Henry_Bot', 'Lampard_Bot', 'Gerrard_Bot', 'Pirlo_Bot', 'Buffon_Bot',
@@ -14,11 +22,20 @@ MAX_PER_MATCH = 5
 
 
 def _ensure_bots_exist():
-    """Creates all V2 bot users if they don't exist yet. Returns list of Users."""
+    """Creates/renames all V2 bot users. Returns list of Users."""
     import os
     from app import db
     from app.models import User
     from werkzeug.security import generate_password_hash
+
+    # Rename old bots to new names in case they already exist
+    for old, new in zip(_OLD_BOT_NAMES, BOT_NAMES_V2):
+        old_user = User.query.filter_by(username=old).first()
+        if old_user:
+            old_user.username = new
+            old_user.email = f'{new.lower().rstrip(".")}@bots.pickgoal.es'
+            db.session.flush()
+            logger.info('Bot renombrado: %s → %s', old, new)
 
     bots = []
     for name in BOT_NAMES_V2:
@@ -26,7 +43,7 @@ def _ensure_bots_exist():
         if not user:
             user = User(
                 username=name,
-                email=f'{name.lower()}@bots.pickgoal.es',
+                email=f'{name.lower().rstrip(".")}@bots.pickgoal.es',
                 password_hash=generate_password_hash(os.urandom(24).hex()),
                 is_bot=True,
             )
@@ -159,10 +176,12 @@ def generate_bot_predictions_v2(jornada_id):
     logger.info('Bot V2 predictions: %d generadas para jornada %d', saved, jornada_id)
 
 
-def displace_bot(league_id):
+def displace_bot(league_id, new_user_id=None):
     """
     Remove the lowest-ranked bot from league_id when a real user joins.
-    Returns the displaced user_id, or None if no bots found.
+    If new_user_id is provided, creates a DivisionMember for them inheriting
+    the bot's division and position.
+    Returns a dict with displacement info, or None if no bots found.
     """
     from app import db
     from app.models import DivisionMember
@@ -182,7 +201,117 @@ def displace_bot(league_id):
         return None
 
     displaced_id = worst_bot.user_id
+    inherited_division = worst_bot.division
+    inherited_position = worst_bot.position
+
     db.session.delete(worst_bot)
+
+    if new_user_id:
+        already = DivisionMember.query.filter_by(
+            league_id=league_id, user_id=new_user_id
+        ).first()
+        if not already:
+            dm = DivisionMember(
+                league_id=league_id,
+                user_id=new_user_id,
+                is_bot=False,
+                division=inherited_division,
+                position=inherited_position,
+            )
+            db.session.add(dm)
+
     db.session.commit()
-    logger.info('Bot %d desplazado de liga %d', displaced_id, league_id)
-    return displaced_id
+    logger.info(
+        'Bot %d desplazado de liga %d; nuevo usuario: %s',
+        displaced_id, league_id, new_user_id,
+    )
+    return {
+        'displaced_bot_id': displaced_id,
+        'league_id': league_id,
+        'new_user_id': new_user_id,
+    }
+
+
+def replace_user_with_bot(user_id):
+    """
+    Replace a departing user with a new bot in all their division memberships.
+    Transfers Duelo and PredictionV2 records to the bot so division standings
+    remain visually unchanged. Returns list of new bot user_ids created.
+    Call this BEFORE deleting the user account.
+    """
+    from app import db
+    from app.models import User, DivisionMember, Duelo, PredictionV2
+    from werkzeug.security import generate_password_hash
+    from sqlalchemy import or_
+
+    user = db.session.get(User, user_id)
+    if not user or user.is_bot:
+        logger.warning('replace_user_with_bot: usuario %d no válido', user_id)
+        return []
+
+    memberships = DivisionMember.query.filter_by(user_id=user_id).all()
+    created_bot_ids = []
+    first_bot_id = None
+
+    for dm in memberships:
+        # Generate a unique bot name derived from the replaced user
+        base = (user.username[:8]).rstrip('_').rstrip('.')
+        while True:
+            suffix = ''.join(random.choices(string.digits, k=2))
+            bot_name = f'{base}_{suffix}.'
+            if not User.query.filter_by(username=bot_name).first():
+                break
+
+        bot = User(
+            username=bot_name,
+            email=f'{bot_name.lower().rstrip(".")}@bots.pickgoal.es',
+            password_hash=generate_password_hash(os.urandom(24).hex()),
+            is_bot=True,
+        )
+        db.session.add(bot)
+        db.session.flush()
+
+        # Bot inherits the user's stored position and accumulated points
+        new_dm = DivisionMember(
+            league_id=dm.league_id,
+            user_id=bot.id,
+            is_bot=True,
+            division=dm.division,
+            position=dm.position,
+            season_div_points=dm.season_div_points,
+            season_total_points=dm.season_total_points,
+        )
+        db.session.add(new_dm)
+
+        # Transfer Duelo records so computed standings don't change
+        for duelo in Duelo.query.filter(
+            Duelo.division_league_id == dm.league_id,
+            Duelo.player1_id == user_id,
+        ).all():
+            duelo.player1_id = bot.id
+
+        for duelo in Duelo.query.filter(
+            Duelo.division_league_id == dm.league_id,
+            Duelo.player2_id == user_id,
+        ).all():
+            duelo.player2_id = bot.id
+
+        db.session.delete(dm)
+        created_bot_ids.append(bot.id)
+
+        if first_bot_id is None:
+            first_bot_id = bot.id
+
+        logger.info(
+            'Bot %d (%s) reemplaza a usuario %d en liga %d',
+            bot.id, bot_name, user_id, dm.league_id,
+        )
+
+    # Transfer all PredictionV2 records to the first (usually only) bot
+    if first_bot_id is not None:
+        for pred in PredictionV2.query.filter_by(user_id=user_id).all():
+            pred.user_id = first_bot_id
+
+    db.session.commit()
+    logger.info('replace_user_with_bot: usuario %d → %d bots creados', user_id, len(created_bot_ids))
+    return created_bot_ids

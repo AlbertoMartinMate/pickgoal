@@ -47,8 +47,8 @@ export function renderLogin(el) {
       const { token, user } = await api.auth.login({ identifier, password });
       auth.setUser(user, token);
       showToast(`¡Bienvenido, ${user.username}!`);
-      router.navigate('/quiniela');
-      maybeShowWelcome('/quiniela');
+      router.navigate('/');
+      maybeShowWelcome('/');
     } catch (err) {
       errEl.textContent = err.message || 'Error al iniciar sesión';
       errEl.classList.remove('hidden');

@@ -19,12 +19,14 @@ import { renderJornada } from './pages/jornada.js';
 import { renderDuelo } from './pages/duelo.js';
 import { renderTablaV2 } from './pages/tabla-v2.js';
 
+const _redirect = (to) => () => { window.location.hash = to; };
+
 const routes = {
   '/': renderHome,
   '/login': renderLogin,
   '/register': renderRegister,
-  '/quiniela': renderQuiniela,
-  '/resultados': renderResultados,
+  '/quiniela': _redirect('/jornada'),
+  '/resultados': _redirect('/tabla-v2'),
   '/ranking': renderRanking,
   '/tablon': renderTablon,
   '/ligas': renderLigas,
@@ -86,7 +88,7 @@ export const router = {
     const { handler, params } = matched;
 
     // Rutas protegidas
-    const protectedRoutes = ['/perfil', '/campeon', '/admin', '/jornada', '/duelo', '/tabla-v2'];
+    const protectedRoutes = ['/perfil', '/admin', '/jornada', '/duelo', '/tabla-v2'];
     if (protectedRoutes.includes(path) && !auth.isLoggedIn()) {
       this.navigate('/login');
       return;

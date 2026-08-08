@@ -12,9 +12,13 @@ from app.models import User, Match, Jornada, JornadaMatch, Season, Competition
 admin_v2_bp = Blueprint('admin_v2', __name__)
 
 COMP_META = {
-    'PD': {'name': 'LaLiga',           'weight': 8, 'max_per_jornada': 4},
-    'PL': {'name': 'Premier League',   'weight': 8, 'max_per_jornada': 4},
-    'CL': {'name': 'Champions League', 'weight': 10, 'max_per_jornada': 4},
+    'PD':  {'name': 'LaLiga',             'weight': 8,  'max_per_jornada': 4},
+    'PL':  {'name': 'Premier League',     'weight': 8,  'max_per_jornada': 4},
+    'CL':  {'name': 'Champions League',   'weight': 10, 'max_per_jornada': 4, 'max_display': 5},
+    'SA':  {'name': 'Serie A',            'weight': 7,  'max_per_jornada': 4},
+    'BL1': {'name': 'Bundesliga',         'weight': 7,  'max_per_jornada': 4},
+    'FL1': {'name': 'Ligue 1',            'weight': 6,  'max_per_jornada': 4},
+    'PPL': {'name': 'Primeira Liga',      'weight': 6,  'max_per_jornada': 4},
 }
 
 
@@ -79,7 +83,9 @@ def partidos_disponibles():
             )
             resp.raise_for_status()
             matches = resp.json().get('matches', [])
-            result[code] = [_serialize_api_match(m, code) for m in matches]
+            serialized = [_serialize_api_match(m, code) for m in matches]
+            max_display = COMP_META.get(code, {}).get('max_display')
+            result[code] = serialized[:max_display] if max_display else serialized
         except Exception as e:
             result[code] = []
             import logging
@@ -99,6 +105,77 @@ def _serialize_api_match(m, comp_code):
         'match_datetime': m.get('utcDate'),
         'status': m.get('status', 'SCHEDULED'),
     }
+
+
+# ─── POST /api/v2/admin/jornada/<id>/publish ────────────────────────────────
+
+@admin_v2_bp.route('/jornada/<int:jornada_id>/publish', methods=['POST'])
+@jwt_required()
+def publish_jornada(jornada_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jornada = db.session.get(Jornada, jornada_id)
+    if not jornada:
+        return jsonify({'error': 'Jornada no encontrada'}), 404
+    if jornada.status != 'draft':
+        return jsonify({'error': f'La jornada ya está en estado {jornada.status}'}), 400
+
+    from datetime import timezone as tz
+    from app.utils import calculate_odds
+    from app.routes.duelos import assign_duelos
+    from app.models import DivisionMember, PushSubscription
+    from app.routes.notifications import _send_push
+
+    now = datetime.now(timezone.utc)
+
+    # Calculate odds for matches that don't have them yet
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
+    for jm in jm_list:
+        if jm.odds_1 is None:
+            try:
+                o1, ox, o2 = calculate_odds(jm.match)
+            except Exception:
+                o1, ox, o2 = 2.50, 3.20, 2.80
+            jm.odds_1 = o1
+            jm.odds_x = ox
+            jm.odds_2 = o2
+            jm.calculated_at = now
+
+    jornada.status = 'upcoming'
+    db.session.commit()
+
+    # Assign duelos for all active leagues
+    active_league_ids = {dm.league_id for dm in DivisionMember.query.all()}
+    duelos_errors = []
+    for lid in active_league_ids:
+        try:
+            assign_duelos(jornada.id, lid)
+        except Exception as e:
+            duelos_errors.append(str(e))
+
+    # Send push to all subscribers
+    subs = PushSubscription.query.all()
+    payload = {
+        'title': '⚽ PickGoal — Nueva jornada disponible',
+        'body': f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!',
+    }
+    push_sent = 0
+    for sub in subs:
+        try:
+            _send_push(sub, payload)
+            push_sent += 1
+        except Exception:
+            pass
+
+    return jsonify({
+        'message': f'Jornada {jornada.number} publicada',
+        'odds_calculated': len(jm_list),
+        'duelos_leagues': len(active_league_ids),
+        'push_sent': push_sent,
+        'duelos_errors': duelos_errors,
+    }), 200
 
 
 # ─── GET /api/v2/admin/jornadas ──────────────────────────────────────────────

@@ -8,6 +8,7 @@ let deferredInstallPrompt = null;
 let unreadPollInterval = null;
 
 async function bootstrap() {
+  document.documentElement.dataset.build = __BUILD_DATE__;
   await auth.init();
   router.init();
   setupNavbar();
@@ -155,6 +156,7 @@ async function updateNavState() {
     userBtn.style.visibility = 'visible';
     bottomNav?.classList.remove('hidden');
     document.body.classList.add('has-bottom-nav');
+    document.getElementById('navAdminLink')?.classList.toggle('hidden', !user.is_admin);
 
     try {
       const { leagues } = user.is_admin

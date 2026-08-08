@@ -33,6 +33,7 @@ export const api = {
     forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     resetPassword: (token, password) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
     ranking: (leagueId) => request(`/auth/ranking${leagueId ? `?league_id=${leagueId}` : ''}`),
+    deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
     users: () => request('/auth/users'),
     toggleAdmin: (uid) => request(`/auth/users/${uid}/toggle-admin`, { method: 'PATCH' }),
   },
@@ -97,10 +98,13 @@ export const api = {
     createJornada: (data) => request('/v2/admin/jornada', { method: 'POST', body: JSON.stringify(data) }),
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteJornada: (id) => request(`/v2/admin/jornada/${id}`, { method: 'DELETE' }),
+    publishJornada: (id) => request(`/v2/admin/jornada/${id}/publish`, { method: 'POST' }),
   },
 
   jornada: {
+    info: () => request('/v2/jornada/info'),
     current: () => request('/v2/jornada/current'),
+    list: () => request('/v2/jornada/list'),
     predict: (prediction) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify(prediction) }),
     history: () => request('/v2/jornada/history'),
   },
@@ -112,5 +116,6 @@ export const api = {
   clasificacion: {
     division: (leagueId) => request(`/v2/clasificacion/division${leagueId ? `?league_id=${leagueId}` : ''}`),
     general: () => request('/v2/clasificacion/general'),
+    allDivisions: () => request('/v2/clasificacion/all-divisions'),
   },
 };

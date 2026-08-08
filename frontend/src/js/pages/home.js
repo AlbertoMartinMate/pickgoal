@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
-import { formatDate, pointsModalHtml, attachPointsModal, showToast } from '../ui.js';
+import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 export async function renderHome(el) {
   const user = auth.getUser();
@@ -14,15 +14,30 @@ export async function renderHome(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const { leagues_summary, upcoming_matches } = await api.home.summary();
+    const { leagues_summary, division_summary, upcoming_matches } = await api.home.summary();
 
-    if (leagues_summary.length === 0) {
+    if (division_summary) {
+      el.innerHTML = `
+        <div class="home-dashboard container">
+          <div class="home-dashboard__topbar">
+            <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
+          </div>
+          ${divisionCard(division_summary)}
+          ${prizeBanner()}
+          ${upcomingSection(upcoming_matches)}
+        </div>
+        ${pointsModalHtml()}
+      `;
+      attachPointsModal(el);
+      return;
+    }
+
+    if (!leagues_summary || leagues_summary.length === 0) {
       renderNoLeague(el);
       return;
     }
 
     const activeId = (() => { const r = localStorage.getItem('activeLeagueId'); return r ? parseInt(r) : null; })();
-    // Ordenar: liga activa primero
     const sorted = [...leagues_summary].sort((a, b) =>
       a.league_id === activeId ? -1 : b.league_id === activeId ? 1 : 0
     );
@@ -33,9 +48,7 @@ export async function renderHome(el) {
           <button class="btn btn--ghost btn--sm" id="btnPointsInfo">📊 Sistema de puntos</button>
         </div>
 
-        ${pickgoalLeagueCard()}
-
-        <h3 class="home-dashboard__section-title">Ligas del Mundial</h3>
+        <h3 class="home-dashboard__section-title">Mis ligas</h3>
         <div class="home-dashboard__leagues">
           ${sorted.map(s => leagueCard(s)).join('')}
         </div>
@@ -49,7 +62,6 @@ export async function renderHome(el) {
       ${pointsModalHtml()}
     `;
     attachPointsModal(el);
-    attachPickgoalLeagueCard(el);
 
     el.querySelectorAll('.league-card[data-league-id]').forEach(card => {
       card.style.cursor = 'pointer';
@@ -72,7 +84,15 @@ export async function renderHome(el) {
   }
 }
 
-function renderGuest(el) {
+async function renderGuest(el) {
+  const LAUNCH_DATE = new Date('2026-08-15T00:00:00Z');
+  const isLaunched = new Date() >= LAUNCH_DATE;
+
+  let jornadaInfo = null;
+  if (isLaunched) {
+    try { jornadaInfo = await api.jornada.info(); } catch (_) {}
+  }
+
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
@@ -84,68 +104,31 @@ function renderGuest(el) {
       </div>
     </section>
 
+    <div class="container">
+      ${pickgoalLeagueCard(jornadaInfo, isLaunched)}
+    </div>
+
     <section class="how-it-works container">
       <h2 class="how-it-works__title">¿Cómo funciona?</h2>
       <div class="how-it-works__grid">
         <div class="how-step">
-          <span class="how-step__icon">🏆</span>
-          <div class="how-step__num">1</div>
-          <h3 class="how-step__title">Únete a una liga</h3>
-          <p class="how-step__desc">Crea tu propia liga o únete a una pública o privada</p>
-        </div>
-        <div class="how-step">
           <span class="how-step__icon">⚽</span>
-          <div class="how-step__num">2</div>
+          <div class="how-step__num">1</div>
           <h3 class="how-step__title">Predice los partidos</h3>
-          <p class="how-step__desc">Elige el resultado 1X2 y el marcador exacto de cada partido del Mundial</p>
+          <p class="how-step__desc">Elige el resultado 1X2 de LaLiga, Premier League y Champions cada jornada</p>
         </div>
         <div class="how-step">
-          <span class="how-step__icon">🎯</span>
-          <div class="how-step__num">3</div>
-          <h3 class="how-step__title">Acumula puntos</h3>
-          <p class="how-step__desc">Gana puntos por cada acierto. Más puntos cuanto más avanza el torneo</p>
+          <span class="how-step__icon">⚔️</span>
+          <div class="how-step__num">2</div>
+          <h3 class="how-step__title">Gana duelos 1vs1</h3>
+          <p class="how-step__desc">Cada jornada te enfrentas a un rival de tu división para sumar puntos</p>
         </div>
         <div class="how-step">
           <span class="how-step__icon">👑</span>
-          <div class="how-step__num">4</div>
-          <h3 class="how-step__title">Gana el Mundial</h3>
-          <p class="how-step__desc">El mejor pronosticador de tu liga gana. Liga oficial con premio camiseta</p>
+          <div class="how-step__num">3</div>
+          <h3 class="how-step__title">Sube de división</h3>
+          <p class="how-step__desc">Los mejores ascienden. ¿Llegarás a lo más alto de la PickGoal League?</p>
         </div>
-      </div>
-
-      <div class="points-table">
-        <h3 class="points-table__title">Sistema de puntos</h3>
-        <div class="points-table__grid">
-          <div class="points-pill">
-            <span class="points-pill__phase">Grupos</span>
-            <span class="points-pill__pts">1<span class="points-pill__sep">+</span>1</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Dieciseisavos</span>
-            <span class="points-pill__pts">2<span class="points-pill__sep">+</span>2</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Octavos</span>
-            <span class="points-pill__pts">3<span class="points-pill__sep">+</span>3</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Cuartos</span>
-            <span class="points-pill__pts">4<span class="points-pill__sep">+</span>4</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Semis</span>
-            <span class="points-pill__pts">5<span class="points-pill__sep">+</span>5</span>
-          </div>
-          <div class="points-pill">
-            <span class="points-pill__phase">Final</span>
-            <span class="points-pill__pts">6<span class="points-pill__sep">+</span>6</span>
-          </div>
-          <div class="points-pill points-pill--champion">
-            <span class="points-pill__phase">Campeón</span>
-            <span class="points-pill__pts">+10</span>
-          </div>
-        </div>
-        <p class="points-table__legend">Puntos por resultado 1X2 <span class="points-table__plus">+</span> puntos extra por marcador exacto</p>
       </div>
     </section>
   `;
@@ -155,12 +138,45 @@ function renderNoLeague(el) {
   el.innerHTML = `
     <div class="home-dashboard container">
       ${pickgoalLeagueCard()}
-      <div class="home-dashboard__create">
-        <a href="#/ligas" class="btn btn--ghost btn--sm">+ Crear liga privada</a>
+    </div>
+  `;
+}
+
+function divisionCard(div) {
+  const zoneLabels = { promotion: '⬆️ Zona ascenso', relegation: '⬇️ Zona descenso', mid: '' };
+  const zoneBadge = zoneLabels[div.zone]
+    ? `<span class="div-card__zone div-card__zone--${div.zone}">${zoneLabels[div.zone]}</span>`
+    : '';
+
+  return `
+    <div class="div-card">
+      <div class="div-card__header">
+        <div>
+          <span class="div-card__league">${div.league_name}</span>
+          <div class="div-card__pos-row">
+            <span class="div-card__pos">${div.rank ?? '—'}º</span>
+            <span class="div-card__of">de ${div.member_count}</span>
+            ${zoneBadge}
+          </div>
+        </div>
+        <div class="div-card__pts-block">
+          <span class="div-card__pts-val">${div.pts_division}</span>
+          <span class="div-card__pts-label">pts división</span>
+        </div>
+      </div>
+      <div class="div-card__record">
+        <div class="div-card__stat"><span>${div.pj}</span><small>PJ</small></div>
+        <div class="div-card__stat"><span>${div.g}</span><small>G</small></div>
+        <div class="div-card__stat"><span>${div.e}</span><small>E</small></div>
+        <div class="div-card__stat"><span>${div.p}</span><small>P</small></div>
+        <div class="div-card__stat div-card__stat--general"><span>${div.pts_general}</span><small>Pts total</small></div>
+      </div>
+      <div class="div-card__actions">
+        <a href="#/jornada" class="btn btn--primary btn--sm">Predecir jornada</a>
+        <a href="#/tabla-v2" class="btn btn--ghost btn--sm">Ver tabla</a>
       </div>
     </div>
   `;
-  attachPickgoalLeagueCard(el);
 }
 
 function daysUntil(targetDate) {
@@ -170,42 +186,50 @@ function daysUntil(targetDate) {
   return Math.max(0, diff);
 }
 
-function pickgoalLeagueCard() {
-  const days = daysUntil('2026-08-15');
-  const countdownHtml = days > 0
-    ? `<div class="pg-league-card__countdown">
-         <span class="pg-league-card__countdown-num">${days}</span>
-         <span class="pg-league-card__countdown-label">días para el inicio</span>
-       </div>`
-    : `<div class="pg-league-card__countdown pg-league-card__countdown--soon">
-         ¡Lanzamiento inminente!
-       </div>`;
+function pickgoalLeagueCard(jornadaInfo = null, isLaunched = false) {
+  let headerRight;
+  let badge;
+
+  if (isLaunched && jornadaInfo?.jornada_number) {
+    badge = 'Temporada 26/27 · En curso';
+    headerRight = `
+      <div class="pg-league-card__jornada">
+        <span class="pg-league-card__jornada-num">J${jornadaInfo.jornada_number}</span>
+        <span class="pg-league-card__jornada-label">jornada actual</span>
+      </div>`;
+  } else if (isLaunched) {
+    badge = 'Temporada 26/27 · En curso';
+    headerRight = `<div class="pg-league-card__countdown pg-league-card__countdown--soon">Temporada en curso</div>`;
+  } else {
+    const days = daysUntil('2026-08-15');
+    badge = 'Temporada 26/27 · Próximamente';
+    headerRight = days > 0
+      ? `<div class="pg-league-card__countdown">
+           <span class="pg-league-card__countdown-num">${days}</span>
+           <span class="pg-league-card__countdown-label">días para el inicio</span>
+         </div>`
+      : `<div class="pg-league-card__countdown pg-league-card__countdown--soon">¡Lanzamiento inminente!</div>`;
+  }
 
   return `
     <div class="pg-league-card">
       <div class="pg-league-card__header">
         <div>
-          <span class="pg-league-card__badge">Temporada 26/27 · Próximamente</span>
+          <span class="pg-league-card__badge">${badge}</span>
           <h2 class="pg-league-card__name">PickGoal League</h2>
         </div>
-        ${countdownHtml}
+        ${headerRight}
       </div>
       <div class="pg-league-card__features">
         <div class="pg-league-card__feature">⚽ LaLiga · Premier League · Champions League</div>
         <div class="pg-league-card__feature">🏆 Sistema de divisiones y duelos 1vs1</div>
-        <div class="pg-league-card__feature">📅 Lanzamiento: agosto 2026</div>
+        <div class="pg-league-card__feature">📅 Temporada 26/27 · agosto 2026</div>
       </div>
       <div class="pg-league-card__actions">
-        <button class="btn btn--primary btn--sm" id="btnWaitlist">Unirse a la lista de espera</button>
+        <a href="#/register" class="btn btn--primary btn--sm">Inscribirme</a>
       </div>
     </div>
   `;
-}
-
-function attachPickgoalLeagueCard(el) {
-  el.querySelector('#btnWaitlist')?.addEventListener('click', () => {
-    showToast('¡Ya estás dentro! Te avisaremos cuando empiece la temporada 🎉');
-  });
 }
 
 function ordinal(n) {
@@ -279,7 +303,19 @@ function upcomingSection(matches) {
           </div>
         `).join('')}
       </div>
-      <a class="btn btn--ghost btn--sm" href="#/quiniela">Ver todos los pronósticos</a>
+      <a class="btn btn--ghost btn--sm" href="#/jornada">Ver jornada actual</a>
     </section>
+  `;
+}
+
+function prizeBanner() {
+  return `
+    <div class="prize-banner">
+      <span class="prize-banner__icon">🏆</span>
+      <div>
+        <strong>Premio temporada 26/27</strong>
+        <p>Camiseta de tu equipo favorito para el campeón de la clasificación general</p>
+      </div>
+    </div>
   `;
 }

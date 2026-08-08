@@ -4,64 +4,84 @@ import { showToast, formatDate } from '../ui.js';
 const MAX_UNITS = 20;
 const MAX_UNITS_PER_MATCH = 5;
 
-// jornada_match_id -> { predicted_result, units }
+// Per-jornada state: jornadaMatchId -> { predicted_result, units }
 let state = {};
 let totalUnits = 0;
 let lastOpenMatchId = null;
+let currentJornadaData = null;
 
 export async function renderJornada(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const data = await api.jornada.current();
+    const { jornadas } = await api.jornada.list();
 
-    if (!data.jornada) {
-      el.innerHTML = emptyStateHtml(data.next_jornada);
+    if (!jornadas.length) {
+      el.innerHTML = emptyStateHtml();
       return;
     }
 
-    const { jornada, matches, units_used } = data;
-    state = {};
-    for (const m of matches) {
-      state[m.jornada_match_id] = {
-        predicted_result: m.prediction?.predicted_result ?? null,
-        units: m.prediction?.units_wagered ?? 0,
-      };
-    }
-    totalUnits = units_used;
-
-    const openMatches = matches.filter(m => !m.predict_locked);
-    lastOpenMatchId = openMatches.length === 1 ? openMatches[0].jornada_match_id : null;
-
-    el.innerHTML = `
-      <div class="container">
-        <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)}</h1>
-        <div class="units-counter" id="unitsCounter"></div>
-        <div class="jornada-matches">
-          ${matches.map(matchRow).join('')}
-        </div>
-      </div>
-    `;
-
-    renderUnitsCounter();
-    updateLastMatchWarning();
-    attachHandlers(el);
-
+    renderJornadaList(el, jornadas, 0);
   } catch (err) {
-    el.innerHTML = `<div class="container"><p class="form__error">Error cargando la jornada: ${err.message}</p></div>`;
+    el.innerHTML = `<div class="container"><p class="form__error">Error cargando jornadas: ${err.message}</p></div>`;
   }
 }
 
-function emptyStateHtml(nextJornada) {
+function renderJornadaList(el, jornadas, activeIdx) {
+  currentJornadaData = jornadas[activeIdx];
+  const { jornada, matches, units_used } = currentJornadaData;
+
+  state = {};
+  for (const m of matches) {
+    state[m.jornada_match_id] = {
+      predicted_result: m.prediction?.predicted_result ?? null,
+      units: m.prediction?.units_wagered ?? 0,
+    };
+  }
+  totalUnits = units_used;
+
+  const openMatches = matches.filter(m => !m.predict_locked);
+  lastOpenMatchId = openMatches.length === 1 ? openMatches[0].jornada_match_id : null;
+
+  const tabs = jornadas.length > 1
+    ? `<div class="jornada-tabs">
+        ${jornadas.map((j, i) => `
+          <button class="jornada-tab ${i === activeIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
+            J${j.jornada.number} · ${formatDayMonth(j.jornada.date_start)}–${formatDayMonth(j.jornada.date_end)}
+          </button>
+        `).join('')}
+       </div>`
+    : '';
+
+  el.innerHTML = `
+    <div class="container">
+      <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)}</h1>
+      ${tabs}
+      ${jornada.locked
+        ? '<p class="notice">⚠️ El plazo de predicción ha cerrado (ya empezó el primer partido).</p>'
+        : jornada.first_match_datetime
+          ? `<p class="notice notice--info">Abierto hasta ${formatDateTime(jornada.first_match_datetime)}</p>`
+          : ''
+      }
+      <div class="units-counter" id="unitsCounter"></div>
+      <div class="jornada-matches">
+        ${matches.map(matchRow).join('')}
+      </div>
+    </div>
+  `;
+
+  renderUnitsCounter();
+  updateLastMatchWarning();
+  attachHandlers(el, jornadas, activeIdx);
+}
+
+function emptyStateHtml() {
   return `
     <div class="container">
       <div class="jornada-empty">
         <div class="jornada-empty__icon">📅</div>
-        <h2 class="jornada-empty__title">No hay jornada activa esta semana</h2>
-        ${nextJornada
-          ? `<p class="jornada-empty__text">Próxima jornada: <strong>Jornada ${nextJornada.number}</strong> — ${formatDate(nextJornada.date_start)}</p>`
-          : '<p class="jornada-empty__text">Todavía no hay una próxima jornada programada.</p>'
-        }
+        <h2 class="jornada-empty__title">No hay jornadas disponibles</h2>
+        <p class="jornada-empty__text">Todavía no hay una próxima jornada programada.</p>
       </div>
     </div>
   `;
@@ -77,8 +97,22 @@ function formatTime(isoString) {
   return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
+function formatDateTime(isoString) {
+  const d = new Date(isoString);
+  return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 function formatOdds(v) {
   return v != null ? v.toFixed(2) : '—';
+}
+
+function matchTag(m) {
+  if (m.status === 'finished') {
+    return `<span class="tag tag--done">Finalizado ${m.home_score_90 ?? '?'}–${m.away_score_90 ?? '?'}</span>`;
+  }
+  return m.predict_locked
+    ? '<span class="tag tag--locked">Bloqueado</span>'
+    : `<span class="tag tag--open">Abierto hasta ${formatTime(m.opens_until)}</span>`;
 }
 
 function matchRow(m) {
@@ -89,10 +123,7 @@ function matchRow(m) {
     <div class="match-card jornada-match ${locked ? 'match-card--locked' : ''}" data-jm-id="${m.jornada_match_id}">
       <div class="match-card__header">
         <span class="match-card__date">${formatDate(m.match_datetime)}</span>
-        ${locked
-          ? '<span class="tag tag--locked">Bloqueado</span>'
-          : `<span class="tag">Abierto hasta ${formatTime(m.opens_until)}</span>`
-        }
+        ${matchTag(m)}
       </div>
       <div class="match-card__teams">
         <span class="team team--home">${m.home_team}</span>
@@ -159,7 +190,14 @@ function recalcTotalUnits() {
   updateLastMatchWarning();
 }
 
-function attachHandlers(el) {
+function attachHandlers(el, jornadas, activeIdx) {
+  el.querySelectorAll('.jornada-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const idx = parseInt(tab.dataset.idx);
+      if (idx !== activeIdx) renderJornadaList(el, jornadas, idx);
+    });
+  });
+
   el.querySelectorAll('.jornada-match').forEach(card => {
     const jmId = parseInt(card.dataset.jmId);
 

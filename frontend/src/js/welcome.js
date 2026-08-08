@@ -1,6 +1,6 @@
 const WELCOME_KEY = 'pickgoal_welcome_shown';
 
-export function maybeShowWelcome(ctaDestination = '/ligas') {
+export function maybeShowWelcome(ctaDestination = '/jornada') {
   if (localStorage.getItem(WELCOME_KEY)) return;
   localStorage.setItem(WELCOME_KEY, '1');
 
@@ -10,38 +10,38 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
       <div class="welcome-modal__overlay" id="welcomeOverlay"></div>
       <div class="welcome-modal__box">
         <h2 class="welcome-modal__title">¡Bienvenido a PickGoal! ⚽</h2>
-        <p class="welcome-modal__subtitle">La quiniela del Mundial 2026</p>
+        <p class="welcome-modal__subtitle">La liga de predicciones · Temporada 26/27</p>
 
         <ol class="welcome-modal__steps">
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">1️⃣</span>
             <div>
-              <strong>Únete a una liga</strong>
-              <span>— pública o privada</span>
+              <strong>Predice los partidos</strong>
+              <span>— LaLiga, Premier League y Champions cada jornada</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">2️⃣</span>
             <div>
-              <strong>Predice los partidos</strong>
-              <span>— 1X2 y marcador exacto</span>
+              <strong>Gana duelos 1vs1</strong>
+              <span>— cada jornada te enfrentas a un rival de tu división</span>
             </div>
           </li>
           <li class="welcome-modal__step">
             <span class="welcome-modal__step-num">3️⃣</span>
             <div>
-              <strong>Acumula puntos</strong>
-              <span>— y sube en la clasificación</span>
+              <strong>Sube de división</strong>
+              <span>— compite por el título de la PickGoal League</span>
             </div>
           </li>
         </ol>
 
         <div class="welcome-modal__highlight">
-          🏆 Predice el campeón antes del 11 de junio y gana <strong>10 puntos extra</strong>
+          🏆 Sistema de divisiones con duelos 1vs1 cada jornada
         </div>
 
         <button class="btn btn--primary btn--full btn--lg" id="welcomeCta">
-          ¡Empezar a predecir!
+          ¡Empezar a jugar!
         </button>
       </div>
     </div>
@@ -51,7 +51,6 @@ export function maybeShowWelcome(ctaDestination = '/ligas') {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden';
 
-  // Forzar reflow para que la animación de entrada arranque
   requestAnimationFrame(() => modal.classList.add('welcome-modal--open'));
 
   function close(destination) {
