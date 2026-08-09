@@ -111,6 +111,7 @@ export const api = {
     list: () => request('/v2/jornada/list'),
     predict: (prediction) => request('/v2/jornada/predict', { method: 'POST', body: JSON.stringify(prediction) }),
     history: () => request('/v2/jornada/history'),
+    myStats: () => request('/v2/jornada/my-stats'),
   },
 
   duelo: {

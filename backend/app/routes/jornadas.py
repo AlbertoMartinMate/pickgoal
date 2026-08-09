@@ -176,6 +176,55 @@ def save_prediction():
     return jsonify({'prediction': pred.to_dict()}), 200
 
 
+@jornadas_bp.route('/my-stats', methods=['GET'])
+@jwt_required()
+def my_prediction_stats():
+    from app.models import Match
+    user_id = int(get_jwt_identity())
+
+    preds = (PredictionV2.query
+             .filter_by(user_id=user_id)
+             .join(JornadaMatch, PredictionV2.jornada_match_id == JornadaMatch.id)
+             .join(Match, JornadaMatch.match_id == Match.id)
+             .order_by(PredictionV2.created_at.desc())
+             .all())
+
+    total = len(preds)
+    correct = 0
+    result_list = []
+
+    for pred in preds:
+        jm = pred.jornada_match
+        match = jm.match
+        result_known = match.result_90 is not None
+        is_correct = result_known and pred.predicted_result == match.result_90
+        if is_correct:
+            correct += 1
+
+        score = (f"{match.home_score_90}–{match.away_score_90}"
+                 if match.home_score_90 is not None else None)
+
+        result_list.append({
+            'id': pred.id,
+            'home_team': match.home_team,
+            'away_team': match.away_team,
+            'predicted_result': pred.predicted_result,
+            'actual_result': match.result_90,
+            'score': score,
+            'points_earned': round(pred.points_earned or 0, 2),
+            'units_wagered': pred.units_wagered,
+            'is_correct': is_correct,
+            'result_known': result_known,
+            'created_at': pred.created_at.isoformat(),
+        })
+
+    return jsonify({
+        'total_predictions': total,
+        'correct_results': correct,
+        'predictions': result_list,
+    }), 200
+
+
 @jornadas_bp.route('/history', methods=['GET'])
 @jwt_required()
 def get_jornada_history():

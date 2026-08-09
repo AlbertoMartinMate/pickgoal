@@ -7,8 +7,7 @@ export async function renderPerfil(el) {
   const user = auth.getUser();
 
   try {
-    const [predsRes, divRes, meRes, adminLeaguesRes] = await Promise.all([
-      api.predictions.mine(null),
+    const [divRes, meRes, adminLeaguesRes] = await Promise.all([
       api.clasificacion.division(),
       api.auth.me(),
       user?.is_admin ? api.leagues.adminAll() : Promise.resolve({ leagues: [] }),
@@ -52,10 +51,6 @@ export async function renderPerfil(el) {
           ${statusProgressHtml(status, allTimePts)}
           <button class="btn btn--danger" id="btnLogoutPerfil">Cerrar sesión</button>
           <div class="profile-card__stats">
-            <div class="stat">
-              <span class="stat__value">${predsRes.predictions.length}</span>
-              <span class="stat__label">Predicciones</span>
-            </div>
             <div class="stat">
               <span class="stat__value">${myDivRow ? `${myDivRow.pos}º` : '—'}</span>
               <span class="stat__label">Posición div.</span>
@@ -104,12 +99,10 @@ export async function renderPerfil(el) {
           }
         </section>
 
-        ${predsRes.predictions.length > 0 ? `
-          <section class="section">
-            <h2>Mis predicciones</h2>
-            <div class="predictions-list">${predsRes.predictions.map(predRow).join('')}</div>
-          </section>
-        ` : ''}
+        <section class="section" id="predStatsSection">
+          <h2>Mis predicciones</h2>
+          <div id="predStatsWrap"><div class="loading"><div class="loading__spinner"></div></div></div>
+        </section>
 
         <section class="section">
           <div class="mensajes-header">
@@ -196,7 +189,8 @@ export async function renderPerfil(el) {
       showDeleteConfirm();
     });
 
-    // Load conversations and board mentions
+    // Load async sections
+    loadPredStats(el);
     loadConversaciones(el);
     loadMenciones(el);
 
@@ -287,14 +281,124 @@ function statusProgressHtml(status, allTimePts) {
     </div>`;
 }
 
-function predRow(p) {
-  return `
-    <div class="pred-row ${p.total_points > 0 ? 'pred-row--scored' : ''}">
-      <span class="pred-row__result">${p.predicted_result}</span>
-      <span class="pred-row__score">${p.predicted_home}-${p.predicted_away}</span>
-      <span class="pred-row__pts">${p.total_points} pts</span>
+async function loadPredStats(el) {
+  const wrap = el.querySelector('#predStatsWrap');
+  if (!wrap) return;
+  try {
+    const { total_predictions, correct_results, predictions } = await api.jornada.myStats();
+    if (total_predictions === 0) {
+      wrap.innerHTML = '<p class="empty">Aún no tienes predicciones en esta temporada.</p>';
+      return;
+    }
+    const pct = Math.round((correct_results / total_predictions) * 100);
+    const R = 50;
+    const C = +(2 * Math.PI * R).toFixed(2);
+    const filled = +((pct / 100) * C).toFixed(2);
+    const empty = +(C - filled).toFixed(2);
+
+    wrap.innerHTML = `
+      <div class="pred-circle-wrap" id="predCircleBtn" role="button" tabindex="0" title="Ver detalle">
+        <div class="pred-circle__chart">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="#1a1a1a" stroke-width="12"/>
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="#39FF14" stroke-width="12"
+              stroke-dasharray="${filled} ${empty}" stroke-linecap="round"
+              transform="rotate(-90 60 60)" class="pred-circle__arc"/>
+          </svg>
+          <div class="pred-circle__label">
+            <span class="pred-circle__pct">${pct}%</span>
+          </div>
+        </div>
+        <p class="pred-circle__sub">${total_predictions} predicciones · ${correct_results} acertadas</p>
+        <span class="btn btn--ghost btn--xs" style="margin-top:4px">Ver detalle →</span>
+      </div>
+    `;
+
+    wrap.querySelector('#predCircleBtn')?.addEventListener('click', () => {
+      showPredModal(predictions);
+    });
+    wrap.querySelector('#predCircleBtn')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') showPredModal(predictions);
+    });
+  } catch {
+    wrap.innerHTML = '<p class="empty">No se pudieron cargar las predicciones.</p>';
+  }
+}
+
+function showPredModal(allPreds) {
+  let filter = 'all';
+
+  const modal = document.createElement('div');
+  modal.className = 'pred-modal';
+  modal.innerHTML = `
+    <div class="pred-modal__overlay" id="predModalOverlay"></div>
+    <div class="pred-modal__box">
+      <div class="pred-modal__header">
+        <h3 class="pred-modal__title">Mis predicciones</h3>
+        <button class="pred-modal__close" id="predModalClose" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="pred-modal__filters">
+        <button class="pred-filter pred-filter--active" data-filter="all">Todos</button>
+        <button class="pred-filter" data-filter="correct">✅ Acertados</button>
+        <button class="pred-filter" data-filter="wrong">❌ Fallados</button>
+      </div>
+      <div class="pred-modal__list" id="predModalList"></div>
     </div>
   `;
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => modal.classList.add('pred-modal--open'));
+
+  function renderList() {
+    const filtered = filter === 'all' ? allPreds
+      : filter === 'correct' ? allPreds.filter(p => p.is_correct)
+      : allPreds.filter(p => p.result_known && !p.is_correct);
+
+    const listEl = document.getElementById('predModalList');
+    if (!listEl) return;
+    if (!filtered.length) {
+      listEl.innerHTML = '<p class="empty" style="text-align:center;padding:1rem">Sin predicciones en este filtro.</p>';
+      return;
+    }
+    listEl.innerHTML = filtered.map(p => {
+      const icon = !p.result_known ? '⏳' : p.is_correct ? '✅' : '❌';
+      const scoreStr = p.score ? `${p.score}` : '—';
+      const ptsStr = p.result_known ? `+${p.points_earned} pts` : '—';
+      return `
+        <div class="pred-item ${p.is_correct ? 'pred-item--correct' : p.result_known ? 'pred-item--wrong' : ''}">
+          <span class="pred-item__icon">${icon}</span>
+          <div class="pred-item__body">
+            <p class="pred-item__teams">${escapeHtml(p.home_team)} vs ${escapeHtml(p.away_team)}</p>
+            <div class="pred-item__row">
+              <span class="pred-item__pred">Pred: <strong>${p.predicted_result}</strong></span>
+              ${p.actual_result ? `<span class="pred-item__actual">Real: <strong>${p.actual_result}</strong> (${scoreStr})</span>` : '<span class="pred-item__actual">Sin resultado</span>'}
+              <span class="pred-item__pts ${p.is_correct ? 'pred-item__pts--ok' : ''}">${ptsStr}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderList();
+
+  modal.querySelectorAll('.pred-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.pred-filter').forEach(b => b.classList.remove('pred-filter--active'));
+      btn.classList.add('pred-filter--active');
+      filter = btn.dataset.filter;
+      renderList();
+    });
+  });
+
+  function close() {
+    modal.classList.remove('pred-modal--open');
+    document.body.style.overflow = '';
+    modal.addEventListener('transitionend', () => modal.remove(), { once: true });
+  }
+
+  document.getElementById('predModalClose')?.addEventListener('click', close);
+  document.getElementById('predModalOverlay')?.addEventListener('click', close);
 }
 
 function showDeleteConfirm() {

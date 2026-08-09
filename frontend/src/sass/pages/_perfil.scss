@@ -318,6 +318,223 @@
   }
 }
 
+// ─── Prediction circle ────────────────────────────────────────────────────────
+.pred-circle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.$sp-2;
+  cursor: pointer;
+  width: fit-content;
+  margin: 0 auto;
+  padding: v.$sp-3;
+  border-radius: v.$r-lg;
+  transition: background v.$t-fast;
+
+  &:hover { background: v.$bg-surface; }
+}
+
+.pred-circle__chart {
+  position: relative;
+  width: 140px;
+  height: 140px;
+
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.pred-circle__arc {
+  transition: stroke-dasharray 0.8s ease;
+}
+
+.pred-circle__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pred-circle__pct {
+  font-size: 28px;
+  font-weight: v.$fw-black;
+  color: v.$accent-neon;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pred-circle__sub {
+  font-size: v.$fs-xs;
+  color: v.$text-muted;
+  margin: 0;
+  text-align: center;
+}
+
+// ─── Prediction modal ─────────────────────────────────────────────────────────
+.pred-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+
+  @media (min-width: 500px) { align-items: center; }
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+  }
+
+  &__box {
+    position: relative;
+    z-index: 1;
+    background: v.$bg-card;
+    border: 1px solid v.$border-light;
+    border-radius: v.$r-xl v.$r-xl 0 0;
+    width: 100%;
+    max-width: 540px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    @media (min-width: 500px) {
+      border-radius: v.$r-xl;
+      max-height: 80vh;
+    }
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: v.$sp-4 v.$sp-6;
+    border-bottom: 1px solid v.$border;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    font-size: v.$fs-md;
+    font-weight: v.$fw-bold;
+    margin: 0;
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    color: v.$text-muted;
+    font-size: v.$fs-md;
+    cursor: pointer;
+    padding: v.$sp-1;
+    line-height: 1;
+    transition: color v.$t-fast;
+    &:hover { color: v.$text; }
+  }
+
+  &__filters {
+    display: flex;
+    gap: v.$sp-2;
+    padding: v.$sp-3 v.$sp-6;
+    border-bottom: 1px solid v.$border;
+    flex-shrink: 0;
+  }
+
+  &__list {
+    overflow-y: auto;
+    flex: 1;
+    padding: v.$sp-2 0;
+    scrollbar-width: thin;
+    scrollbar-color: v.$border transparent;
+  }
+}
+
+.pred-filter {
+  background: none;
+  border: 1px solid v.$border;
+  border-radius: v.$r-full;
+  color: v.$text-muted;
+  font-size: v.$fs-xs;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background v.$t-fast, color v.$t-fast, border-color v.$t-fast;
+
+  &:hover { color: v.$text; border-color: v.$border-light; }
+
+  &--active {
+    background: v.$accent-dim;
+    border-color: v.$accent-dark;
+    color: v.$accent;
+  }
+}
+
+.pred-item {
+  display: flex;
+  align-items: flex-start;
+  gap: v.$sp-3;
+  padding: v.$sp-3 v.$sp-6;
+  border-bottom: 1px solid rgba(v.$border, 0.5);
+  transition: background v.$t-fast;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: v.$bg-surface; }
+
+  &--correct { background: rgba(v.$accent, 0.03); }
+  &--wrong   { background: rgba(v.$danger, 0.02); }
+
+  &__icon {
+    font-size: v.$fs-base;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+
+  &__body { flex: 1; min-width: 0; }
+
+  &__teams {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    margin: 0 0 v.$sp-1;
+    color: v.$text;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+  }
+
+  &__pred,
+  &__actual {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+
+    strong { color: v.$text; }
+  }
+
+  &__pts {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-bold;
+    color: v.$text-muted;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+
+    &--ok { color: v.$accent; }
+  }
+}
+
 // ─── Danger section ───────────────────────────────────────────────────────────
 .section--danger {
   border-color: rgba(255, 56, 96, 0.3);
