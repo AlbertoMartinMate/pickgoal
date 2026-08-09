@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { renderTablon } from './tablon.js';
 
-export async function renderTablaV2(el) {
+export async function renderTablaV2(el, { query = {} } = {}) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
@@ -72,7 +72,7 @@ export async function renderTablaV2(el) {
       </div>
     `;
 
-    attachTabHandlers(me);
+    attachTabHandlers(me, query.tab);
     checkTablonGeneralUnread();
     setupUserContextMenu(el, me);
 
@@ -97,7 +97,7 @@ async function checkTablonGeneralUnread() {
   }
 }
 
-function attachTabHandlers(me) {
+function attachTabHandlers(me, initialTab) {
   const tabs = {
     general:     { btn: document.getElementById('tabGeneral'),    panel: document.getElementById('panelGeneral') },
     miDivision:  { btn: document.getElementById('tabMiDivision'), panel: document.getElementById('panelMiDivision') },
@@ -130,9 +130,8 @@ function attachTabHandlers(me) {
     }
   });
 
-  tabs.tablon.btn.addEventListener('click', () => {
+  function activateTablon() {
     activate('tablon');
-    // Mark general tablón as read
     localStorage.setItem('tablon_general_last_read', new Date().toISOString());
     document.getElementById('tablonTabDot')?.classList.add('hidden');
     document.dispatchEvent(new CustomEvent('tablon:read'));
@@ -140,7 +139,14 @@ function attachTabHandlers(me) {
       tabs.tablon.panel.dataset.loaded = '1';
       renderTablon(tabs.tablon.panel, { forceGeneral: true });
     }
-  });
+  }
+
+  tabs.tablon.btn.addEventListener('click', activateTablon);
+
+  // Auto-activate tab from query param (?tab=tablon)
+  if (initialTab === 'tablon') {
+    activateTablon();
+  }
 }
 
 async function renderMiDivision(me) {

@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { showToast } from '../ui.js';
+import { showToast, formatDate } from '../ui.js';
 
 export async function renderPerfil(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -117,6 +117,12 @@ export async function renderPerfil(el) {
             <a href="#/mensajes" class="btn btn--ghost btn--xs">Ver todos</a>
           </div>
           <div id="conversacionesList"><div class="loading"><div class="loading__spinner"></div></div></div>
+
+          <div class="mensajes-header" style="margin-top:1.5rem">
+            <h3 style="font-size:1rem;font-weight:600">📣 Menciones en tablón</h3>
+            <a href="#/tabla-v2?tab=tablon" class="btn btn--ghost btn--xs">Ver tablón</a>
+          </div>
+          <div id="mencionesTablon"><div class="loading"><div class="loading__spinner"></div></div></div>
         </section>
 
         <section class="section section--danger">
@@ -190,8 +196,9 @@ export async function renderPerfil(el) {
       showDeleteConfirm();
     });
 
-    // Load conversations
+    // Load conversations and board mentions
     loadConversaciones(el);
+    loadMenciones(el);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
@@ -225,6 +232,33 @@ async function loadConversaciones(el) {
     `).join('');
   } catch {
     container.innerHTML = '<p class="empty">Sin conversaciones aún.</p>';
+  }
+}
+
+async function loadMenciones(el) {
+  const container = el.querySelector('#mencionesTablon');
+  if (!container) return;
+  try {
+    const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
+    const { messages } = await api.board.mentions(since);
+    if (!messages || !messages.length) {
+      container.innerHTML = '<p class="empty">Sin menciones recientes.</p>';
+      return;
+    }
+    container.innerHTML = messages.slice(0, 5).map(m => `
+      <a href="#/tabla-v2?tab=tablon" class="mensajes-item">
+        <div class="mensajes-item__avatar">${escapeHtml(m.username[0].toUpperCase())}</div>
+        <div class="mensajes-item__info">
+          <div class="mensajes-item__header">
+            <strong class="mensajes-item__name">${escapeHtml(m.username)}</strong>
+            <span class="mensajes-item__time">${formatDate(m.created_at)}</span>
+          </div>
+          <p class="mensajes-item__preview">${escapeHtml(m.message)}</p>
+        </div>
+      </a>
+    `).join('');
+  } catch {
+    container.innerHTML = '<p class="empty">Sin menciones recientes.</p>';
   }
 }
 

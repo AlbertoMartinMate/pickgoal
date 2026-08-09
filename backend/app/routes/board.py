@@ -102,22 +102,23 @@ def get_mention_count():
     except (ValueError, AttributeError):
         return jsonify({'count': 0}), 200
 
-    count = (BoardMessage.query
-             .join(User, BoardMessage.user_id == User.id)
-             .filter(
-                 BoardMessage.league_id == None,
-                 BoardMessage.parent_id == None,
-                 BoardMessage.is_deleted == False,
-                 BoardMessage.created_at > since_dt,
-                 BoardMessage.user_id != user_id,
-                 or_(
-                     BoardMessage.message.contains(f'@{user.username}'),
-                     User.is_admin == True
-                 )
-             )
-             .count())
+    base_q = (BoardMessage.query
+              .join(User, BoardMessage.user_id == User.id)
+              .filter(
+                  BoardMessage.league_id == None,
+                  BoardMessage.parent_id == None,
+                  BoardMessage.is_deleted == False,
+                  BoardMessage.created_at > since_dt,
+                  BoardMessage.user_id != user_id,
+                  or_(
+                      BoardMessage.message.contains(f'@{user.username}'),
+                      User.is_admin == True
+                  )
+              ))
 
-    return jsonify({'count': count}), 200
+    count = base_q.count()
+    recent = base_q.order_by(BoardMessage.created_at.desc()).limit(5).all()
+    return jsonify({'count': count, 'messages': [m.to_dict() for m in recent]}), 200
 
 
 @board_bp.route('/', methods=['POST'])

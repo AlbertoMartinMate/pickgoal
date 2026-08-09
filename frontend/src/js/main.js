@@ -2,10 +2,12 @@ import '../sass/main.scss';
 import { router } from './router.js';
 import { auth } from './auth.js';
 import { api } from './api.js';
+import { formatDate } from './ui.js';
 
 let userLeagues = [];
 let deferredInstallPrompt = null;
 let unreadPollInterval = null;
+let notifPanelOpen = false;
 
 async function bootstrap() {
   document.documentElement.dataset.build = __BUILD_DATE__;
@@ -167,15 +169,23 @@ function setupNavbar() {
     }
   });
 
-  // Mensajes link: mark all as read, hide badges, navigate
+  // Mensajes link: open notifications panel
   document.getElementById('navMensajesLink')?.addEventListener('click', async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     closeAllDropdowns();
-    document.getElementById('navMensajesDot')?.classList.add('hidden');
-    document.getElementById('perfilBadge')?.classList.add('hidden');
-    try { await api.messages.markAllRead(); } catch (_) {}
-    document.dispatchEvent(new CustomEvent('messages:read'));
-    window.location.hash = '/mensajes';
+    if (notifPanelOpen) {
+      closeNotifPanel();
+    } else {
+      await openNotifPanel();
+    }
+  });
+
+  // Close notif panel on click outside
+  document.addEventListener('click', (e) => {
+    if (notifPanelOpen && !e.target.closest('#notifPanel') && !e.target.closest('#navMensajesLink')) {
+      closeNotifPanel();
+    }
   });
 
   // Logout
@@ -309,6 +319,96 @@ async function trySubscribePush(registration) {
 
     await api.notifications.subscribe(subscription.toJSON());
   } catch (_) {}
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Notif Panel
+// ──────────────────────────────────────────────────────────────────────────────
+
+function closeNotifPanel() {
+  document.getElementById('notifPanel')?.classList.add('hidden');
+  notifPanelOpen = false;
+}
+
+async function openNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const body = document.getElementById('notifPanelBody');
+  if (!panel || !body) return;
+
+  notifPanelOpen = true;
+  panel.classList.remove('hidden');
+  body.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
+
+  try {
+    const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
+    const [convRes, mentionsRes] = await Promise.all([
+      api.messages.list().catch(() => ({ conversations: [] })),
+      api.board.mentions(since).catch(() => ({ count: 0, messages: [] })),
+    ]);
+
+    const unreadConvs = (convRes.conversations || []).filter(c => c.unread_count > 0);
+    const mentionMsgs = mentionsRes.messages || [];
+
+    body.innerHTML = buildNotifPanelHtml(unreadConvs, mentionMsgs);
+
+    body.querySelectorAll('.notif-item[data-nav]').forEach(item => {
+      item.addEventListener('click', () => {
+        closeNotifPanel();
+        window.location.hash = item.dataset.nav;
+      });
+    });
+
+  } catch {
+    body.innerHTML = '<p class="notif-panel__empty">Error cargando notificaciones</p>';
+  }
+}
+
+function buildNotifPanelHtml(unreadConvs, mentionMsgs) {
+  const pmHtml = unreadConvs.length === 0
+    ? '<p class="notif-panel__empty">Sin mensajes sin leer</p>'
+    : unreadConvs.map(c => `
+        <div class="notif-item" data-nav="/mensajes/${c.user_id}">
+          <div class="notif-item__avatar">${notifEscHtml(c.username[0].toUpperCase())}</div>
+          <div class="notif-item__content">
+            <div class="notif-item__header">
+              <strong class="notif-item__name">${notifEscHtml(c.username)}</strong>
+              <span class="notif-item__badge">${c.unread_count}</span>
+            </div>
+            <p class="notif-item__text">${notifEscHtml(c.last_message.slice(0, 70))}${c.last_message.length > 70 ? '…' : ''}</p>
+          </div>
+        </div>
+      `).join('') + `<a class="notif-panel__link" href="#/mensajes" onclick="closeNotifPanel?.()">Ver todos →</a>`;
+
+  const boardHtml = mentionMsgs.length === 0
+    ? '<p class="notif-panel__empty">Sin menciones recientes</p>'
+    : mentionMsgs.map(m => `
+        <div class="notif-item" data-nav="/tabla-v2?tab=tablon">
+          <div class="notif-item__avatar">${notifEscHtml(m.username[0].toUpperCase())}</div>
+          <div class="notif-item__content">
+            <div class="notif-item__header">
+              <strong class="notif-item__name">${notifEscHtml(m.username)}</strong>
+              <span class="notif-item__time">${formatDate(m.created_at)}</span>
+            </div>
+            <p class="notif-item__text">${notifEscHtml(m.message.slice(0, 80))}${m.message.length > 80 ? '…' : ''}</p>
+          </div>
+        </div>
+      `).join('') + `<a class="notif-panel__link" href="#/tabla-v2?tab=tablon">Ver tablón →</a>`;
+
+  return `
+    <div class="notif-panel__section">
+      <h4 class="notif-panel__title">💬 Mensajes privados</h4>
+      ${pmHtml}
+    </div>
+    <div class="notif-panel__section">
+      <h4 class="notif-panel__title">📣 Tablón</h4>
+      ${boardHtml}
+    </div>
+  `;
+}
+
+function notifEscHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 bootstrap();

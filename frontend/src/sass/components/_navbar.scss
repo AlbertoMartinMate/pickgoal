@@ -134,6 +134,7 @@
     }
   }
 
+  // ─── Notifications panel ───────────────────────────────────────────────────
   &__badge-dot {
     display: inline-block;
     width: 8px;
@@ -148,4 +149,145 @@
 
     &.hidden { display: none; }
   }
+}
+
+// ─── Notif panel ─────────────────────────────────────────────────────────────
+.notif-panel {
+  position: fixed;
+  top: calc(#{v.$navbar-h} + 6px);
+  right: v.$sp-3;
+  width: 320px;
+  max-height: calc(100vh - #{v.$navbar-h} - 24px);
+  overflow-y: auto;
+  background: v.$bg-card;
+  border: 1px solid v.$border-light;
+  border-radius: v.$r-lg;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  z-index: 250;
+  scrollbar-width: thin;
+  scrollbar-color: v.$border transparent;
+
+  &.hidden { display: none; }
+
+  &__body {
+    padding: v.$sp-2 0;
+  }
+
+  &__section {
+    padding: v.$sp-2 0;
+
+    & + & {
+      border-top: 1px solid v.$border;
+    }
+  }
+
+  &__title {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: v.$sp-1 v.$sp-4;
+    margin-bottom: v.$sp-1;
+  }
+
+  &__empty {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    padding: v.$sp-2 v.$sp-4;
+    margin: 0;
+  }
+
+  &__link {
+    display: block;
+    font-size: v.$fs-xs;
+    color: v.$accent;
+    text-decoration: none;
+    padding: v.$sp-2 v.$sp-4;
+    transition: color v.$t-fast;
+
+    &:hover { color: v.$accent-dark; }
+  }
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: v.$sp-2;
+  padding: v.$sp-2 v.$sp-4;
+  cursor: pointer;
+  transition: background v.$t-fast;
+
+  &:hover { background: v.$bg-surface; }
+
+  &__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-bold;
+    color: v.$accent;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-1;
+    margin-bottom: 2px;
+  }
+
+  &__name {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text;
+  }
+
+  &__badge {
+    background: v.$danger;
+    color: #fff;
+    font-size: 9px;
+    font-weight: v.$fw-bold;
+    border-radius: 8px;
+    padding: 1px 5px;
+    line-height: 1.4;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  &__time {
+    font-size: 9px;
+    color: v.$text-muted;
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  &__text {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Tiempo en mensajes-item de perfil
+.mensajes-item__time {
+  font-size: v.$fs-xs;
+  color: v.$text-muted;
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
