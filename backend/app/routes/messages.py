@@ -84,6 +84,15 @@ def get_messages_with(partner_id):
     }), 200
 
 
+@messages_bp.route('/mark-all-read', methods=['PATCH'])
+@jwt_required()
+def mark_all_read():
+    user_id = int(get_jwt_identity())
+    PrivateMessage.query.filter_by(receiver_id=user_id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'ok': True}), 200
+
+
 @messages_bp.route('/<int:partner_id>', methods=['POST'])
 @jwt_required()
 def send_message(partner_id):

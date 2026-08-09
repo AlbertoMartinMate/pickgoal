@@ -121,6 +121,7 @@ export const api = {
     list: () => request('/messages/'),
     get: (userId) => request(`/messages/${userId}`),
     send: (userId, message) => request(`/messages/${userId}`, { method: 'POST', body: JSON.stringify({ message }) }),
+    markAllRead: () => request('/messages/mark-all-read', { method: 'PATCH' }),
   },
 
   clasificacion: {

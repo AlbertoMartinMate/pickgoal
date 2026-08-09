@@ -24,6 +24,14 @@ export async function renderTablon(el, { query = {}, forceGeneral = false } = {}
   let page = 1;
   let totalPages = 1;
 
+  // En modo general cargar todos los usuarios para @menciones
+  if (forceGeneral && user) {
+    try {
+      const { users } = await api.auth.users();
+      members = (users || []).filter(u => !u.is_bot);
+    } catch (_) {}
+  }
+
   // Detectar liga activa si no viene por query y no es modo general
   if (!forceGeneral) {
     try {

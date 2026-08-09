@@ -74,10 +74,14 @@ function closeAllDropdowns() {
 
 async function checkProfileBadge() {
   const badge = document.getElementById('perfilBadge');
-  if (!badge) return;
+  const navDot = document.getElementById('navMensajesDot');
 
   const user = auth.getUser();
-  if (!user) { badge.classList.add('hidden'); return; }
+  if (!user) {
+    badge?.classList.add('hidden');
+    navDot?.classList.add('hidden');
+    return;
+  }
 
   try {
     const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
@@ -85,12 +89,15 @@ async function checkProfileBadge() {
       api.board.mentions(since).catch(e => { console.warn('[perfilBadge] mentions error:', e); return { count: 0 }; }),
       api.messages.unread().catch(e => { console.warn('[perfilBadge] pm unread error:', e); return { count: 0 }; }),
     ]);
-    const total = (mentionsRes.count || 0) + (pmRes.count || 0);
-    console.log('[perfilBadge] mentions:', mentionsRes.count, 'pm:', pmRes.count, 'total:', total);
-    badge.classList.toggle('hidden', total === 0);
+    const mentionCount = mentionsRes.count || 0;
+    const pmCount = pmRes.count || 0;
+    console.log('[perfilBadge] mentions:', mentionCount, 'pm:', pmCount);
+    badge?.classList.toggle('hidden', mentionCount + pmCount === 0);
+    navDot?.classList.toggle('hidden', pmCount === 0);
   } catch (e) {
     console.warn('[perfilBadge] error:', e);
-    badge.classList.add('hidden');
+    badge?.classList.add('hidden');
+    navDot?.classList.add('hidden');
   }
 }
 
@@ -158,6 +165,17 @@ function setupNavbar() {
     if (e.target.closest('#navProfileLink')) {
       closeAllDropdowns();
     }
+  });
+
+  // Mensajes link: mark all as read, hide badges, navigate
+  document.getElementById('navMensajesLink')?.addEventListener('click', async (e) => {
+    e.preventDefault();
+    closeAllDropdowns();
+    document.getElementById('navMensajesDot')?.classList.add('hidden');
+    document.getElementById('perfilBadge')?.classList.add('hidden');
+    try { await api.messages.markAllRead(); } catch (_) {}
+    document.dispatchEvent(new CustomEvent('messages:read'));
+    window.location.hash = '/mensajes';
   });
 
   // Logout

@@ -143,6 +143,22 @@
   }
 }
 
+// Botón de username clickable en tablas de clasificación
+.user-link {
+  background: none;
+  border: none;
+  color: v.$text;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  line-height: inherit;
+
+  &:hover { color: v.$accent; }
+}
+
 .status-emoji {
   font-size: 1em;
   line-height: 1;
