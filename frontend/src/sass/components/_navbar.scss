@@ -281,6 +281,22 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  &--notable {
+    border-left: 2px solid v.$accent;
+    padding-left: calc(#{v.$sp-4} - 2px);
+  }
+
+  &__mention {
+    font-size: 9px;
+    font-weight: v.$fw-semi;
+    color: v.$accent;
+    background: v.$accent-dim;
+    border-radius: 4px;
+    padding: 1px 4px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 // Tiempo en mensajes-item de perfil

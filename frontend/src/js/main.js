@@ -340,16 +340,19 @@ async function openNotifPanel() {
   body.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
-    const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
-    const [convRes, mentionsRes] = await Promise.all([
+    // Use last 30 days as window for notable tablón messages
+    const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const [convRes, boardRes, mentionsRes] = await Promise.all([
       api.messages.list().catch(() => ({ conversations: [] })),
-      api.board.mentions(since).catch(() => ({ count: 0, messages: [] })),
+      api.board.messages(1, null).catch(() => ({ messages: [] })),
+      api.board.mentions(since30d).catch(() => ({ messages: [] })),
     ]);
 
-    const unreadConvs = (convRes.conversations || []).filter(c => c.unread_count > 0);
-    const mentionMsgs = mentionsRes.messages || [];
+    const convs = (convRes.conversations || []).slice(0, 5);
+    const boardMsgs = (boardRes.messages || []).slice(0, 5);
+    const notableIds = new Set((mentionsRes.messages || []).map(m => m.id));
 
-    body.innerHTML = buildNotifPanelHtml(unreadConvs, mentionMsgs);
+    body.innerHTML = buildNotifPanelHtml(convs, boardMsgs, notableIds);
 
     body.querySelectorAll('.notif-item[data-nav]').forEach(item => {
       item.addEventListener('click', () => {
@@ -363,36 +366,40 @@ async function openNotifPanel() {
   }
 }
 
-function buildNotifPanelHtml(unreadConvs, mentionMsgs) {
-  const pmHtml = unreadConvs.length === 0
-    ? '<p class="notif-panel__empty">Sin mensajes sin leer</p>'
-    : unreadConvs.map(c => `
+function buildNotifPanelHtml(convs, boardMsgs, notableIds) {
+  const pmHtml = convs.length === 0
+    ? '<p class="notif-panel__empty">Aún no tienes mensajes</p>'
+    : convs.map(c => `
         <div class="notif-item" data-nav="/mensajes/${c.user_id}">
           <div class="notif-item__avatar">${notifEscHtml(c.username[0].toUpperCase())}</div>
           <div class="notif-item__content">
             <div class="notif-item__header">
               <strong class="notif-item__name">${notifEscHtml(c.username)}</strong>
-              <span class="notif-item__badge">${c.unread_count}</span>
+              ${c.unread_count > 0 ? `<span class="notif-item__badge">${c.unread_count}</span>` : ''}
             </div>
-            <p class="notif-item__text">${notifEscHtml(c.last_message.slice(0, 70))}${c.last_message.length > 70 ? '…' : ''}</p>
+            <p class="notif-item__text">${notifEscHtml((c.last_message || '').slice(0, 70))}${(c.last_message || '').length > 70 ? '…' : ''}</p>
           </div>
         </div>
-      `).join('') + `<a class="notif-panel__link" href="#/mensajes" onclick="closeNotifPanel?.()">Ver todos →</a>`;
+      `).join('') + `<a class="notif-panel__link" href="#/mensajes">Ver todos los mensajes →</a>`;
 
-  const boardHtml = mentionMsgs.length === 0
-    ? '<p class="notif-panel__empty">Sin menciones recientes</p>'
-    : mentionMsgs.map(m => `
-        <div class="notif-item" data-nav="/tabla-v2?tab=tablon">
-          <div class="notif-item__avatar">${notifEscHtml(m.username[0].toUpperCase())}</div>
-          <div class="notif-item__content">
-            <div class="notif-item__header">
-              <strong class="notif-item__name">${notifEscHtml(m.username)}</strong>
-              <span class="notif-item__time">${formatDate(m.created_at)}</span>
+  const boardHtml = boardMsgs.length === 0
+    ? '<p class="notif-panel__empty">Aún no hay mensajes en el tablón</p>'
+    : boardMsgs.map(m => {
+        const notable = notableIds.has(m.id);
+        return `
+          <div class="notif-item${notable ? ' notif-item--notable' : ''}" data-nav="/tabla-v2?tab=tablon">
+            <div class="notif-item__avatar">${notifEscHtml(m.username[0].toUpperCase())}</div>
+            <div class="notif-item__content">
+              <div class="notif-item__header">
+                <strong class="notif-item__name">${notifEscHtml(m.username)}</strong>
+                ${notable ? '<span class="notif-item__mention">@tú / admin</span>' : ''}
+                <span class="notif-item__time">${formatDate(m.created_at)}</span>
+              </div>
+              <p class="notif-item__text">${notifEscHtml((m.message || '').slice(0, 80))}${(m.message || '').length > 80 ? '…' : ''}</p>
             </div>
-            <p class="notif-item__text">${notifEscHtml(m.message.slice(0, 80))}${m.message.length > 80 ? '…' : ''}</p>
           </div>
-        </div>
-      `).join('') + `<a class="notif-panel__link" href="#/tabla-v2?tab=tablon">Ver tablón →</a>`;
+        `;
+      }).join('') + `<a class="notif-panel__link" href="#/tabla-v2?tab=tablon">Ver tablón →</a>`;
 
   return `
     <div class="notif-panel__section">
@@ -400,7 +407,7 @@ function buildNotifPanelHtml(unreadConvs, mentionMsgs) {
       ${pmHtml}
     </div>
     <div class="notif-panel__section">
-      <h4 class="notif-panel__title">📣 Tablón</h4>
+      <h4 class="notif-panel__title">📣 Tablón general</h4>
       ${boardHtml}
     </div>
   `;
