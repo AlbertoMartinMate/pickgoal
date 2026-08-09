@@ -111,6 +111,14 @@ export async function renderPerfil(el) {
           </section>
         ` : ''}
 
+        <section class="section">
+          <div class="mensajes-header">
+            <h2>💬 Mensajes privados</h2>
+            <a href="#/mensajes" class="btn btn--ghost btn--xs">Ver todos</a>
+          </div>
+          <div id="conversacionesList"><div class="loading"><div class="loading__spinner"></div></div></div>
+        </section>
+
         <section class="section section--danger">
           <h2>Zona de peligro</h2>
           <button class="btn btn--danger btn--sm" id="btnDeleteAccount">Cerrar cuenta</button>
@@ -182,8 +190,41 @@ export async function renderPerfil(el) {
       showDeleteConfirm();
     });
 
+    // Load conversations
+    loadConversaciones(el);
+
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
+  }
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function loadConversaciones(el) {
+  const container = el.querySelector('#conversacionesList');
+  if (!container) return;
+  try {
+    const { conversations } = await api.messages.list();
+    if (!conversations.length) {
+      container.innerHTML = '<p class="empty">Sin conversaciones aún.</p>';
+      return;
+    }
+    container.innerHTML = conversations.slice(0, 5).map(c => `
+      <a href="#/mensajes/${c.user_id}" class="mensajes-item">
+        <div class="mensajes-item__avatar">${escapeHtml(c.username[0].toUpperCase())}</div>
+        <div class="mensajes-item__info">
+          <div class="mensajes-item__header">
+            <strong class="mensajes-item__name">${escapeHtml(c.username)}</strong>
+            ${c.unread_count > 0 ? `<span class="mensajes-item__badge">${c.unread_count}</span>` : ''}
+          </div>
+          <p class="mensajes-item__preview">${escapeHtml(c.last_message)}</p>
+        </div>
+      </a>
+    `).join('');
+  } catch {
+    container.innerHTML = '<p class="empty">Sin conversaciones aún.</p>';
   }
 }
 

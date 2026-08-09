@@ -79,16 +79,17 @@ async function checkProfileBadge() {
   const user = auth.getUser();
   if (!user) { badge.classList.add('hidden'); return; }
 
-  const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
-
   try {
-    const { count } = await api.board.mentions(since);
-    if (count > 0) {
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
-    }
-  } catch {
+    const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
+    const [mentionsRes, pmRes] = await Promise.all([
+      api.board.mentions(since).catch(e => { console.warn('[perfilBadge] mentions error:', e); return { count: 0 }; }),
+      api.messages.unread().catch(e => { console.warn('[perfilBadge] pm unread error:', e); return { count: 0 }; }),
+    ]);
+    const total = (mentionsRes.count || 0) + (pmRes.count || 0);
+    console.log('[perfilBadge] mentions:', mentionsRes.count, 'pm:', pmRes.count, 'total:', total);
+    badge.classList.toggle('hidden', total === 0);
+  } catch (e) {
+    console.warn('[perfilBadge] error:', e);
     badge.classList.add('hidden');
   }
 }
@@ -129,6 +130,10 @@ function setupNavbar() {
   });
 
   document.addEventListener('tablon:read', () => {
+    checkProfileBadge();
+  });
+
+  document.addEventListener('messages:read', () => {
     checkProfileBadge();
   });
 

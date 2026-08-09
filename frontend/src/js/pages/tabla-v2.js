@@ -42,7 +42,10 @@ export async function renderTablaV2(el) {
                         <td class="ranking-table__pos" data-pos="${u.pos}">${u.pos}</td>
                         <td>
                           <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>
-                          ${u.username}
+                          ${u.is_bot || (me && u.user_id === me.id)
+                            ? escapeHtml(u.username)
+                            : `<button class="user-link" data-user-id="${u.user_id}">${escapeHtml(u.username)}</button>`
+                          }
                         </td>
                         <td class="ranking-table__stat">${u.pts_jornada_actual}</td>
                         <td class="ranking-table__pts">${u.pts_general}</td>
@@ -71,6 +74,7 @@ export async function renderTablaV2(el) {
 
     attachTabHandlers(me);
     checkTablonGeneralUnread();
+    setupUserContextMenu(el, me);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando la clasificación: ${err.message}</p></div>`;
@@ -85,8 +89,10 @@ async function checkTablonGeneralUnread() {
   const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
   try {
     const { count } = await api.board.unread(null, since);
+    console.log('[tablonDot] count:', count, 'since:', since);
     dot.classList.toggle('hidden', count === 0);
-  } catch {
+  } catch (e) {
+    console.warn('[tablonDot] error:', e);
     dot.classList.add('hidden');
   }
 }
@@ -219,6 +225,58 @@ function divisionAccordion(div, me) {
   `;
 }
 
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function setupUserContextMenu(container, me) {
+  // Singleton floating menu
+  let menu = document.getElementById('userCtxMenu');
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.id = 'userCtxMenu';
+    menu.className = 'user-ctx-menu hidden';
+    menu.innerHTML = `
+      <a class="user-ctx-menu__item" id="ctxProfile" href="#">👤 Ver jugador</a>
+      <button class="user-ctx-menu__item" id="ctxMessage">💬 Enviar mensaje</button>
+    `;
+    document.body.appendChild(menu);
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#userCtxMenu') && !e.target.closest('.user-link')) {
+        menu.classList.add('hidden');
+      }
+    }, true);
+  }
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.user-link');
+    if (!btn) return;
+    e.stopPropagation();
+
+    const userId = btn.dataset.userId;
+    const rect = btn.getBoundingClientRect();
+
+    menu.querySelector('#ctxProfile').href = `#/jugador/${userId}`;
+    menu.querySelector('#ctxMessage').onclick = () => {
+      menu.classList.add('hidden');
+      window.location.hash = `/mensajes/${userId}`;
+    };
+
+    menu.classList.remove('hidden');
+    // Position below the button, clamp to viewport
+    const menuW = 180;
+    let left = rect.left;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+    menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+    menu.style.left = `${left}px`;
+  });
+}
+
 function divisionRow(row, me) {
   const isMe = me && row.user_id === me.id;
   const zoneStyle = row.zone === 'promotion'
@@ -237,7 +295,10 @@ function divisionRow(row, me) {
     ${separatorBefore}
     <tr class="${isMe ? 'ranking-table__row--me' : ''}" style="${zoneStyle}">
       <td class="ranking-table__pos" data-pos="${row.pos}">${row.pos}</td>
-      <td>${row.username}</td>
+      <td>${isMe || row.is_bot
+        ? escapeHtml(row.username)
+        : `<button class="user-link" data-user-id="${row.user_id}">${escapeHtml(row.username)}</button>`
+      }</td>
       <td class="ranking-table__stat">${row.pj}</td>
       <td class="ranking-table__stat">${row.g}</td>
       <td class="ranking-table__stat">${row.e}</td>

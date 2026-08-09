@@ -116,6 +116,13 @@ export const api = {
     current: () => request('/v2/duelo/current'),
   },
 
+  messages: {
+    unread: () => request('/messages/unread'),
+    list: () => request('/messages/'),
+    get: (userId) => request(`/messages/${userId}`),
+    send: (userId, message) => request(`/messages/${userId}`, { method: 'POST', body: JSON.stringify({ message }) }),
+  },
+
   clasificacion: {
     division: (leagueId) => request(`/v2/clasificacion/division${leagueId ? `?league_id=${leagueId}` : ''}`),
     general: () => request('/v2/clasificacion/general'),

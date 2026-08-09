@@ -18,6 +18,7 @@ import { renderJugador } from './pages/jugador.js';
 import { renderJornada } from './pages/jornada.js';
 import { renderDuelo } from './pages/duelo.js';
 import { renderTablaV2 } from './pages/tabla-v2.js';
+import { renderMensajes } from './pages/mensajes.js';
 
 const _redirect = (to) => () => { window.location.hash = to; };
 
@@ -41,6 +42,8 @@ const routes = {
   '/jornada': renderJornada,
   '/duelo': renderDuelo,
   '/tabla-v2': renderTablaV2,
+  '/mensajes': renderMensajes,
+  '/mensajes/:userId': renderMensajes,
 };
 
 function matchRoute(path) {
@@ -88,7 +91,7 @@ export const router = {
     const { handler, params } = matched;
 
     // Rutas protegidas
-    const protectedRoutes = ['/perfil', '/admin', '/jornada', '/duelo', '/tabla-v2'];
+    const protectedRoutes = ['/perfil', '/admin', '/jornada', '/duelo', '/tabla-v2', '/mensajes'];
     if (protectedRoutes.includes(path) && !auth.isLoggedIn()) {
       this.navigate('/login');
       return;

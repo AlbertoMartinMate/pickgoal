@@ -60,6 +60,7 @@ def create_app():
     from app.routes.duelos import duelos_bp
     from app.routes.clasificacion import clasificacion_bp
     from app.routes.admin_v2 import admin_v2_bp
+    from app.routes.messages import messages_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(matches_bp, url_prefix='/api/matches')
@@ -72,6 +73,7 @@ def create_app():
     app.register_blueprint(duelos_bp, url_prefix='/api/v2/duelo')
     app.register_blueprint(clasificacion_bp, url_prefix='/api/v2/clasificacion')
     app.register_blueprint(admin_v2_bp, url_prefix='/api/v2/admin')
+    app.register_blueprint(messages_bp, url_prefix='/api/messages')
 
     with app.app_context():
         db.create_all()

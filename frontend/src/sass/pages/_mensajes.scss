@@ -1,0 +1,205 @@
+@use '../abstracts/variables' as v;
+
+// ─── Lista de conversaciones ─────────────────────────────────────────────────
+.mensajes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mensajes-item {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-3;
+  padding: v.$sp-3 v.$sp-2;
+  border-radius: 8px;
+  text-decoration: none;
+  color: v.$text;
+  transition: background 0.15s;
+
+  &:hover,
+  &:focus {
+    background: v.$bg-surface;
+    outline: none;
+  }
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: v.$bg-surface;
+    border: 1px solid v.$border-light;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: v.$fw-bold;
+    font-size: v.$fs-md;
+    flex-shrink: 0;
+    color: v.$accent;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    margin-bottom: 2px;
+  }
+
+  &__name {
+    font-weight: v.$fw-semi;
+    font-size: v.$fs-sm;
+  }
+
+  &__badge {
+    background: v.$danger;
+    color: #fff;
+    font-size: 10px;
+    font-weight: v.$fw-bold;
+    border-radius: 10px;
+    padding: 1px 6px;
+    line-height: 1.4;
+    margin-left: auto;
+  }
+
+  &__preview {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+  }
+}
+
+// ─── Vista de conversación ───────────────────────────────────────────────────
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: v.$sp-3;
+  padding: v.$sp-3 0;
+  border-bottom: 1px solid v.$border;
+  margin-bottom: v.$sp-3;
+
+  &__name {
+    font-size: v.$fs-md;
+    font-weight: v.$fw-semi;
+    margin: 0;
+    flex: 1;
+  }
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+  min-height: 200px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: v.$sp-2 0;
+  margin-bottom: v.$sp-3;
+}
+
+.chat-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+
+  &--sent {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+
+  &--received {
+    align-self: flex-start;
+    align-items: flex-start;
+  }
+
+  &__bubble {
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    border-radius: 12px;
+    padding: v.$sp-2 v.$sp-3;
+    font-size: v.$fs-sm;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  &--sent &__bubble {
+    background: v.$accent-dim;
+    border-color: v.$accent-glow;
+    color: v.$text;
+  }
+
+  &__time {
+    font-size: 10px;
+    color: v.$text-muted;
+    margin-top: 2px;
+    padding: 0 v.$sp-1;
+  }
+}
+
+// ─── Input de chat ───────────────────────────────────────────────────────────
+.chat-input {
+  display: flex;
+  gap: v.$sp-2;
+  align-items: flex-end;
+  padding: v.$sp-2 0;
+  border-top: 1px solid v.$border;
+
+  &__textarea {
+    flex: 1;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    font-size: v.$fs-sm;
+  }
+
+  &__btn {
+    flex-shrink: 0;
+    align-self: flex-end;
+    height: 44px;
+    padding: 0 v.$sp-4;
+  }
+}
+
+// ─── Menú contextual usuario ─────────────────────────────────────────────────
+.user-ctx-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 180px;
+  background: v.$bg-card;
+  border: 1px solid v.$border-light;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+
+  &.hidden {
+    display: none;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    padding: 10px 14px;
+    font-size: v.$fs-sm;
+    color: v.$text;
+    text-decoration: none;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover {
+      background: v.$bg-surface;
+    }
+  }
+}
