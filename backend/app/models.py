@@ -40,6 +40,7 @@ class User(db.Model):
     country = db.Column(db.String(60))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     is_bot = db.Column(db.Boolean, default=False, nullable=False)
+    is_muted = db.Column(db.Boolean, default=False, nullable=False)
     total_points_all_time = db.Column(db.Integer, default=0, nullable=False)
     current_division = db.Column(db.Integer, default=1, nullable=False)
     current_league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=True)
@@ -58,6 +59,7 @@ class User(db.Model):
             'country': self.country,
             'is_admin': self.is_admin,
             'is_bot': self.is_bot,
+            'is_muted': self.is_muted,
             'created_at': self.created_at.isoformat(),
             'total_points_all_time': pts_all_time,
             'status': get_user_status(pts_all_time),

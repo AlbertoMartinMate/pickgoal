@@ -34,7 +34,18 @@ export async function renderPerfil(el) {
             <div class="profile-card__avatar">${user.username[0].toUpperCase()}</div>
             <div>
               <h2>${user.username}</h2>
-              <p>${user.email}</p>
+              <div class="profile-card__email-row">
+                <p id="emailDisplay">${meUser.email}</p>
+                <button class="btn btn--ghost btn--xs" id="btnEditEmail" title="Cambiar email">✏️</button>
+              </div>
+              <div class="profile-card__email-edit hidden" id="emailEditForm">
+                <input class="form__input" type="email" id="emailInput" value="${meUser.email}" autocomplete="email" />
+                <div class="profile-card__email-actions">
+                  <button class="btn btn--primary btn--xs" id="btnSaveEmail">Guardar</button>
+                  <button class="btn btn--ghost btn--xs" id="btnCancelEmail">Cancelar</button>
+                </div>
+                <p class="form__error hidden" id="emailError"></p>
+              </div>
               <p>${user.country || 'Sin país'}</p>
             </div>
           </div>
@@ -125,6 +136,46 @@ export async function renderPerfil(el) {
     el.querySelector('#btnLogoutPerfil')?.addEventListener('click', () => {
       auth.logout();
       window.location.hash = '/';
+    });
+
+    el.querySelector('#btnEditEmail')?.addEventListener('click', () => {
+      el.querySelector('#emailEditForm').classList.remove('hidden');
+      el.querySelector('#emailInput').focus();
+    });
+
+    el.querySelector('#btnCancelEmail')?.addEventListener('click', () => {
+      el.querySelector('#emailEditForm').classList.add('hidden');
+      el.querySelector('#emailError').classList.add('hidden');
+    });
+
+    el.querySelector('#btnSaveEmail')?.addEventListener('click', async () => {
+      const newEmail = el.querySelector('#emailInput').value.trim();
+      const errEl = el.querySelector('#emailError');
+      errEl.classList.add('hidden');
+
+      if (!newEmail) {
+        errEl.textContent = 'El email no puede estar vacío';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(newEmail)) {
+        errEl.textContent = 'Formato de email inválido';
+        errEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const { user: updatedUser } = await api.auth.updateEmail(newEmail);
+        auth.setUser(updatedUser, localStorage.getItem('token'));
+        el.querySelector('#emailDisplay').textContent = updatedUser.email;
+        el.querySelector('#emailEditForm').classList.add('hidden');
+        showToast('Email actualizado');
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+      }
     });
 
     el.querySelector('#btnDeleteAccount')?.addEventListener('click', () => {

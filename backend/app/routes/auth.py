@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (create_access_token, jwt_required,
                                  get_jwt_identity)
@@ -28,6 +29,8 @@ def register():
 
     if not username or not email or not password:
         return jsonify({'error': 'Faltan campos obligatorios'}), 400
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        return jsonify({'error': 'Formato de email inválido'}), 400
     if len(password) < 6:
         return jsonify({'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
     if User.query.filter_by(username=username).first():
@@ -253,3 +256,36 @@ def toggle_admin(uid):
     target.is_admin = not target.is_admin
     db.session.commit()
     return jsonify({'user': target.to_dict()}), 200
+
+
+@auth_bp.route('/users/<int:uid>/toggle-mute', methods=['PATCH'])
+@jwt_required()
+def toggle_mute(uid):
+    user_id = int(get_jwt_identity())
+    admin = User.query.get_or_404(user_id)
+    if not admin.is_admin:
+        return jsonify({'error': 'Sin permisos'}), 403
+    target = User.query.get_or_404(uid)
+    target.is_muted = not target.is_muted
+    db.session.commit()
+    return jsonify({'user': target.to_dict()}), 200
+
+
+@auth_bp.route('/me/email', methods=['PATCH'])
+@jwt_required()
+def update_email():
+    user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    new_email = data.get('email', '').strip().lower()
+
+    if not new_email:
+        return jsonify({'error': 'El email no puede estar vacío'}), 400
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', new_email):
+        return jsonify({'error': 'Formato de email inválido'}), 400
+    if User.query.filter(User.email == new_email, User.id != user_id).first():
+        return jsonify({'error': 'El email ya está en uso'}), 409
+
+    user.email = new_email
+    db.session.commit()
+    return jsonify({'user': user.to_dict(include_email=True)}), 200

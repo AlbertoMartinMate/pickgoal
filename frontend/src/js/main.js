@@ -72,6 +72,27 @@ function closeAllDropdowns() {
   document.getElementById('userBtn')?.classList.remove('navbar__dropdown-btn--open');
 }
 
+async function checkProfileBadge() {
+  const badge = document.getElementById('perfilBadge');
+  if (!badge) return;
+
+  const user = auth.getUser();
+  if (!user) { badge.classList.add('hidden'); return; }
+
+  const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
+
+  try {
+    const { count } = await api.board.mentions(since);
+    if (count > 0) {
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch {
+    badge.classList.add('hidden');
+  }
+}
+
 async function checkTablonUnread() {
   const badge = document.getElementById('tablonBadge');
   if (!badge) return;
@@ -104,6 +125,11 @@ function setupNavbar() {
     closeAllDropdowns();
     updateBottomNavActive();
     setTimeout(checkTablonUnread, 200);
+    setTimeout(checkProfileBadge, 200);
+  });
+
+  document.addEventListener('tablon:read', () => {
+    checkProfileBadge();
   });
 
   // Click outside → close all dropdowns
@@ -168,8 +194,9 @@ async function updateNavState() {
     }
     syncActiveLeague(userLeagues);
     checkTablonUnread();
+    checkProfileBadge();
     if (unreadPollInterval) clearInterval(unreadPollInterval);
-    unreadPollInterval = setInterval(checkTablonUnread, 5 * 60 * 1000);
+    unreadPollInterval = setInterval(() => { checkTablonUnread(); checkProfileBadge(); }, 5 * 60 * 1000);
   } else {
     authLinks?.classList.remove('hidden');
     userBtn.style.visibility = 'hidden';

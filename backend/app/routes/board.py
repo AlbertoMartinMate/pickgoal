@@ -17,7 +17,7 @@ def get_unread_count():
     league_id = request.args.get('league_id', None, type=int)
     since = request.args.get('since', None)
 
-    if not league_id or not since:
+    if not since:
         return jsonify({'count': 0}), 200
 
     try:
@@ -78,6 +78,48 @@ def get_messages():
     }), 200
 
 
+@board_bp.route('/mentions', methods=['GET'])
+@jwt_required()
+def get_mention_count():
+    """Count general-board messages (no league) that @mention the user or are from an admin, since a given timestamp."""
+    from datetime import datetime
+    from sqlalchemy import or_
+    user_id = int(get_jwt_identity())
+    user = User.query.get_or_404(user_id)
+    since = request.args.get('since', None)
+
+    if not since:
+        return jsonify({'count': 0}), 200
+
+    try:
+        clean = since.replace('Z', '+00:00')
+        try:
+            since_dt = datetime.fromisoformat(clean)
+        except ValueError:
+            since_dt = datetime.fromisoformat(clean[:19] + '+00:00')
+        if since_dt.tzinfo is None:
+            since_dt = since_dt.replace(tzinfo=timezone.utc)
+    except (ValueError, AttributeError):
+        return jsonify({'count': 0}), 200
+
+    count = (BoardMessage.query
+             .join(User, BoardMessage.user_id == User.id)
+             .filter(
+                 BoardMessage.league_id == None,
+                 BoardMessage.parent_id == None,
+                 BoardMessage.is_deleted == False,
+                 BoardMessage.created_at > since_dt,
+                 BoardMessage.user_id != user_id,
+                 or_(
+                     BoardMessage.message.contains(f'@{user.username}'),
+                     User.is_admin == True
+                 )
+             )
+             .count())
+
+    return jsonify({'count': count}), 200
+
+
 @board_bp.route('/', methods=['POST'])
 @jwt_required()
 def post_message():
@@ -90,10 +132,13 @@ def post_message():
     if len(message) > 500:
         return jsonify({'error': 'El mensaje no puede superar los 500 caracteres'}), 400
 
+    user = User.query.get(user_id)
+    if user and user.is_muted:
+        return jsonify({'error': 'Tu cuenta está restringida para escribir en el tablón'}), 403
+
     if league_id:
         is_member = LeagueMember.query.filter_by(league_id=league_id, user_id=user_id).first()
-        user = User.query.get(user_id)
-        if not is_member and not user.is_admin:
+        if not is_member and not (user and user.is_admin):
             return jsonify({'error': 'No perteneces a esta liga'}), 403
 
     msg = BoardMessage(user_id=user_id, message=message, league_id=league_id)
@@ -187,6 +232,10 @@ def reply_message(msg_id):
         return jsonify({'error': 'El mensaje no puede estar vacío'}), 400
     if len(message) > 500:
         return jsonify({'error': 'El mensaje no puede superar los 500 caracteres'}), 400
+
+    muted_user = User.query.get(user_id)
+    if muted_user and muted_user.is_muted:
+        return jsonify({'error': 'Tu cuenta está restringida para escribir en el tablón'}), 403
 
     parent = BoardMessage.query.get_or_404(msg_id)
     if parent.parent_id is not None:

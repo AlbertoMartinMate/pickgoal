@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
+import { renderTablon } from './tablon.js';
 
 export async function renderTablaV2(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -16,6 +17,9 @@ export async function renderTablaV2(el) {
           <button class="league-tab league-tab--active" id="tabGeneral">General</button>
           <button class="league-tab" id="tabMiDivision">Mi División</button>
           <button class="league-tab" id="tabDivisiones">Divisiones</button>
+          <button class="league-tab" id="tabTablon">
+            Tablón<span class="tablon-tab-dot hidden" id="tablonTabDot">●</span>
+          </button>
         </div>
 
         <section id="panelGeneral">
@@ -58,13 +62,32 @@ export async function renderTablaV2(el) {
         <section id="panelDivisiones" class="hidden">
           <div class="loading"><div class="loading__spinner"></div></div>
         </section>
+
+        <section id="panelTablon" class="hidden">
+          <div class="loading"><div class="loading__spinner"></div></div>
+        </section>
       </div>
     `;
 
     attachTabHandlers(me);
+    checkTablonGeneralUnread();
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando la clasificación: ${err.message}</p></div>`;
+  }
+}
+
+async function checkTablonGeneralUnread() {
+  const dot = document.getElementById('tablonTabDot');
+  if (!dot) return;
+  const user = auth.getUser();
+  if (!user) { dot.classList.add('hidden'); return; }
+  const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
+  try {
+    const { count } = await api.board.unread(null, since);
+    dot.classList.toggle('hidden', count === 0);
+  } catch {
+    dot.classList.add('hidden');
   }
 }
 
@@ -73,6 +96,7 @@ function attachTabHandlers(me) {
     general:     { btn: document.getElementById('tabGeneral'),    panel: document.getElementById('panelGeneral') },
     miDivision:  { btn: document.getElementById('tabMiDivision'), panel: document.getElementById('panelMiDivision') },
     divisiones:  { btn: document.getElementById('tabDivisiones'), panel: document.getElementById('panelDivisiones') },
+    tablon:      { btn: document.getElementById('tabTablon'),     panel: document.getElementById('panelTablon') },
   };
 
   function activate(key) {
@@ -97,6 +121,18 @@ function attachTabHandlers(me) {
     if (!tabs.divisiones.panel.dataset.loaded) {
       tabs.divisiones.panel.dataset.loaded = '1';
       renderDivisiones(me);
+    }
+  });
+
+  tabs.tablon.btn.addEventListener('click', () => {
+    activate('tablon');
+    // Mark general tablón as read
+    localStorage.setItem('tablon_general_last_read', new Date().toISOString());
+    document.getElementById('tablonTabDot')?.classList.add('hidden');
+    document.dispatchEvent(new CustomEvent('tablon:read'));
+    if (!tabs.tablon.panel.dataset.loaded) {
+      tabs.tablon.panel.dataset.loaded = '1';
+      renderTablon(tabs.tablon.panel, { forceGeneral: true });
     }
   });
 }

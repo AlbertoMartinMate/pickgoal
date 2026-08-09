@@ -36,6 +36,8 @@ export const api = {
     deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
     users: () => request('/auth/users'),
     toggleAdmin: (uid) => request(`/auth/users/${uid}/toggle-admin`, { method: 'PATCH' }),
+    toggleMute: (uid) => request(`/auth/users/${uid}/toggle-mute`, { method: 'PATCH' }),
+    updateEmail: (email) => request('/auth/me/email', { method: 'PATCH', body: JSON.stringify({ email }) }),
   },
 
   matches: {
@@ -79,11 +81,12 @@ export const api = {
 
   board: {
     messages: (page = 1, leagueId = null) => request(`/board/?page=${page}${leagueId ? `&league_id=${leagueId}` : ''}`),
-    unread: (leagueId, since) => request(`/board/unread?league_id=${leagueId}&since=${encodeURIComponent(since)}`),
+    unread: (leagueId, since) => request(`/board/unread?${leagueId ? `league_id=${leagueId}&` : ''}since=${encodeURIComponent(since)}`),
     post: (message, leagueId = null) => request('/board/', { method: 'POST', body: JSON.stringify({ message, league_id: leagueId }) }),
     pin: (id) => request(`/board/${id}/pin`, { method: 'POST' }),
     reply: (id, message) => request(`/board/${id}/reply`, { method: 'POST', body: JSON.stringify({ message }) }),
     delete: (id) => request(`/board/${id}`, { method: 'DELETE' }),
+    mentions: (since) => request(`/board/mentions?since=${encodeURIComponent(since)}`),
   },
 
   notifications: {

@@ -72,7 +72,7 @@ export async function renderAdmin(el) {
             <table class="admin-table">
               <thead>
                 <tr>
-                  <th>ID</th><th>Usuario</th><th>Email</th><th>País</th><th>Admin</th><th>Acción</th>
+                  <th>ID</th><th>Usuario</th><th>Email</th><th>País</th><th>Admin</th><th>Muted</th><th>Acción</th>
                 </tr>
               </thead>
               <tbody id="usersTableBody">
@@ -153,15 +153,31 @@ function attachEvents(el) {
   });
 
   document.getElementById('usersTableBody')?.addEventListener('click', async (e) => {
-    const btn = e.target.closest('.toggle-admin');
-    if (!btn) return;
-    const uid = parseInt(btn.dataset.id);
-    try {
-      const { user } = await api.auth.toggleAdmin(uid);
-      btn.closest('tr').querySelector('.admin-badge').textContent = user.is_admin ? 'Sí' : 'No';
-      showToast(`${user.username} ${user.is_admin ? 'ahora es admin' : 'ya no es admin'}`);
-    } catch (err) {
-      showToast(err.message, 'error');
+    const adminBtn = e.target.closest('.toggle-admin');
+    if (adminBtn) {
+      const uid = parseInt(adminBtn.dataset.id);
+      try {
+        const { user } = await api.auth.toggleAdmin(uid);
+        adminBtn.closest('tr').querySelector('.admin-badge').textContent = user.is_admin ? 'Sí' : 'No';
+        showToast(`${user.username} ${user.is_admin ? 'ahora es admin' : 'ya no es admin'}`);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+      return;
+    }
+
+    const muteBtn = e.target.closest('.toggle-mute');
+    if (muteBtn) {
+      const uid = parseInt(muteBtn.dataset.id);
+      try {
+        const { user } = await api.auth.toggleMute(uid);
+        const tr = muteBtn.closest('tr');
+        tr.querySelector('.mute-badge').textContent = user.is_muted ? 'Sí' : 'No';
+        muteBtn.textContent = user.is_muted ? 'Activar' : 'Silenciar';
+        showToast(`${user.username} ${user.is_muted ? 'silenciado' : 'activado'}`);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
     }
   });
 }
@@ -174,9 +190,13 @@ function userRow(u) {
       <td>${u.email}</td>
       <td>${u.country || '—'}</td>
       <td><span class="admin-badge">${u.is_admin ? 'Sí' : 'No'}</span></td>
-      <td>
+      <td><span class="mute-badge">${u.is_muted ? 'Sí' : 'No'}</span></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn--ghost btn--xs toggle-admin" data-id="${u.id}">
           ${u.is_admin ? 'Quitar admin' : 'Hacer admin'}
+        </button>
+        <button class="btn btn--ghost btn--xs toggle-mute" data-id="${u.id}">
+          ${u.is_muted ? 'Activar' : 'Silenciar'}
         </button>
       </td>
     </tr>

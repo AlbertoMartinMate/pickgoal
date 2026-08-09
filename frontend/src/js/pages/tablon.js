@@ -2,45 +2,52 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { showToast, formatDate } from '../ui.js';
 
-export async function renderTablon(el, { query = {} } = {}) {
+export async function renderTablon(el, { query = {}, forceGeneral = false } = {}) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   const user = auth.getUser();
-  let leagueId = query.liga ? parseInt(query.liga) : null;
+  let leagueId = forceGeneral ? null : (query.liga ? parseInt(query.liga) : null);
 
-  // Mark as read immediately if leagueId is known from query
-  if (leagueId) {
+  if (forceGeneral) {
+    // Mark general tablón as read and notify badge
+    localStorage.setItem('tablon_general_last_read', new Date().toISOString());
+    document.dispatchEvent(new CustomEvent('tablon:read'));
+  } else if (leagueId) {
+    // Mark as read immediately if leagueId is known from query
     localStorage.setItem(`tablon_last_read_${leagueId}`, new Date().toISOString());
     const badge = document.getElementById('tablonBadge');
     if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
   }
+
   let leagueName = null;
   let members = [];
   let page = 1;
   let totalPages = 1;
 
-  // Detectar liga activa si no viene por query
-  try {
-    if (!leagueId && user) {
-      const { leagues } = await api.leagues.my();
-      if (leagues && leagues.length) {
-        leagueId = leagues[0].id;
-        leagueName = leagues[0].name;
+  // Detectar liga activa si no viene por query y no es modo general
+  if (!forceGeneral) {
+    try {
+      if (!leagueId && user) {
+        const { leagues } = await api.leagues.my();
+        if (leagues && leagues.length) {
+          leagueId = leagues[0].id;
+          leagueName = leagues[0].name;
+        }
+      } else if (leagueId) {
+        try {
+          const { league } = await api.leagues.get(leagueId);
+          leagueName = league.name;
+        } catch (_) {}
       }
-    } else if (leagueId) {
-      try {
-        const { league } = await api.leagues.get(leagueId);
-        leagueName = league.name;
-      } catch (_) {}
-    }
 
-    if (leagueId && user) {
-      try {
-        const { members: m } = await api.leagues.members(leagueId);
-        members = m || [];
-      } catch (_) {}
-    }
-  } catch (_) {}
+      if (leagueId && user) {
+        try {
+          const { members: m } = await api.leagues.members(leagueId);
+          members = m || [];
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
 
   async function loadMessages() {
     const data = await api.board.messages(page, leagueId);
@@ -198,7 +205,10 @@ export async function renderTablon(el, { query = {} } = {}) {
 
   function renderText(text) {
     const escaped = escapeHtml(text);
-    if (!members.length) return escaped;
+    if (!members.length) {
+      // General tablón: highlight any @word pattern
+      return escaped.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    }
     const names = members.map(m => escapeRegexStr(m.username));
     const rx = new RegExp(`@(${names.join('|')})`, 'gi');
     return escaped.replace(rx, '<span class="mention">@$1</span>');
