@@ -194,6 +194,13 @@ def ranking():
     return jsonify({'ranking': ranking_data}), 200
 
 
+@auth_bp.route('/users/for-mentions', methods=['GET'])
+@jwt_required()
+def users_for_mentions():
+    users = User.query.filter_by(is_bot=False).order_by(User.username).all()
+    return jsonify({'users': [{'id': u.id, 'username': u.username} for u in users]}), 200
+
+
 @auth_bp.route('/users', methods=['GET'])
 @jwt_required()
 def list_users():

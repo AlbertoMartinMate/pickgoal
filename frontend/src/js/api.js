@@ -35,6 +35,7 @@ export const api = {
     ranking: (leagueId) => request(`/auth/ranking${leagueId ? `?league_id=${leagueId}` : ''}`),
     deleteAccount: () => request('/auth/account', { method: 'DELETE' }),
     users: () => request('/auth/users'),
+    usersForMentions: () => request('/auth/users/for-mentions'),
     toggleAdmin: (uid) => request(`/auth/users/${uid}/toggle-admin`, { method: 'PATCH' }),
     toggleMute: (uid) => request(`/auth/users/${uid}/toggle-mute`, { method: 'PATCH' }),
     updateEmail: (email) => request('/auth/me/email', { method: 'PATCH', body: JSON.stringify({ email }) }),

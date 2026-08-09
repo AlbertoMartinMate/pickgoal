@@ -27,9 +27,12 @@ export async function renderTablon(el, { query = {}, forceGeneral = false } = {}
   // En modo general cargar todos los usuarios para @menciones
   if (forceGeneral && user) {
     try {
-      const { users } = await api.auth.users();
-      members = (users || []).filter(u => !u.is_bot);
-    } catch (_) {}
+      const { users } = await api.auth.usersForMentions();
+      members = users || [];
+      console.log('[tablon] usuarios cargados:', members.length);
+    } catch (e) {
+      console.warn('[tablon] error cargando usuarios:', e);
+    }
   }
 
   // Detectar liga activa si no viene por query y no es modo general
@@ -364,7 +367,10 @@ export async function renderTablon(el, { query = {}, forceGeneral = false } = {}
   // ── @mention autocomplete ─────────────────────────────────────────────────
 
   function handleMentionInput(input, dropdown) {
-    if (!dropdown || !members.length) return;
+    if (!dropdown || !members.length) {
+      console.log('[tablon] handleMentionInput: sin dropdown o members vacío', { dropdown: !!dropdown, membersLen: members.length });
+      return;
+    }
 
     const val = input.value;
     const cur = input.selectionStart;
@@ -377,9 +383,11 @@ export async function renderTablon(el, { query = {}, forceGeneral = false } = {}
     }
 
     const query = atMatch[1].toLowerCase();
+    console.log('[tablon] mention detected, query:', query);
     const filtered = members.filter(m =>
       m.username.toLowerCase().startsWith(query) && m.id !== user?.id
     );
+    console.log('[tablon] matches:', filtered.map(m => m.username));
 
     const todosItem = auth.isAdmin() && 'todos'.startsWith(query)
       ? [{ username: 'todos', description: 'Notificar a todos los miembros' }]
