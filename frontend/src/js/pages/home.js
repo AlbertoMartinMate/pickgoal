@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
 import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
+import heroImg from '../../assets/icon-512-v2.png';
 
 export async function renderHome(el) {
   const user = auth.getUser();
@@ -96,7 +97,7 @@ async function renderGuest(el) {
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
-        <img src="/assets/icon-512-v2.png" alt="PickGoal" class="hero__logo-img" />
+        <img src="${heroImg}" alt="PickGoal" class="hero__logo-img" />
         <div class="hero__cta">
           <a href="#/register" class="btn btn--primary btn--lg">Registrarse</a>
           <a href="#/login" class="btn btn--ghost btn--lg">Ya tengo cuenta</a>
