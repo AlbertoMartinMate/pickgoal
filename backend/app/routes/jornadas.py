@@ -57,13 +57,14 @@ def _build_jornada_payload(jornada, user_id):
             'away_team': match.away_team,
             'match_datetime': dt_utc.isoformat(),
             'status': match.status,
+            'jm_status': jm.status,
             'result_90': match.result_90,
             'home_score_90': match.home_score_90,
             'away_score_90': match.away_score_90,
             'odds_1': jm.odds_1,
             'odds_x': jm.odds_x,
             'odds_2': jm.odds_2,
-            'predict_locked': match.is_locked(),
+            'predict_locked': match.is_locked() or jm.status == 'cancelled',
             'opens_until': (dt_utc - timedelta(minutes=30)).isoformat(),
             'prediction': pred.to_dict() if pred else None,
         })
@@ -136,6 +137,9 @@ def save_prediction():
     jm = JornadaMatch.query.get(jornada_match_id)
     if not jm or jm.jornada.status not in ('active', 'upcoming'):
         return jsonify({'error': f'Partido {jornada_match_id} no pertenece a una jornada abierta'}), 400
+
+    if jm.status == 'cancelled':
+        return jsonify({'error': 'Este partido ha sido cancelado'}), 400
 
     jornada = jm.jornada
 

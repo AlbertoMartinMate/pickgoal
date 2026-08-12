@@ -389,6 +389,7 @@ class JornadaMatch(db.Model):
     odds_x = db.Column(db.Float, nullable=True)
     odds_2 = db.Column(db.Float, nullable=True)
     calculated_at = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(10), nullable=False, default='scheduled')  # scheduled/finished/cancelled
 
     match = db.relationship('Match', backref='jornada_matches')
     predictions_v2 = db.relationship('PredictionV2', backref='jornada_match', lazy='dynamic', cascade='all, delete-orphan')
@@ -404,6 +405,7 @@ class JornadaMatch(db.Model):
             'odds_x': self.odds_x,
             'odds_2': self.odds_2,
             'calculated_at': self.calculated_at.isoformat() if self.calculated_at else None,
+            'status': self.status,
         }
 
 

@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import User, Match, Jornada, JornadaMatch, Season, Competition
+from app.models import User, Match, Jornada, JornadaMatch, Season, Competition, PredictionV2
 
 admin_v2_bp = Blueprint('admin_v2', __name__)
 logger = logging.getLogger(__name__)
@@ -313,6 +313,115 @@ def delete_jornada(jornada_id):
     db.session.delete(jornada)
     db.session.commit()
     return jsonify({'message': f'Jornada {jornada.number} eliminada'})
+
+
+# ─── GET /api/v2/admin/jornada/<id>/matches ─────────────────────────────────
+
+@admin_v2_bp.route('/jornada/<int:jornada_id>/matches', methods=['GET'])
+@jwt_required()
+def get_jornada_matches_admin(jornada_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jornada = db.session.get(Jornada, jornada_id)
+    if not jornada:
+        return jsonify({'error': 'Jornada no encontrada'}), 404
+
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada_id).all()
+    matches_data = []
+    for jm in jm_list:
+        m = jm.match
+        matches_data.append({
+            'jornada_match_id': jm.id,
+            'match_id': m.id,
+            'home_team': m.home_team,
+            'away_team': m.away_team,
+            'match_datetime': m.match_datetime.replace(tzinfo=timezone.utc).isoformat(),
+            'status': m.status,
+            'jm_status': jm.status,
+            'home_score_90': m.home_score_90,
+            'away_score_90': m.away_score_90,
+            'result_90': m.result_90,
+            'odds_1': jm.odds_1,
+            'odds_x': jm.odds_x,
+            'odds_2': jm.odds_2,
+        })
+    return jsonify({'jornada': jornada.to_dict(), 'matches': matches_data})
+
+
+# ─── POST /api/v2/admin/jornada-match/<id>/resultado ────────────────────────
+
+@admin_v2_bp.route('/jornada-match/<int:jm_id>/resultado', methods=['POST'])
+@jwt_required()
+def set_jornada_match_resultado(jm_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jm = db.session.get(JornadaMatch, jm_id)
+    if not jm:
+        return jsonify({'error': 'Partido no encontrado'}), 404
+    if jm.status == 'cancelled':
+        return jsonify({'error': 'El partido está cancelado'}), 400
+
+    data = request.get_json() or {}
+    home = data.get('home_score')
+    away = data.get('away_score')
+    result_90_override = data.get('result_90')
+
+    if home is None or away is None:
+        return jsonify({'error': 'Se requieren home_score y away_score'}), 400
+    try:
+        home, away = int(home), int(away)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Los marcadores deben ser números enteros'}), 400
+    if result_90_override is not None and result_90_override not in ('1', 'X', '2'):
+        return jsonify({'error': 'result_90 debe ser 1, X o 2'}), 400
+
+    from app.utils import recalculate_v2_for_match, compute_result_90
+
+    match = jm.match
+    match.home_score_90 = home
+    match.away_score_90 = away
+    match.home_score_final = home
+    match.away_score_final = away
+    match.result_90 = result_90_override if result_90_override is not None else compute_result_90(home, away)
+    match.status = 'finished'
+    jm.status = 'finished'
+    db.session.commit()
+
+    recalculate_v2_for_match(match)
+
+    return jsonify({'message': 'Resultado guardado y puntos recalculados'}), 200
+
+
+# ─── POST /api/v2/admin/jornada-match/<id>/cancel ───────────────────────────
+
+@admin_v2_bp.route('/jornada-match/<int:jm_id>/cancel', methods=['POST'])
+@jwt_required()
+def cancel_jornada_match(jm_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jm = db.session.get(JornadaMatch, jm_id)
+    if not jm:
+        return jsonify({'error': 'Partido no encontrado'}), 404
+    if jm.status == 'cancelled':
+        return jsonify({'error': 'El partido ya está cancelado'}), 400
+
+    jm.status = 'cancelled'
+    db.session.commit()
+
+    from app.utils import calculate_jornada_points
+
+    user_ids = {p.user_id for p in PredictionV2.query.filter_by(jornada_match_id=jm_id).all()}
+    for uid in user_ids:
+        calculate_jornada_points(uid, jm.jornada_id, commit=False)
+    db.session.commit()
+
+    return jsonify({'message': f'Partido cancelado. {len(user_ids)} usuario(s) afectado(s).'}), 200
 
 
 # ─── Helper ──────────────────────────────────────────────────────────────────

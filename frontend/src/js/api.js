@@ -103,6 +103,9 @@ export const api = {
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteJornada: (id) => request(`/v2/admin/jornada/${id}`, { method: 'DELETE' }),
     publishJornada: (id) => request(`/v2/admin/jornada/${id}/publish`, { method: 'POST' }),
+    jornadaMatches: (id) => request(`/v2/admin/jornada/${id}/matches`),
+    setResultado: (jmId, data) => request(`/v2/admin/jornada-match/${jmId}/resultado`, { method: 'POST', body: JSON.stringify(data) }),
+    cancelMatch: (jmId) => request(`/v2/admin/jornada-match/${jmId}/cancel`, { method: 'POST' }),
   },
 
   jornada: {

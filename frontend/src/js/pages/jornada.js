@@ -107,6 +107,9 @@ function formatOdds(v) {
 }
 
 function matchTag(m) {
+  if (m.jm_status === 'cancelled') {
+    return '<span class="tag tag--cancelled">Suspendido</span>';
+  }
   if (m.status === 'finished') {
     return `<span class="tag tag--done">Finalizado ${m.home_score_90 ?? '?'}–${m.away_score_90 ?? '?'}</span>`;
   }
@@ -116,11 +119,12 @@ function matchTag(m) {
 }
 
 function matchRow(m) {
+  const cancelled = m.jm_status === 'cancelled';
   const locked = m.predict_locked;
   const s = state[m.jornada_match_id] ?? { predicted_result: null, units: 0 };
 
   return `
-    <div class="match-card jornada-match ${locked ? 'match-card--locked' : ''}" data-jm-id="${m.jornada_match_id}">
+    <div class="match-card jornada-match ${locked ? 'match-card--locked' : ''} ${cancelled ? 'match-card--cancelled' : ''}" data-jm-id="${m.jornada_match_id}">
       <div class="match-card__header">
         <span class="match-card__date">${formatDate(m.match_datetime)}</span>
         ${matchTag(m)}

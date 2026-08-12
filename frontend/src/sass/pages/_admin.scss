@@ -461,3 +461,84 @@
     border-color: rgba(v.$accent, 0.2);
   }
 }
+
+// ─── Panel de resultados jornada V2 ─────────────────────────────────────────
+.jv2-results-panel {
+  background: v.$bg;
+  border: 1px solid rgba(v.$accent, 0.15);
+  border-top: none;
+  border-radius: 0 0 v.$r-md v.$r-md;
+  padding: v.$sp-4;
+  margin-top: -4px;
+}
+
+.jv2-results-table {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+
+  &__header {
+    display: grid;
+    grid-template-columns: 1fr 100px 120px 80px 130px;
+    gap: v.$sp-2;
+    padding: v.$sp-2 v.$sp-3;
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: v.$fw-semi;
+
+    @media (max-width: 700px) { display: none; }
+  }
+}
+
+.jv2-results-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 120px 80px 130px;
+  gap: v.$sp-2;
+  align-items: center;
+  padding: v.$sp-3;
+  background: v.$bg-surface;
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+
+  &--cancelled {
+    opacity: 0.6;
+    border-color: rgba(255, 60, 60, 0.25);
+  }
+
+  &__teams {
+    display: flex;
+    gap: v.$sp-2;
+    align-items: center;
+    font-size: v.$fs-sm;
+    flex-wrap: wrap;
+  }
+
+  &__vs {
+    color: v.$text-dim;
+    font-size: v.$fs-xs;
+  }
+
+  &__score {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: v.$fs-sm;
+  }
+
+  &__r90 {
+    font-size: v.$fs-sm;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$sp-2;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+    gap: v.$sp-2;
+  }
+}

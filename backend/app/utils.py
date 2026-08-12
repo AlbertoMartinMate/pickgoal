@@ -416,25 +416,31 @@ def calculate_v2_points(prediction, match) -> float:
 def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True) -> float:
     """
     Calculates and persists total points for a user in a jornada:
-      - Sum of points_earned across all PredictionV2 rows
-      - Plus unused units (20 - sum of units_wagered)
+      - Sum of points_earned across all non-cancelled PredictionV2 rows
+      - Plus unused units (20 - sum of units_wagered on non-cancelled matches)
+    Units wagered on cancelled matches are refunded via the unused-units pool.
     Updates Duelo if one exists. Returns total points.
     """
     from app.models import JornadaMatch, PredictionV2, Duelo
 
     MAX_UNITS = 20
 
-    jm_ids = [
-        jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada_id).all()
-    ]
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada_id).all()
+    jm_ids = [jm.id for jm in jm_list]
+    cancelled_jm_ids = {jm.id for jm in jm_list if jm.status == 'cancelled'}
+
     preds = PredictionV2.query.filter_by(user_id=user_id).filter(
         PredictionV2.jornada_match_id.in_(jm_ids)
     ).all()
 
-    units_used = sum(p.units_wagered for p in preds)
+    # Units on cancelled matches don't count toward the 20-unit budget (they're refunded)
+    units_used = sum(p.units_wagered for p in preds if p.jornada_match_id not in cancelled_jm_ids)
     points_from_bets = 0.0
 
     for pred in preds:
+        if pred.jornada_match_id in cancelled_jm_ids:
+            pred.points_earned = 0.0
+            continue
         earned = calculate_v2_points(pred, pred.jornada_match.match)
         pred.points_earned = earned
         points_from_bets += earned
