@@ -102,7 +102,7 @@
     `,ue(e),e.querySelectorAll(".league-card[data-league-id]").forEach(r=>{r.style.cursor="pointer",r.addEventListener("click",d=>{d.target.closest("[data-go-ranking]")||d.target.closest("a")||(localStorage.setItem("activeLeagueId",r.dataset.leagueId),S.navigate(`/ligas/${r.dataset.leagueId}`))})}),e.querySelectorAll("[data-go-ranking]").forEach(r=>{r.addEventListener("click",d=>{d.stopPropagation(),localStorage.setItem("activeLeagueId",r.dataset.goRanking),S.navigate("/ranking")})})}catch(t){e.innerHTML=`<div class="container"><p class="form__error">Error cargando el inicio: ${t.message}</p></div>`}}async function Fe(e){const t=new Date>=new Date("2026-08-15T00:00:00Z");let s=null;if(t)try{s=await c.jornada.info()}catch{}e.innerHTML=`
     <section class="hero">
       <div class="hero__content">
-        <img src="/assets/logo-icono-v2.png" alt="PickGoal" class="hero__logo-img" />
+        <img src="/assets/icon-512-v2.png" alt="PickGoal" class="hero__logo-img" />
         <div class="hero__cta">
           <a href="#/register" class="btn btn--primary btn--lg">Registrarse</a>
           <a href="#/login" class="btn btn--ghost btn--lg">Ya tengo cuenta</a>
