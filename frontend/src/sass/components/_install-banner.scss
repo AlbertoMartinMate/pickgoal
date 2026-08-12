@@ -10,8 +10,8 @@
   justify-content: space-between;
   gap: v.$sp-4;
   padding: v.$sp-4 v.$sp-6;
-  background: #000000;
-  border-top: 2px solid v.$accent-neon;
+  background: #0d0d0d;
+  border-top: 1px solid rgba(v.$accent-neon, 0.5);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.7);
 
   // Sit above the bottom nav when present

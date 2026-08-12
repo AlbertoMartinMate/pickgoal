@@ -25,6 +25,12 @@
     opacity: 0.95;
     transition: opacity v.$t-fast;
     &:hover { opacity: 1; }
+
+    img {
+      height: 44px;
+      width: auto;
+      display: block;
+    }
   }
 
   // User menu (right)

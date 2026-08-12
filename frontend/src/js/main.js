@@ -47,7 +47,7 @@ function showInstallBanner() {
   banner.id = 'installBanner';
   banner.className = 'install-banner';
   banner.innerHTML = `
-    <span class="install-banner__text">⚽ Instala PickGoal en tu dispositivo</span>
+    <span class="install-banner__text">📱 Instala PickGoal en tu móvil</span>
     <div class="install-banner__actions">
       <button class="install-banner__btn install-banner__btn--primary" id="installBtn">Instalar</button>
       <button class="install-banner__btn install-banner__btn--ghost" id="installDismissBtn">Ahora no</button>
