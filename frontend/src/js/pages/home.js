@@ -96,7 +96,7 @@ async function renderGuest(el) {
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
-        <img src="/assets/logo-icono-v2.png" alt="PickGoal" class="hero__logo-img" />
+        <img src="/assets/icon-512-v2.png" alt="PickGoal" class="hero__logo-img" />
         <div class="hero__cta">
           <a href="#/register" class="btn btn--primary btn--lg">Registrarse</a>
           <a href="#/login" class="btn btn--ghost btn--lg">Ya tengo cuenta</a>
