@@ -213,6 +213,7 @@ async function updateNavState() {
     authLinks?.classList.add('hidden');
     if (navUsername) navUsername.textContent = user.username;
     userBtn.style.visibility = 'visible';
+    console.log('[navbar] userBtn visibility:', userBtn.style.visibility, 'computed:', getComputedStyle(userBtn).visibility, 'offsetWidth:', userBtn.offsetWidth, 'right rect:', userBtn.getBoundingClientRect().right);
     bottomNav?.classList.remove('hidden');
     document.body.classList.add('has-bottom-nav');
     document.getElementById('navAdminLink')?.classList.toggle('hidden', !user.is_admin);
