@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import Duelo, Jornada, JornadaMatch, Match, PredictionV2, DivisionMember, User
+from app.models import Duelo, Jornada, JornadaMatch, Match, PredictionV2, DivisionMember, User, DueloCalendar
 
 duelos_bp = Blueprint('duelos_v2', __name__)
 
@@ -254,38 +254,111 @@ def get_current_duelo_detail():
     }), 200
 
 
-def assign_duelos(jornada_id, league_id):
+def _round_robin_schedule(player_ids):
+    """Return N-1 rounds of pairs for N players using the circle method.
+
+    Each round is a list of (p1, p2) tuples. p2 is None when the player gets
+    a bye (only possible when len(player_ids) is odd).
     """
-    Assign random duelos for all members of a division league in a jornada.
-    Odd number of players → one player gets a bye (plays against a ghost with average points).
-    """
+    players = list(player_ids)
+    n = len(players)
+    if n % 2 == 1:
+        players.append(None)  # sentinel for bye
+        n += 1
+
+    fixed = players[0]
+    rotating = players[1:]  # length n-1
+
+    rounds = []
+    for _ in range(n - 1):
+        pairs = [(fixed, rotating[-1])]
+        half = (n - 2) // 2
+        for i in range(half):
+            pairs.append((rotating[i], rotating[n - 3 - i]))
+        rounds.append(pairs)
+        # Rotate circle: bring last element to front
+        rotating = [rotating[-1]] + rotating[:-1]
+
+    return rounds
+
+
+def _generate_calendar(league_id, vuelta):
+    """Generate and persist the full round-robin calendar for one vuelta."""
+    # Clear any stale calendar for this league+vuelta (idempotent)
+    DueloCalendar.query.filter_by(league_id=league_id, vuelta=vuelta).delete()
+
     members = DivisionMember.query.filter_by(league_id=league_id).all()
     player_ids = [m.user_id for m in members]
-    random.shuffle(player_ids)
+    random.shuffle(player_ids)  # different draw each vuelta
 
-    bye_player_id = None
-    if len(player_ids) % 2 != 0:
-        bye_player_id = player_ids.pop()
+    rounds = _round_robin_schedule(player_ids)
+    for round_idx, pairs in enumerate(rounds):
+        round_number = round_idx + 1
+        for p1, p2 in pairs:
+            bye_player = p1 if p2 is None else (p2 if p1 is None else None)
+            if bye_player is not None:
+                db.session.add(DueloCalendar(
+                    league_id=league_id,
+                    vuelta=vuelta,
+                    round_number=round_number,
+                    player1_id=bye_player,
+                    player2_id=None,
+                ))
+            else:
+                db.session.add(DueloCalendar(
+                    league_id=league_id,
+                    vuelta=vuelta,
+                    round_number=round_number,
+                    player1_id=p1,
+                    player2_id=p2,
+                ))
+    db.session.flush()
 
-    for i in range(0, len(player_ids), 2):
-        p1 = player_ids[i]
-        p2 = player_ids[i + 1]
-        duelo = Duelo(
-            jornada_id=jornada_id,
-            division_league_id=league_id,
-            player1_id=p1,
-            player2_id=p2,
-        )
-        db.session.add(duelo)
 
-    if bye_player_id is not None:
-        # Bye player plays against themselves (ghost): use player2_id = player1_id
-        bye_duelo = Duelo(
-            jornada_id=jornada_id,
-            division_league_id=league_id,
-            player1_id=bye_player_id,
-            player2_id=bye_player_id,
-        )
-        db.session.add(bye_duelo)
+def assign_duelos(jornada_id, league_id):
+    """Assign duelos for a jornada using a pre-generated round-robin calendar.
+
+    On the first round of each vuelta the full 15-round schedule is generated
+    and stored in DueloCalendar. Subsequent rounds look up the stored schedule,
+    ensuring each player faces every other player exactly once per vuelta.
+    """
+    from app.divisions import ROTATION_JORNADAS
+
+    # Guard: skip if duelos already exist for this jornada+league
+    if Duelo.query.filter_by(jornada_id=jornada_id, division_league_id=league_id).first():
+        return
+
+    jornada = Jornada.query.get(jornada_id)
+    if not jornada:
+        return
+
+    vuelta = (jornada.number - 1) // ROTATION_JORNADAS + 1
+    round_in_vuelta = (jornada.number - 1) % ROTATION_JORNADAS + 1
+
+    if round_in_vuelta == 1:
+        _generate_calendar(league_id, vuelta)
+
+    entries = DueloCalendar.query.filter_by(
+        league_id=league_id,
+        vuelta=vuelta,
+        round_number=round_in_vuelta,
+    ).all()
+
+    for entry in entries:
+        if entry.player2_id is None:
+            # Bye: player plays against themselves
+            db.session.add(Duelo(
+                jornada_id=jornada_id,
+                division_league_id=league_id,
+                player1_id=entry.player1_id,
+                player2_id=entry.player1_id,
+            ))
+        else:
+            db.session.add(Duelo(
+                jornada_id=jornada_id,
+                division_league_id=league_id,
+                player1_id=entry.player1_id,
+                player2_id=entry.player2_id,
+            ))
 
     db.session.commit()

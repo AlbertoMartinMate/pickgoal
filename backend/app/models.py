@@ -500,3 +500,24 @@ class DivisionMember(db.Model):
             'position': self.position,
             'joined_at': self.joined_at.isoformat(),
         }
+
+
+class DueloCalendar(db.Model):
+    """Pre-generated round-robin schedule for a division league per vuelta.
+
+    Each row represents one match-up: player1 vs player2 in a given round.
+    player2_id is NULL when the player gets a bye (odd-sized league).
+    """
+    __tablename__ = 'duelo_calendar'
+
+    id = db.Column(db.Integer, primary_key=True)
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id'), nullable=False)
+    vuelta = db.Column(db.Integer, nullable=False)       # 1, 2, 3
+    round_number = db.Column(db.Integer, nullable=False) # 1–15 within the vuelta
+    player1_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    player2_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # NULL = bye
+
+    __table_args__ = (
+        db.UniqueConstraint('league_id', 'vuelta', 'round_number', 'player1_id',
+                            name='uq_duelo_calendar'),
+    )
