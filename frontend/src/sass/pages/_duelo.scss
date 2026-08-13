@@ -100,6 +100,39 @@
   &__text { font-size: v.$fs-sm; color: v.$text-muted; }
 }
 
+// ─── Past duelo result badge ──────────────────────────────────────────────────
+.duelo-card--finished {
+  border-color: v.$border;
+}
+
+.duelo-result-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-bold;
+  letter-spacing: 0.04em;
+
+  &--ganado {
+    background: rgba(57, 255, 20, 0.1);
+    color: v.$accent-neon;
+    border: 1px solid rgba(57, 255, 20, 0.3);
+  }
+
+  &--perdido {
+    background: v.$danger-dim;
+    color: v.$danger;
+    border: 1px solid rgba(v.$danger, 0.3);
+  }
+
+  &--empate {
+    background: v.$warning-dim;
+    color: v.$warning;
+    border: 1px solid rgba(v.$warning, 0.3);
+  }
+}
+
 // ─── Tracker en tiempo real ───────────────────────────────────────────────────
 .duelo-tracker {
   @include m.card;

@@ -131,6 +131,58 @@ def get_current_duelo():
     }), 200
 
 
+@duelos_bp.route('/list', methods=['GET'])
+@jwt_required()
+def list_duelos():
+    user_id = int(get_jwt_identity())
+
+    from sqlalchemy import or_
+    duelos = (
+        Duelo.query
+        .filter(or_(Duelo.player1_id == user_id, Duelo.player2_id == user_id))
+        .join(Duelo.jornada)
+        .order_by(Jornada.number.asc())
+        .all()
+    )
+
+    result = []
+    for duelo in duelos:
+        jornada = duelo.jornada
+        is_p1 = duelo.player1_id == user_id
+        rival_id = duelo.player2_id if is_p1 else duelo.player1_id
+        rival = User.query.get(rival_id)
+        is_bye = duelo.player1_id == duelo.player2_id
+
+        my_points = duelo.points_player1 if is_p1 else duelo.points_player2
+        rival_points = duelo.points_player2 if is_p1 else duelo.points_player1
+
+        if duelo.winner_id is None and jornada.status != 'finished':
+            status = 'en_curso'
+        elif duelo.winner_id == user_id:
+            status = 'ganado'
+        elif duelo.winner_id == rival_id:
+            status = 'perdido'
+        else:
+            status = 'empate'
+
+        result.append({
+            'jornada_id': jornada.id,
+            'jornada_number': jornada.number,
+            'jornada_date_start': jornada.date_start.replace(tzinfo=timezone.utc).isoformat(),
+            'jornada_date_end': jornada.date_end.replace(tzinfo=timezone.utc).isoformat(),
+            'jornada_status': jornada.status,
+            'duelo_id': duelo.id,
+            'rival': {'id': rival.id, 'username': rival.username} if rival and not is_bye else None,
+            'is_bye': is_bye,
+            'my_points': round(my_points or 0, 2),
+            'rival_points': round(rival_points or 0, 2),
+            'status': status,
+            'division_league_id': duelo.division_league_id,
+        })
+
+    return jsonify({'duelos': result}), 200
+
+
 @duelos_bp.route('/current/detail', methods=['GET'])
 @jwt_required()
 def get_current_duelo_detail():

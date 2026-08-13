@@ -118,6 +118,7 @@ export const api = {
   },
 
   duelo: {
+    list: () => request('/v2/duelo/list'),
     current: () => request('/v2/duelo/current'),
     detail: () => request('/v2/duelo/current/detail'),
   },
