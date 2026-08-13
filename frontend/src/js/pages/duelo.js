@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 let _trackerInterval = null;
 
@@ -52,12 +52,12 @@ export async function renderDuelo(el) {
           <div class="duelo-card__matchup">
             <div class="duelo-card__player">
               <span class="duelo-card__name">${me.username}</span>
-              <span class="duelo-card__pts">${duelo.my_points}</span>
+              <span class="duelo-card__pts">${fmtPts(duelo.my_points)}</span>
             </div>
             <span class="duelo-card__vs">VS</span>
             <div class="duelo-card__player">
               <span class="duelo-card__name">${isBye ? 'Descanso' : rivalName}</span>
-              <span class="duelo-card__pts">${isBye ? '—' : duelo.rival_points}</span>
+              <span class="duelo-card__pts">${isBye ? '—' : fmtPts(duelo.rival_points)}</span>
             </div>
           </div>
         </div>
@@ -155,12 +155,12 @@ function buildTrackerHtml(detail, myName, rivalName) {
     return `
       <div class="duelo-tracker__col">
         <div class="duelo-tracker__player">${name}</div>
-        <div class="duelo-tracker__pts">${(d.points_earned).toFixed(2)}</div>
+        <div class="duelo-tracker__pts">${fmtPts(d.points_earned)}</div>
         <div class="duelo-tracker__rows">
           <div class="duelo-tracker__row">
             <span class="duelo-tracker__icon">✅</span>
             <span class="duelo-tracker__label">Ganados</span>
-            <span class="duelo-tracker__val">${d.points_earned.toFixed(2)}</span>
+            <span class="duelo-tracker__val">${fmtPts(d.points_earned)}</span>
           </div>
           <div class="duelo-tracker__row">
             <span class="duelo-tracker__icon">⏳</span>

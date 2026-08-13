@@ -416,7 +416,7 @@ def calculate_v2_points(prediction, match) -> float:
     jm = prediction.jornada_match
     odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
     odds = odds_map.get(match.result_90) or 1.0
-    return prediction.units_wagered * odds
+    return round(prediction.units_wagered * odds, 2)
 
 
 def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True) -> float:
@@ -452,7 +452,7 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
         points_from_bets += earned
 
     unused_units = MAX_UNITS - units_used
-    total = points_from_bets + unused_units
+    total = round(points_from_bets + unused_units, 2)
 
     # Update duelo live points
     from app import db

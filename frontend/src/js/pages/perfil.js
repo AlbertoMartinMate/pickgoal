@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { showToast, formatDate } from '../ui.js';
+import { showToast, formatDate, fmtPts } from '../ui.js';
 
 export async function renderPerfil(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -56,7 +56,7 @@ export async function renderPerfil(el) {
               <span class="stat__label">Posición div.</span>
             </div>
             <div class="stat">
-              <span class="stat__value">${myDivRow?.pts_division ?? '—'}</span>
+              <span class="stat__value">${myDivRow ? fmtPts(myDivRow.pts_division) : '—'}</span>
               <span class="stat__label">Pts división</span>
             </div>
           </div>
@@ -81,11 +81,11 @@ export async function renderPerfil(el) {
                      <small>de ${divRes.standings.length}</small>
                    </div>
                    <div class="division-info__stat">
-                     <span>${myDivRow.pts_division}</span>
+                     <span>${fmtPts(myDivRow.pts_division)}</span>
                      <small>pts división</small>
                    </div>
                    <div class="division-info__stat">
-                     <span>${myDivRow.pts_general}</span>
+                     <span>${fmtPts(myDivRow.pts_general)}</span>
                      <small>pts total</small>
                    </div>
                    <div class="division-info__stat">
@@ -275,7 +275,7 @@ function statusProgressHtml(status, allTimePts) {
     <div class="level-progress">
       <div class="level-progress__header">
         <span class="status-badge">${status.emoji} ${status.name}</span>
-        <span class="level-progress__label">${allTimePts} / ${status.next_threshold} pts → ${status.next_emoji || ''} ${status.next_name}</span>
+        <span class="level-progress__label">${fmtPts(allTimePts)} / ${status.next_threshold} pts → ${status.next_emoji || ''} ${status.next_name}</span>
       </div>
       <div class="level-progress__bar"><div class="level-progress__fill" style="width:${pct}%"></div></div>
     </div>`;
@@ -363,7 +363,7 @@ function showPredModal(allPreds) {
     listEl.innerHTML = filtered.map(p => {
       const icon = !p.result_known ? '⏳' : p.is_correct ? '✅' : '❌';
       const scoreStr = p.score ? `${p.score}` : '—';
-      const ptsStr = p.result_known ? `+${p.points_earned} pts` : '—';
+      const ptsStr = p.result_known ? `+${fmtPts(p.points_earned)} pts` : '—';
       return `
         <div class="pred-item ${p.is_correct ? 'pred-item--correct' : p.result_known ? 'pred-item--wrong' : ''}">
           <span class="pred-item__icon">${icon}</span>

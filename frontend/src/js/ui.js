@@ -103,6 +103,12 @@ export function attachPointsModal(el) {
   return open;
 }
 
+export function fmtPts(x) {
+  const n = parseFloat(x);
+  if (isNaN(n) || x == null) return '—';
+  return parseFloat(n.toFixed(2)).toString();
+}
+
 export function formatDate(isoString) {
   if (!isoString) return '—';
   const date = new Date(isoString);

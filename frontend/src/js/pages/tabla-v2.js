@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { renderTablon } from './tablon.js';
-import { pointsModalHtml, attachPointsModal } from '../ui.js';
+import { pointsModalHtml, attachPointsModal, fmtPts } from '../ui.js';
 
 export async function renderTablaV2(el, { query = {} } = {}) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -51,8 +51,8 @@ export async function renderTablaV2(el, { query = {} } = {}) {
                             : `<button class="user-link" data-user-id="${u.user_id}">${escapeHtml(u.username)}</button>`
                           }
                         </td>
-                        <td class="ranking-table__stat">${u.pts_jornada_actual}</td>
-                        <td class="ranking-table__pts">${u.pts_general}</td>
+                        <td class="ranking-table__stat">${fmtPts(u.pts_jornada_actual)}</td>
+                        <td class="ranking-table__pts">${fmtPts(u.pts_general)}</td>
                       </tr>
                     `).join('')}
                   </tbody>
@@ -315,7 +315,7 @@ function divisionRow(row, me) {
       <td class="ranking-table__stat">${row.g}</td>
       <td class="ranking-table__stat">${row.e}</td>
       <td class="ranking-table__stat">${row.p}</td>
-      <td class="ranking-table__pts">${row.pts_division}</td>
+      <td class="ranking-table__pts">${fmtPts(row.pts_division)}</td>
     </tr>
   `;
 }

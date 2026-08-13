@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
-import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
 import heroImg from '../../assets/icon-512-v2.png';
 
 export async function renderHome(el) {
@@ -161,7 +161,7 @@ function divisionCard(div) {
           </div>
         </div>
         <div class="div-card__pts-block">
-          <span class="div-card__pts-val">${div.pts_division}</span>
+          <span class="div-card__pts-val">${fmtPts(div.pts_division)}</span>
           <span class="div-card__pts-label">pts división</span>
         </div>
       </div>
@@ -170,7 +170,7 @@ function divisionCard(div) {
         <div class="div-card__stat"><span>${div.g}</span><small>G</small></div>
         <div class="div-card__stat"><span>${div.e}</span><small>E</small></div>
         <div class="div-card__stat"><span>${div.p}</span><small>P</small></div>
-        <div class="div-card__stat div-card__stat--general"><span>${div.pts_general}</span><small>Pts total</small></div>
+        <div class="div-card__stat div-card__stat--general"><span>${fmtPts(div.pts_general)}</span><small>Pts total</small></div>
       </div>
       <div class="div-card__actions">
         <a href="#/jornada" class="btn btn--primary btn--sm">Predecir jornada</a>
@@ -259,7 +259,7 @@ function leagueCard(s) {
       </div>
       <div class="league-card__stats">
         <div class="league-card__stat">
-          <span class="league-card__stat-val">${s.total_points}</span>
+          <span class="league-card__stat-val">${fmtPts(s.total_points)}</span>
           <span class="league-card__stat-label">Puntos</span>
         </div>
         <div class="league-card__stat">
