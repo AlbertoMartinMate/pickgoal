@@ -252,6 +252,7 @@
 }
 
 .admin-match-badge {
+  display: inline-block;
   font-size: v.$fs-xs;
   font-weight: v.$fw-semi;
   padding: 2px 8px;
@@ -259,13 +260,27 @@
   flex-shrink: 0;
 
   &--done {
-    background: v.$accent-dim;
+    background: rgba(57, 255, 20, 0.1);
     color: v.$accent;
+    border: 1px solid rgba(57, 255, 20, 0.25);
   }
 
   &--pending {
-    background: v.$warning-dim;
-    color: v.$warning;
+    background: rgba(255, 200, 0, 0.1);
+    color: #ffc800;
+    border: 1px solid rgba(255, 200, 0, 0.25);
+  }
+
+  &--live {
+    background: rgba(0, 120, 255, 0.12);
+    color: #4da6ff;
+    border: 1px solid rgba(0, 120, 255, 0.3);
+  }
+
+  &--cancelled {
+    background: rgba(255, 60, 60, 0.1);
+    color: #ff5c5c;
+    border: 1px solid rgba(255, 60, 60, 0.25);
   }
 }
 
@@ -472,31 +487,22 @@
   margin-top: -4px;
 }
 
+.jv2-results-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: v.$sp-3;
+}
+
 .jv2-results-table {
   display: flex;
   flex-direction: column;
   gap: v.$sp-2;
-
-  &__header {
-    display: grid;
-    grid-template-columns: 1fr 100px 120px 80px 130px;
-    gap: v.$sp-2;
-    padding: v.$sp-2 v.$sp-3;
-    font-size: v.$fs-xs;
-    color: v.$text-dim;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: v.$fw-semi;
-
-    @media (max-width: 700px) { display: none; }
-  }
 }
 
 .jv2-results-row {
-  display: grid;
-  grid-template-columns: 1fr 100px 120px 80px 130px;
+  display: flex;
+  flex-direction: column;
   gap: v.$sp-2;
-  align-items: center;
   padding: v.$sp-3;
   background: v.$bg-surface;
   border: 1px solid v.$border;
@@ -507,11 +513,26 @@
     border-color: rgba(255, 60, 60, 0.25);
   }
 
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+  }
+
+  &__datetime {
+    font-size: v.$fs-xs;
+    color: v.$text-dim;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   &__teams {
     display: flex;
     gap: v.$sp-2;
     align-items: center;
     font-size: v.$fs-sm;
+    flex: 1;
     flex-wrap: wrap;
   }
 
@@ -520,25 +541,10 @@
     font-size: v.$fs-xs;
   }
 
-  &__score {
+  &__controls {
     display: flex;
     align-items: center;
-    gap: 2px;
-    font-size: v.$fs-sm;
-  }
-
-  &__r90 {
-    font-size: v.$fs-sm;
-  }
-
-  &__actions {
-    display: flex;
     gap: v.$sp-2;
     flex-wrap: wrap;
-  }
-
-  @media (max-width: 700px) {
-    grid-template-columns: 1fr;
-    gap: v.$sp-2;
   }
 }

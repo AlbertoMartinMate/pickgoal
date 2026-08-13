@@ -535,7 +535,7 @@ async function toggleResultsPanel(jornadaId, btn) {
   btn.textContent = 'Cargando…';
   try {
     const { matches } = await api.adminV2.jornadaMatches(jornadaId);
-    panel.innerHTML = renderResultsPanel(matches);
+    panel.innerHTML = renderResultsPanel(matches, jornadaId);
     panel.style.display = 'block';
     attachResultsEvents(panel, jornadaId);
     btn.textContent = 'Ocultar';
@@ -547,55 +547,63 @@ async function toggleResultsPanel(jornadaId, btn) {
   }
 }
 
-function renderResultsPanel(matches) {
-  return `
-    <div class="jv2-results-table">
-      <div class="jv2-results-table__header">
-        <span>Partido</span>
-        <span>Estado</span>
-        <span>Marcador</span>
-        <span>1X2</span>
-        <span>Acciones</span>
-      </div>
-      ${matches.map(m => {
-        const isCancelled = m.jm_status === 'cancelled';
-        const isFinished  = m.jm_status === 'finished';
-        const jmStatusBadge = isCancelled
-          ? '<span class="admin-match-badge" style="background:rgba(255,60,60,0.12);color:#ff5c5c;border:1px solid rgba(255,60,60,0.3)">Suspendido</span>'
-          : isFinished
-            ? '<span class="admin-match-badge admin-match-badge--done">Finalizado</span>'
-            : '<span class="admin-match-badge admin-match-badge--pending">Pendiente</span>';
+function matchStatusBadge(m) {
+  if (m.jm_status === 'cancelled') {
+    return '<span class="admin-match-badge admin-match-badge--cancelled">🔴 Suspendido</span>';
+  }
+  if (m.jm_status === 'finished') {
+    const score = (m.home_score_90 != null && m.away_score_90 != null)
+      ? ` ${m.home_score_90}–${m.away_score_90}`
+      : '';
+    return `<span class="admin-match-badge admin-match-badge--done">🟢 Finalizado${score}</span>`;
+  }
+  const now = Date.now();
+  const kickoff = new Date(m.match_datetime).getTime();
+  const twoHoursAfter = kickoff + 2 * 60 * 60 * 1000;
+  if (now >= kickoff && now <= twoHoursAfter) {
+    return '<span class="admin-match-badge admin-match-badge--live">🔵 En juego</span>';
+  }
+  return '<span class="admin-match-badge admin-match-badge--pending">🟡 Pendiente</span>';
+}
 
+function fmtAdminDt(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderResultsPanel(matches, jornadaId) {
+  const sorted = [...matches].sort((a, b) => new Date(b.match_datetime) - new Date(a.match_datetime));
+  return `
+    <div class="jv2-results-toolbar">
+      <button class="btn btn--ghost btn--xs jv2-sync-btn" data-jornada-id="${jornadaId}">🔄 Sincronizar resultados ahora</button>
+    </div>
+    <div class="jv2-results-table">
+      ${sorted.map(m => {
+        const isCancelled = m.jm_status === 'cancelled';
         return `
           <div class="jv2-results-row ${isCancelled ? 'jv2-results-row--cancelled' : ''}" data-jm-id="${m.jornada_match_id}">
-            <div class="jv2-results-row__teams">
-              <span>${m.home_team}</span>
-              <span class="jv2-results-row__vs">vs</span>
-              <span>${m.away_team}</span>
+            <div class="jv2-results-row__meta">
+              <span class="jv2-results-row__datetime">${fmtAdminDt(m.match_datetime)}</span>
+              <div class="jv2-results-row__teams">
+                <span>${m.home_team}</span>
+                <span class="jv2-results-row__vs">vs</span>
+                <span>${m.away_team}</span>
+              </div>
+              ${matchStatusBadge(m)}
             </div>
-            <div>${jmStatusBadge}</div>
-            <div class="jv2-results-row__score">
-              ${isCancelled ? '—' : `
-                <input type="number" class="form__input jv2-score-input" data-side="home" min="0" max="99" value="${m.home_score_90 ?? ''}" placeholder="L" style="width:52px" ${isCancelled ? 'disabled' : ''} />
+            <div class="jv2-results-row__controls">
+              ${isCancelled ? '<span style="color:var(--text-muted)">—</span>' : `
+                <input type="number" class="form__input jv2-score-input" data-side="home" min="0" max="99" value="${m.home_score_90 ?? ''}" placeholder="L" style="width:52px" />
                 <span style="padding:0 4px">–</span>
-                <input type="number" class="form__input jv2-score-input" data-side="away" min="0" max="99" value="${m.away_score_90 ?? ''}" placeholder="V" style="width:52px" ${isCancelled ? 'disabled' : ''} />
-              `}
-            </div>
-            <div class="jv2-results-row__r90">
-              ${isCancelled ? '—' : `
-                <select class="form__input jv2-r90-select" style="width:72px" ${isCancelled ? 'disabled' : ''}>
+                <input type="number" class="form__input jv2-score-input" data-side="away" min="0" max="99" value="${m.away_score_90 ?? ''}" placeholder="V" style="width:52px" />
+                <select class="form__input jv2-r90-select" style="width:68px">
                   <option value="" ${!m.result_90 ? 'selected' : ''}>Auto</option>
                   <option value="1" ${m.result_90 === '1' ? 'selected' : ''}>1</option>
                   <option value="X" ${m.result_90 === 'X' ? 'selected' : ''}>X</option>
                   <option value="2" ${m.result_90 === '2' ? 'selected' : ''}>2</option>
                 </select>
-              `}
-            </div>
-            <div class="jv2-results-row__actions" style="display:flex;gap:6px;flex-wrap:wrap">
-              ${isCancelled ? '' : `
                 <button class="btn btn--primary btn--xs jv2-save-result-btn" data-jm-id="${m.jornada_match_id}">Guardar</button>
-              `}
-              ${isCancelled ? '' : `
                 <button class="btn btn--danger btn--xs jv2-cancel-match-btn" data-jm-id="${m.jornada_match_id}" data-home="${m.home_team}" data-away="${m.away_team}">Cancelar</button>
               `}
             </div>
@@ -607,6 +615,21 @@ function renderResultsPanel(matches) {
 }
 
 function attachResultsEvents(panel, jornadaId) {
+  panel.querySelector('.jv2-sync-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = '⏳ Sincronizando…';
+    try {
+      await api.matches.sync();
+      showToast('Sincronización completada');
+      await reloadResultsPanel(jornadaId);
+    } catch (err) {
+      showToast(err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '🔄 Sincronizar resultados ahora';
+    }
+  });
+
   panel.querySelectorAll('.jv2-save-result-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const jmId = btn.dataset.jmId;
@@ -660,7 +683,7 @@ async function reloadResultsPanel(jornadaId) {
   if (!panel || panel.style.display === 'none') return;
   try {
     const { matches } = await api.adminV2.jornadaMatches(jornadaId);
-    panel.innerHTML = renderResultsPanel(matches);
+    panel.innerHTML = renderResultsPanel(matches, jornadaId);
     attachResultsEvents(panel, jornadaId);
   } catch (err) {
     showToast(`Error recargando: ${err.message}`, 'error');
