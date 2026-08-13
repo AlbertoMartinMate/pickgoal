@@ -41,7 +41,7 @@
     letter-spacing: 0.08em;
     white-space: nowrap;
 
-    @media (max-width: 360px) { display: none; }
+    @media (max-width: 480px) { display: none; }
   }
 
   // User menu (right)
@@ -52,6 +52,11 @@
     min-width: 0;
     flex-shrink: 1;
     position: relative;
+
+    @media (max-width: 480px) {
+      margin-left: auto;
+      min-width: 0;
+    }
   }
 
   // Dropdown trigger button
@@ -69,7 +74,7 @@
     border-radius: v.$r-sm;
     transition: color v.$t-fast, background v.$t-fast;
     min-width: 0;
-    max-width: 140px;
+    max-width: 120px;
 
     span {
       overflow: hidden;
