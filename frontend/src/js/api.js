@@ -11,7 +11,7 @@ async function request(path, options = {}) {
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${BASE_URL}${path}`, { cache: 'no-store', ...options, headers });
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
