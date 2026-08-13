@@ -60,12 +60,6 @@ function renderJornadaList(el, jornadas, activeIdx) {
         <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
       </div>
       ${tabs}
-      ${jornada.locked
-        ? '<p class="notice">⚠️ El plazo de predicción ha cerrado (ya empezó el primer partido).</p>'
-        : jornada.first_match_datetime
-          ? `<p class="notice notice--info">Abierto hasta ${formatDateTime(jornada.first_match_datetime)}</p>`
-          : ''
-      }
       <div class="units-counter" id="unitsCounter"></div>
       <div class="jornada-matches">
         ${matches.map(matchRow).join('')}
@@ -120,7 +114,7 @@ function matchTag(m) {
   }
   return m.predict_locked
     ? '<span class="tag tag--locked">Bloqueado</span>'
-    : `<span class="tag tag--open">Abierto hasta ${formatTime(m.opens_until)}</span>`;
+    : `<span class="tag tag--open">Abierto hasta ${formatDateTime(m.opens_until)}</span>`;
 }
 
 function matchRow(m) {
