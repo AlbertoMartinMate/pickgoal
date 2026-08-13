@@ -8,6 +8,7 @@
   z-index: 200;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 v.$sp-4;
   background: #000000;
   border-bottom: 2px solid v.$accent-neon;
@@ -15,7 +16,6 @@
   &__brand {
     display: flex;
     flex-shrink: 0;
-    margin-right: auto;
   }
 
   &__logo {
@@ -40,14 +40,17 @@
     color: #ffffff;
     letter-spacing: 0.08em;
     white-space: nowrap;
+
+    @media (max-width: 360px) { display: none; }
   }
 
   // User menu (right)
   &__right {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: v.$sp-2;
+    min-width: 0;
+    flex-shrink: 1;
     position: relative;
   }
 
@@ -59,18 +62,20 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: v.$accent-neon;
+    color: #39ff14;
     font-size: v.$fs-xs;
     font-weight: v.$fw-semi;
     padding: 5px v.$sp-2;
     border-radius: v.$r-sm;
     transition: color v.$t-fast, background v.$t-fast;
-    max-width: 130px;
+    min-width: 0;
+    max-width: 140px;
 
     span {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      min-width: 0;
     }
 
     &:hover {
