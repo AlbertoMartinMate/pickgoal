@@ -443,18 +443,26 @@ def activar_jornada(app):
 
 
 def _schedule_bot_predictions_for_jornada(app, jornada):
-    """Schedule one bot-prediction job per match, 1 hour before kick-off."""
+    """Schedule bot-prediction jobs for a jornada.
+
+    Runs immediately for any matches whose 1-hour-before trigger has already
+    passed, and schedules future jobs for the rest.
+    """
     from app.models import JornadaMatch
 
     jm_list = JornadaMatch.query.filter_by(jornada_id=jornada.id).all()
     scheduled = set()
+    now = datetime.now(timezone.utc)
+    needs_immediate = False
 
     for jm in jm_list:
         match = jm.match
         dt_utc = match.match_datetime.replace(tzinfo=timezone.utc)
         trigger_time = dt_utc - timedelta(hours=1)
 
-        if trigger_time <= datetime.now(timezone.utc):
+        if trigger_time <= now:
+            # Trigger already passed — run immediately once for the whole jornada
+            needs_immediate = True
             continue
 
         # One job per kick-off hour (avoids duplicates for same-time matches)
@@ -472,6 +480,10 @@ def _schedule_bot_predictions_for_jornada(app, jornada):
             replace_existing=True,
         )
         logger.info('Bot predictions V2 programadas: jornada %d a las %s', jornada.id, trigger_time)
+
+    if needs_immediate:
+        logger.info('Bot predictions V2 inmediatas: jornada %d (trigger ya pasó)', jornada.id)
+        _run_bot_predictions_v2(app, jornada.id)
 
 
 def _run_bot_predictions_v2(app, jornada_id):
@@ -644,6 +656,21 @@ def _update_division_positions(jornada_id):
     db.session.commit()
 
 
+def _ensure_bot_predictions_v2(app):
+    """Fallback: run bot predictions for any active/upcoming jornada that needs them."""
+    with app.app_context():
+        from app.models import Jornada
+        jornada = (
+            Jornada.query
+            .filter(Jornada.status.in_(['active', 'upcoming']))
+            .order_by(Jornada.date_start.asc())
+            .first()
+        )
+        if jornada:
+            logger.info('ensure_bot_predictions_v2: ejecutando para jornada %d', jornada.id)
+            _run_bot_predictions_v2(app, jornada.id)
+
+
 def init_scheduler(app):
     if scheduler.running:
         return
@@ -667,6 +694,13 @@ def init_scheduler(app):
         args=[app],
         trigger=IntervalTrigger(hours=6),
         id='generate_bot_predictions',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=_ensure_bot_predictions_v2,
+        args=[app],
+        trigger=IntervalTrigger(hours=12),
+        id='ensure_bot_predictions_v2',
         replace_existing=True,
     )
 
