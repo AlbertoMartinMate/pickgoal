@@ -165,7 +165,7 @@ function buildTrackerHtml(detail, myName, rivalName) {
           <div class="duelo-tracker__row">
             <span class="duelo-tracker__icon">⏳</span>
             <span class="duelo-tracker__label">En juego</span>
-            <span class="duelo-tracker__val">${d.units_in_play > 0 ? d.units_in_play + ' u' : '—'}</span>
+            <span class="duelo-tracker__val">${d.units_at_stake + ' u'}</span>
           </div>
           <div class="duelo-tracker__row">
             <span class="duelo-tracker__icon">💰</span>
@@ -181,7 +181,7 @@ function buildTrackerHtml(detail, myName, rivalName) {
     <div class="duelo-tracker__inner">
       ${col(myName, me, true)}
       <div class="duelo-tracker__divider">VS</div>
-      ${col(rivalName, rival ?? { points_earned: 0, units_in_play: 0, units_unbet: null }, false)}
+      ${col(rivalName, rival ?? { points_earned: 0, units_at_stake: 0, units_unbet: null }, false)}
     </div>
     <div class="duelo-tracker__note">Actualizado hace unos segundos · se refresca cada minuto</div>
   `;

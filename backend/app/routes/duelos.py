@@ -167,7 +167,7 @@ def get_current_duelo_detail():
                 .filter(PredictionV2.jornada_match_id.in_(jm_ids)).all()
         }
         points_earned = 0.0
-        units_in_play = 0
+        units_at_stake = 0
         total_wagered = 0
 
         for jm in jm_list:
@@ -176,17 +176,17 @@ def get_current_duelo_detail():
             pred = preds.get(jm.id)
             if not pred:
                 continue
-            started = _match_started(jm.match)
             finished = jm.match.status == 'finished'
             total_wagered += pred.units_wagered
             if finished:
                 points_earned += pred.points_earned or 0.0
-            elif started:
-                units_in_play += pred.units_wagered
+            else:
+                # Includes both not-yet-started and in-progress matches
+                units_at_stake += pred.units_wagered
 
         return {
             'points_earned': round(points_earned, 2),
-            'units_in_play': units_in_play,
+            'units_at_stake': units_at_stake,
             'units_unbet': (20 - total_wagered) if reveal_unbet else None,
         }
 
