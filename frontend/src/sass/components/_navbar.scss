@@ -37,12 +37,12 @@
     img {
       height: 56px;
       width: auto;
+      max-width: none;
       display: block;
       flex-shrink: 0;
 
       @media (max-width: 480px) {
         height: 48px;
-        width: auto;
       }
     }
   }
