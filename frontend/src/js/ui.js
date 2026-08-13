@@ -64,7 +64,7 @@ export function pointsModalHtml() {
           <h3 class="points-modal__subheading">🏆 Divisiones</h3>
           <ul class="points-modal__list">
             <li>Los jugadores se agrupan en divisiones de tamaño similar.</li>
-            <li>Al final de temporada: los mejores <strong>ascienden</strong>, los peores <strong>descienden</strong>.</li>
+            <li>Cada 16 jornadas: top 4 suben, últimos 4 bajan.</li>
             <li>La clasificación general refleja los puntos totales acumulados en todas las jornadas.</li>
           </ul>
         </div>

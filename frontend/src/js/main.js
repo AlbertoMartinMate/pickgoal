@@ -110,13 +110,10 @@ async function checkTablonUnread() {
   const user = auth.getUser();
   if (!user) { badge.classList.add('hidden'); return; }
 
-  const activeLeagueId = localStorage.getItem('activeLeagueId');
-  if (!activeLeagueId) { badge.classList.add('hidden'); return; }
-
-  const since = localStorage.getItem(`tablon_last_read_${activeLeagueId}`) || new Date(0).toISOString();
+  const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
 
   try {
-    const { count } = await api.board.unread(parseInt(activeLeagueId), since);
+    const { count } = await api.board.unread(null, since);
     if (count > 0) {
       badge.textContent = count > 99 ? '99+' : String(count);
       badge.classList.remove('hidden');
@@ -140,6 +137,7 @@ function setupNavbar() {
 
   document.addEventListener('tablon:read', () => {
     checkProfileBadge();
+    checkTablonUnread();
   });
 
   document.addEventListener('messages:read', () => {
