@@ -21,16 +21,25 @@
   &__logo {
     display: flex;
     align-items: center;
+    gap: 8px;
     text-decoration: none;
     opacity: 0.95;
     transition: opacity v.$t-fast;
     &:hover { opacity: 1; }
 
     img {
-      height: 44px;
+      height: 56px;
       width: auto;
       display: block;
     }
+  }
+
+  &__brand-name {
+    font-size: v.$fs-base;
+    font-weight: v.$fw-black;
+    color: #ffffff;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
 
   // User menu (right)
