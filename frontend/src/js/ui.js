@@ -61,11 +61,24 @@ export function pointsModalHtml() {
         </div>
 
         <div class="points-modal__section">
-          <h3 class="points-modal__subheading">🏆 Divisiones</h3>
+          <h3 class="points-modal__subheading">🏆 Clasificación divisional</h3>
           <ul class="points-modal__list">
-            <li>Los jugadores se agrupan en divisiones de tamaño similar.</li>
-            <li>Cada 16 jornadas: top 4 suben, últimos 4 bajan.</li>
-            <li>La clasificación general refleja los puntos totales acumulados en todas las jornadas.</li>
+            <li>Cada liga está formada por <strong>16 jugadores</strong>.</li>
+            <li>Al final de cada vuelta (16 jornadas) se producen ascensos y descensos:
+              <ul class="points-modal__list points-modal__list--inner">
+                <li>Top 4 → suben de división</li>
+                <li>Últimos 4 → bajan de división</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="points-modal__section">
+          <h3 class="points-modal__subheading">📊 Clasificación general</h3>
+          <ul class="points-modal__list">
+            <li>Suma total de puntos de todas las jornadas.</li>
+            <li>Al final de la temporada (48 jornadas) se entregan premios a los mejores de la clasificación general.</li>
+            <li>🏆 Premio: camiseta de tu equipo favorito</li>
           </ul>
         </div>
       </div>

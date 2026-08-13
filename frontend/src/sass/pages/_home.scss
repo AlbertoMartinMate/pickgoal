@@ -571,6 +571,13 @@
       list-style: decimal;
     }
 
+    &--inner {
+      margin-top: v.$sp-1;
+      padding-left: v.$sp-4;
+
+      li { list-style: circle; }
+    }
+
     li { list-style: disc; }
     &--ordered li { list-style: decimal; }
 
