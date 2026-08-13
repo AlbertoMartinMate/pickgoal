@@ -282,6 +282,12 @@
     color: #ff5c5c;
     border: 1px solid rgba(255, 60, 60, 0.25);
   }
+
+  &--stale {
+    background: rgba(255, 140, 0, 0.12);
+    color: #ff9900;
+    border: 1px solid rgba(255, 140, 0, 0.3);
+  }
 }
 
 .admin-result-footer {
@@ -522,7 +528,7 @@
 
   &__datetime {
     font-size: v.$fs-xs;
-    color: v.$text-dim;
+    color: v.$text-muted;
     white-space: nowrap;
     flex-shrink: 0;
   }

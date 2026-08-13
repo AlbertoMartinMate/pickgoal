@@ -20,9 +20,15 @@ def fetch_wc_matches():
     return resp.json().get('matches', [])
 
 
+_LIVE_COMPETITIONS = 'PPL,PD,PL,SA,BL1,FL1,CL,WC'
+
 def fetch_live_matches():
     # Include PAUSED (half-time) so we don't miss score updates during the break
-    url = f'{FOOTBALL_API_BASE}/competitions/WC/matches?status=IN_PLAY,PAUSED'
+    # Single call covering all tracked competitions
+    url = (
+        f'{FOOTBALL_API_BASE}/matches'
+        f'?competitions={_LIVE_COMPETITIONS}&status=IN_PLAY,PAUSED'
+    )
     resp = requests.get(url, headers=get_api_headers(), timeout=10)
     resp.raise_for_status()
     return resp.json().get('matches', [])

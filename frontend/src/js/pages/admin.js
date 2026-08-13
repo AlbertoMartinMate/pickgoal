@@ -563,6 +563,9 @@ function matchStatusBadge(m) {
   if (now >= kickoff && now <= twoHoursAfter) {
     return '<span class="admin-match-badge admin-match-badge--live">🔵 En juego</span>';
   }
+  if (now > twoHoursAfter) {
+    return '<span class="admin-match-badge admin-match-badge--stale">⚠️ ¿Ya se jugó? Introduce el resultado manualmente</span>';
+  }
   return '<span class="admin-match-badge admin-match-badge--pending">🟡 Pendiente</span>';
 }
 
