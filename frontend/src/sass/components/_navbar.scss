@@ -42,8 +42,7 @@
 
       @media (max-width: 480px) {
         height: 48px;
-        max-width: 48px;
-        object-fit: contain;
+        width: auto;
       }
     }
   }
