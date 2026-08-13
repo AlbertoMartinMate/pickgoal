@@ -683,6 +683,24 @@
     color: #ffd700;
     border-color: rgba(255, 215, 0, 0.25);
   }
+
+  &--win {
+    background: rgba(57, 255, 20, 0.1);
+    color: v.$accent-neon;
+    border-color: rgba(57, 255, 20, 0.25);
+  }
+
+  &--draw {
+    background: rgba(255, 200, 0, 0.1);
+    color: #ffc800;
+    border-color: rgba(255, 200, 0, 0.25);
+  }
+
+  &--loss {
+    background: rgba(255, 60, 60, 0.1);
+    color: #ff5c5c;
+    border-color: rgba(255, 60, 60, 0.25);
+  }
 }
 
 // ─── League card — finalizada ─────────────────────────────────────────────────

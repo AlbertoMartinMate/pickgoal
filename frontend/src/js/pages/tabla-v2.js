@@ -1,6 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { renderTablon } from './tablon.js';
+import { pointsModalHtml, attachPointsModal } from '../ui.js';
 
 export async function renderTablaV2(el, { query = {} } = {}) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -11,7 +12,10 @@ export async function renderTablaV2(el, { query = {} } = {}) {
 
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Clasificación</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Clasificación</h1>
+          <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
+        </div>
 
         <div class="league-tabs">
           <button class="league-tab league-tab--active" id="tabGeneral">General</button>
@@ -69,10 +73,12 @@ export async function renderTablaV2(el, { query = {} } = {}) {
         <section id="panelTablon" class="hidden">
           <div class="loading"><div class="loading__spinner"></div></div>
         </section>
+        ${pointsModalHtml()}
       </div>
     `;
 
     attachTabHandlers(me, query.tab);
+    attachPointsModal(el);
     checkTablonGeneralUnread();
     setupUserContextMenu(el, me);
 

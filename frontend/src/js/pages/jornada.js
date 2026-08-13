@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { showToast, formatDate } from '../ui.js';
+import { showToast, formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 const MAX_UNITS = 20;
 const MAX_UNITS_PER_MATCH = 5;
@@ -55,7 +55,10 @@ function renderJornadaList(el, jornadas, activeIdx) {
 
   el.innerHTML = `
     <div class="container">
-      <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)}</h1>
+      <div class="page-title-row">
+        <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)}</h1>
+        <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
+      </div>
       ${tabs}
       ${jornada.locked
         ? '<p class="notice">⚠️ El plazo de predicción ha cerrado (ya empezó el primer partido).</p>'
@@ -67,12 +70,14 @@ function renderJornadaList(el, jornadas, activeIdx) {
       <div class="jornada-matches">
         ${matches.map(matchRow).join('')}
       </div>
+      ${pointsModalHtml()}
     </div>
   `;
 
   renderUnitsCounter();
   updateLastMatchWarning();
   attachHandlers(el, jornadas, activeIdx);
+  attachPointsModal(el);
 }
 
 function emptyStateHtml() {

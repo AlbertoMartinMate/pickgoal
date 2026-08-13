@@ -671,6 +671,75 @@ def _ensure_bot_predictions_v2(app):
             _run_bot_predictions_v2(app, jornada.id)
 
 
+def notificar_jornada_disponible(app):
+    """Lunes 10:00 UTC — push a todos los usuarios: nueva jornada disponible."""
+    with app.app_context():
+        try:
+            from app import db
+            from app.models import User, Jornada
+            from app.routes.notifications import send_push_notification
+
+            jornada = (
+                Jornada.query
+                .filter(Jornada.status.in_(['active', 'upcoming']))
+                .order_by(Jornada.date_start.asc())
+                .first()
+            )
+            if not jornada:
+                logger.info('notificar_jornada_disponible: no hay jornada activa/próxima')
+                return
+
+            users = User.query.filter_by(is_bot=False).all()
+            title = '⚽ PickGoal — Nueva jornada disponible'
+            body = '¡Ya puedes hacer tus pronósticos para esta semana!'
+            total = 0
+            for user in users:
+                total += send_push_notification(user.id, title, body)
+            logger.info('notificar_jornada_disponible: %d push enviados para jornada %d', total, jornada.id)
+        except Exception as e:
+            logger.error('Error en notificar_jornada_disponible: %s', e)
+
+
+def notificar_primer_partido(app):
+    """Viernes 18:00 UTC — push si el primer partido de la jornada es hoy."""
+    with app.app_context():
+        try:
+            from app import db
+            from app.models import User, Jornada, JornadaMatch
+            from app.routes.notifications import send_push_notification
+
+            jornada = (
+                Jornada.query
+                .filter(Jornada.status.in_(['active', 'upcoming']))
+                .order_by(Jornada.date_start.asc())
+                .first()
+            )
+            if not jornada:
+                logger.info('notificar_primer_partido: no hay jornada activa/próxima')
+                return
+
+            first_match = (
+                JornadaMatch.query
+                .filter_by(jornada_id=jornada.id)
+                .filter(JornadaMatch.status == 'scheduled')
+                .order_by(JornadaMatch.match_id.asc())
+                .first()
+            )
+            if not first_match:
+                logger.info('notificar_primer_partido: no hay partidos programados')
+                return
+
+            users = User.query.filter_by(is_bot=False).all()
+            title = '🔔 PickGoal — ¡Último aviso!'
+            body = 'El primer partido de la jornada empieza hoy. Última oportunidad para predecir.'
+            total = 0
+            for user in users:
+                total += send_push_notification(user.id, title, body)
+            logger.info('notificar_primer_partido: %d push enviados para jornada %d', total, jornada.id)
+        except Exception as e:
+            logger.error('Error en notificar_primer_partido: %s', e)
+
+
 def init_scheduler(app):
     if scheduler.running:
         return
@@ -732,6 +801,20 @@ def init_scheduler(app):
         args=[app],
         trigger=CronTrigger(day_of_week='mon', hour=0, minute=5, timezone='UTC'),
         id='check_inactive_users',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=notificar_jornada_disponible,
+        args=[app],
+        trigger=CronTrigger(day_of_week='mon', hour=10, minute=0, timezone='UTC'),
+        id='notificar_jornada_disponible',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=notificar_primer_partido,
+        args=[app],
+        trigger=CronTrigger(day_of_week='fri', hour=18, minute=0, timezone='UTC'),
+        id='notificar_primer_partido',
         replace_existing=True,
     )
 

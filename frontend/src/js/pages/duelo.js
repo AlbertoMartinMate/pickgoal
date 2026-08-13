@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { formatDate } from '../ui.js';
+import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 const STATUS_META = {
   en_curso: { label: 'En curso', cls: 'duelo-status--curso' },
@@ -35,7 +35,10 @@ export async function renderDuelo(el) {
 
     el.innerHTML = `
       <div class="container">
-        <h1 class="page-title">Tu duelo esta jornada</h1>
+        <div class="page-title-row">
+          <h1 class="page-title">Tu duelo esta jornada</h1>
+          <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
+        </div>
 
         <div class="duelo-card">
           <span class="duelo-status ${statusMeta.cls}">${statusMeta.label}</span>
@@ -61,9 +64,11 @@ export async function renderDuelo(el) {
 
         <h2 class="section-title">Clasificación divisional</h2>
         <div id="divisionStandings"><div class="loading"><div class="loading__spinner"></div></div></div>
+        ${pointsModalHtml()}
       </div>
     `;
 
+    attachPointsModal(el);
     renderDivisionStandings(duelo.division_league_id, me.id);
 
   } catch (err) {
