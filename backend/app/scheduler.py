@@ -534,6 +534,18 @@ def cerrar_jornada(app):
             db.session.commit()
             _update_division_positions(jornada.id)
             logger.info('Jornada %d cerrada', jornada.number)
+
+            # Rotación de divisiones al final de cada vuelta (cada 15 jornadas)
+            from app.divisions import ROTATION_JORNADAS, TOTAL_JORNADAS, process_rotation
+            if jornada.number % ROTATION_JORNADAS == 0:
+                season = jornada.season
+                if season and season.status == 'active':
+                    is_final = (jornada.number >= TOTAL_JORNADAS)
+                    logger.info(
+                        'Jornada %d — rotación de divisiones (temporada %d, final=%s)',
+                        jornada.number, season.id, is_final,
+                    )
+                    process_rotation(season.id, close_season=is_final)
         except Exception as e:
             logger.error('Error en cerrar_jornada: %s', e)
             db.session.rollback()

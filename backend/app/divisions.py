@@ -4,7 +4,10 @@ from sqlalchemy import or_
 logger = logging.getLogger(__name__)
 
 PROMOTION_SPOTS = 4
-RELEGATION_SPOTS = 8
+RELEGATION_SPOTS = 4
+ROTATION_JORNADAS = 15   # ascensos/descensos cada N jornadas (1 vuelta)
+TOTAL_JORNADAS = 45      # temporada completa (3 vueltas)
+LEAGUE_SIZE = 16         # jugadores por liga
 
 
 def get_division_standings(league_id):
@@ -93,22 +96,23 @@ def get_division_standings(league_id):
     return standings
 
 
-def process_season_end(season_id):
+def process_rotation(season_id, close_season=False):
     """
     Promote top PROMOTION_SPOTS and relegate bottom RELEGATION_SPOTS in each
     division league of the season. Resets season counters for all members.
+    If close_season=True, marks the season as finished (last rotation).
     """
     from app import db
-    from app.models import Season, Jornada, Duelo, DivisionMember
+    from app.models import Season, Duelo, DivisionMember
 
     season = Season.query.get(season_id)
     if not season:
-        logger.warning('process_season_end: temporada %d no encontrada', season_id)
+        logger.warning('process_rotation: temporada %d no encontrada', season_id)
         return
 
     jornada_ids = [j.id for j in season.jornadas.all()]
     if not jornada_ids:
-        logger.info('process_season_end: temporada %d sin jornadas', season_id)
+        logger.info('process_rotation: temporada %d sin jornadas', season_id)
         return
 
     league_ids = {
@@ -142,6 +146,14 @@ def process_season_end(season_id):
             league_id, len(promoted_ids), len(relegated_ids)
         )
 
-    season.status = 'finished'
+    if close_season:
+        season.status = 'finished'
+        logger.info('Temporada %d cerrada', season_id)
+
     db.session.commit()
-    logger.info('Temporada %d cerrada', season_id)
+    logger.info('Rotación completada para temporada %d (close=%s)', season_id, close_season)
+
+
+def process_season_end(season_id):
+    """Alias for final rotation that closes the season."""
+    process_rotation(season_id, close_season=True)
