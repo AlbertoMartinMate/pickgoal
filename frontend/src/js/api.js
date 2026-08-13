@@ -119,6 +119,7 @@ export const api = {
 
   duelo: {
     current: () => request('/v2/duelo/current'),
+    detail: () => request('/v2/duelo/current/detail'),
   },
 
   messages: {

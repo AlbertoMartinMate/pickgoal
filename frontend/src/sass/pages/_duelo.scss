@@ -100,6 +100,101 @@
   &__text { font-size: v.$fs-sm; color: v.$text-muted; }
 }
 
+// ─── Tracker en tiempo real ───────────────────────────────────────────────────
+.duelo-tracker {
+  @include m.card;
+  padding: v.$sp-4 v.$sp-5;
+  margin-bottom: v.$sp-6;
+
+  &__inner {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  &__col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: v.$sp-2;
+    padding: v.$sp-3;
+    text-align: center;
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-dim;
+    letter-spacing: 0.1em;
+    padding: 0 v.$sp-2;
+    border-left: 1px solid v.$border;
+    border-right: 1px solid v.$border;
+  }
+
+  &__player {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  &__pts {
+    font-size: v.$fs-2xl;
+    font-weight: v.$fw-black;
+    color: v.$accent;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: v.$sp-1;
+    width: 100%;
+    margin-top: v.$sp-2;
+    border-top: 1px solid v.$border;
+    padding-top: v.$sp-2;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-1;
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+
+  &__icon { flex-shrink: 0; }
+
+  &__label {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  &__val {
+    font-variant-numeric: tabular-nums;
+    font-weight: v.$fw-semi;
+    color: v.$text;
+  }
+
+  &__note {
+    margin-top: v.$sp-2;
+    font-size: 10px;
+    color: v.$text-dim;
+    text-align: center;
+  }
+}
+
 // ─── Partido a partido (picks) ────────────────────────────────────────────────
 .duelo-matches {
   display: flex;

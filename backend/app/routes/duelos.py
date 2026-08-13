@@ -131,6 +131,77 @@ def get_current_duelo():
     }), 200
 
 
+@duelos_bp.route('/current/detail', methods=['GET'])
+@jwt_required()
+def get_current_duelo_detail():
+    user_id = int(get_jwt_identity())
+    jornada = _get_active_jornada()
+    if not jornada:
+        return jsonify({'detail': None}), 200
+
+    from sqlalchemy import or_
+    duelo = Duelo.query.filter(
+        Duelo.jornada_id == jornada.id,
+        or_(Duelo.player1_id == user_id, Duelo.player2_id == user_id)
+    ).first()
+    if not duelo:
+        return jsonify({'detail': None}), 200
+
+    is_p1 = duelo.player1_id == user_id
+    rival_id = duelo.player2_id if is_p1 else duelo.player1_id
+    is_bye = duelo.player1_id == duelo.player2_id
+
+    jm_list = (
+        JornadaMatch.query
+        .filter_by(jornada_id=jornada.id)
+        .join(JornadaMatch.match)
+        .order_by(Match.match_datetime.asc())
+        .all()
+    )
+    jm_ids = [jm.id for jm in jm_list]
+
+    def _compute(uid, reveal_unbet):
+        preds = {
+            p.jornada_match_id: p
+            for p in PredictionV2.query.filter_by(user_id=uid)
+                .filter(PredictionV2.jornada_match_id.in_(jm_ids)).all()
+        }
+        points_earned = 0.0
+        units_in_play = 0
+        total_wagered = 0
+
+        for jm in jm_list:
+            if jm.status == 'cancelled':
+                continue
+            pred = preds.get(jm.id)
+            if not pred:
+                continue
+            started = _match_started(jm.match)
+            finished = jm.match.status == 'finished'
+            total_wagered += pred.units_wagered
+            if finished:
+                points_earned += pred.points_earned or 0.0
+            elif started:
+                units_in_play += pred.units_wagered
+
+        return {
+            'points_earned': round(points_earned, 2),
+            'units_in_play': units_in_play,
+            'units_unbet': (20 - total_wagered) if reveal_unbet else None,
+        }
+
+    me_detail = _compute(user_id, reveal_unbet=True)
+    rival_detail = _compute(rival_id, reveal_unbet=False) if not is_bye else None
+
+    return jsonify({
+        'detail': {
+            'me': me_detail,
+            'rival': rival_detail,
+            'is_bye': is_bye,
+        }
+    }), 200
+
+
 def assign_duelos(jornada_id, league_id):
     """
     Assign random duelos for all members of a division league in a jornada.

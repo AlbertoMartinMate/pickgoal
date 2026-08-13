@@ -2,6 +2,12 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
 
+let _trackerInterval = null;
+
+function stopTracker() {
+  if (_trackerInterval) { clearInterval(_trackerInterval); _trackerInterval = null; }
+}
+
 const STATUS_META = {
   en_curso: { label: 'En curso', cls: 'duelo-status--curso' },
   ganado:   { label: 'Ganaste',  cls: 'duelo-status--ganado' },
@@ -10,6 +16,7 @@ const STATUS_META = {
 };
 
 export async function renderDuelo(el) {
+  stopTracker();
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
 
   try {
@@ -55,6 +62,8 @@ export async function renderDuelo(el) {
           </div>
         </div>
 
+        ${!isBye ? '<div class="duelo-tracker" id="dueloTracker"></div>' : ''}
+
         ${!isBye && duelo.matches?.length > 0 ? `
           <h2 class="section-title">Partido a partido</h2>
           <div class="duelo-matches">
@@ -70,6 +79,11 @@ export async function renderDuelo(el) {
 
     attachPointsModal(el);
     renderDivisionStandings(duelo.division_league_id, me.id);
+
+    if (!isBye) {
+      refreshTracker(me.username, rivalName);
+      _trackerInterval = setInterval(() => refreshTracker(me.username, rivalName), 60_000);
+    }
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando el duelo: ${err.message}</p></div>`;
@@ -117,6 +131,59 @@ function matchPickCard(m, rivalName) {
         </div>
       </div>
     </div>
+  `;
+}
+
+async function refreshTracker(myName, rivalName) {
+  const container = document.getElementById('dueloTracker');
+  if (!container) { stopTracker(); return; }
+
+  try {
+    const { detail } = await api.duelo.detail();
+    if (!detail) return;
+    container.innerHTML = buildTrackerHtml(detail, myName, rivalName);
+  } catch (_) {}
+}
+
+function buildTrackerHtml(detail, myName, rivalName) {
+  const { me, rival } = detail;
+
+  function col(name, d, isMe) {
+    const unbet = isMe
+      ? d.units_unbet
+      : (d.units_unbet != null ? d.units_unbet : null);
+    return `
+      <div class="duelo-tracker__col">
+        <div class="duelo-tracker__player">${name}</div>
+        <div class="duelo-tracker__pts">${(d.points_earned).toFixed(2)}</div>
+        <div class="duelo-tracker__rows">
+          <div class="duelo-tracker__row">
+            <span class="duelo-tracker__icon">✅</span>
+            <span class="duelo-tracker__label">Ganados</span>
+            <span class="duelo-tracker__val">${d.points_earned.toFixed(2)}</span>
+          </div>
+          <div class="duelo-tracker__row">
+            <span class="duelo-tracker__icon">⏳</span>
+            <span class="duelo-tracker__label">En juego</span>
+            <span class="duelo-tracker__val">${d.units_in_play > 0 ? d.units_in_play + ' u' : '—'}</span>
+          </div>
+          <div class="duelo-tracker__row">
+            <span class="duelo-tracker__icon">💰</span>
+            <span class="duelo-tracker__label">Sin apostar</span>
+            <span class="duelo-tracker__val">${unbet != null ? unbet + ' u' : '?'}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="duelo-tracker__inner">
+      ${col(myName, me, true)}
+      <div class="duelo-tracker__divider">VS</div>
+      ${col(rivalName, rival ?? { points_earned: 0, units_in_play: 0, units_unbet: null }, false)}
+    </div>
+    <div class="duelo-tracker__note">Actualizado hace unos segundos · se refresca cada minuto</div>
   `;
 }
 
