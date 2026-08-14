@@ -101,7 +101,7 @@ async function loadDueloJornada(el, jornadaInfo, me) {
 
   if (isLive) {
     try {
-      const { duelo } = await api.duelo.current();
+      const { duelo } = await api.duelo.current(jornadaInfo.jornada_id);
       if (!duelo) {
         content.innerHTML = emptyDueloHtml();
         return;
@@ -111,8 +111,8 @@ async function loadDueloJornada(el, jornadaInfo, me) {
 
       if (!jornadaInfo.is_bye) {
         const rivalName = jornadaInfo.rival?.username ?? '—';
-        refreshTracker(me.username, rivalName);
-        _trackerInterval = setInterval(() => refreshTracker(me.username, rivalName), 60_000);
+        refreshTracker(jornadaInfo.jornada_id, me.username, rivalName);
+        _trackerInterval = setInterval(() => refreshTracker(jornadaInfo.jornada_id, me.username, rivalName), 60_000);
       }
     } catch (err) {
       content.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
@@ -198,12 +198,12 @@ function emptyDueloHtml() {
 
 // ─── Tracker ──────────────────────────────────────────────────────────────────
 
-async function refreshTracker(myName, rivalName) {
+async function refreshTracker(jornadaId, myName, rivalName) {
   const container = document.getElementById('dueloTracker');
   if (!container) { stopTracker(); return; }
 
   try {
-    const { detail } = await api.duelo.detail();
+    const { detail } = await api.duelo.detail(jornadaId);
     if (!detail) return;
     container.innerHTML = buildTrackerHtml(detail, myName, rivalName);
   } catch (_) {}

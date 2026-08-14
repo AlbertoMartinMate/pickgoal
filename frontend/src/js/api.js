@@ -119,8 +119,8 @@ export const api = {
 
   duelo: {
     list: () => request('/v2/duelo/list'),
-    current: () => request('/v2/duelo/current'),
-    detail: () => request('/v2/duelo/current/detail'),
+    current: (jornadaId) => request(`/v2/duelo/current${jornadaId ? `?jornada_id=${jornadaId}` : ''}`),
+    detail: (jornadaId) => request(`/v2/duelo/current/detail${jornadaId ? `?jornada_id=${jornadaId}` : ''}`),
   },
 
   messages: {

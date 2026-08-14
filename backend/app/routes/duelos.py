@@ -86,8 +86,10 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
 @duelos_bp.route('/current', methods=['GET'])
 @jwt_required()
 def get_current_duelo():
+    from flask import request as flask_request
     user_id = int(get_jwt_identity())
-    jornada = _get_active_jornada()
+    jornada_id_param = flask_request.args.get('jornada_id', type=int)
+    jornada = Jornada.query.get(jornada_id_param) if jornada_id_param else _get_active_jornada()
     if not jornada:
         return jsonify({'duelo': None}), 200
 
@@ -186,8 +188,10 @@ def list_duelos():
 @duelos_bp.route('/current/detail', methods=['GET'])
 @jwt_required()
 def get_current_duelo_detail():
+    from flask import request as flask_request
     user_id = int(get_jwt_identity())
-    jornada = _get_active_jornada()
+    jornada_id_param = flask_request.args.get('jornada_id', type=int)
+    jornada = Jornada.query.get(jornada_id_param) if jornada_id_param else _get_active_jornada()
     if not jornada:
         return jsonify({'detail': None}), 200
 
