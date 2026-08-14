@@ -1,7 +1,7 @@
 {
-  "name": "PickGoal",
+  "name": "PickGoal — Pronósticos de Fútbol",
   "short_name": "PickGoal",
-  "description": "La quiniela oficial del Mundial de Fútbol 2026",
+  "description": "La liga de pronósticos de fútbol. Predice LaLiga, Premier League y Champions. Duelos 1vs1 y sistema de divisiones.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
