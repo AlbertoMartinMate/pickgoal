@@ -496,56 +496,86 @@ def _run_bot_predictions_v2(app, jornada_id):
             logger.error('Error en bot_predictions_v2 jornada %d: %s', jornada_id, e)
 
 
+def _close_single_jornada(jornada):
+    """
+    Cierra una jornada concreta: marca status='finished', recalcula los puntos
+    de todos los participantes (predicciones + duelos), actualiza las posiciones
+    de división y, si toca, ejecuta la rotación de divisiones.
+    Asume estar dentro de un app_context.
+    """
+    from app import db
+    from app.models import PredictionV2, Duelo
+    from app.utils import calculate_jornada_points
+
+    jornada.status = 'finished'
+    db.session.commit()
+
+    jm_ids = [jm.id for jm in jornada.jornada_matches.all()]
+
+    # All users with predictions or in duelos
+    user_ids = {
+        p.user_id for p in
+        PredictionV2.query.filter(
+            PredictionV2.jornada_match_id.in_(jm_ids)
+        ).all()
+    }
+    for duelo in Duelo.query.filter_by(jornada_id=jornada.id).all():
+        user_ids.add(duelo.player1_id)
+        user_ids.add(duelo.player2_id)
+
+    for uid in user_ids:
+        try:
+            calculate_jornada_points(uid, jornada.id, commit=False)
+        except Exception as e:
+            logger.error('Error puntos user %d jornada %d: %s', uid, jornada.id, e)
+
+    db.session.commit()
+    _update_division_positions(jornada.id)
+    logger.info('Jornada %d cerrada', jornada.number)
+
+    # Rotación de divisiones al final de cada vuelta (cada 15 jornadas)
+    from app.divisions import ROTATION_JORNADAS, TOTAL_JORNADAS, process_rotation
+    if jornada.number % ROTATION_JORNADAS == 0:
+        season = jornada.season
+        if season and season.status == 'active':
+            is_final = (jornada.number >= TOTAL_JORNADAS)
+            logger.info(
+                'Jornada %d — rotación de divisiones (temporada %d, final=%s)',
+                jornada.number, season.id, is_final,
+            )
+            process_rotation(season.id, close_season=is_final)
+
+
 def cerrar_jornada(app):
     logger.info('JOB cerrar_jornada — inicio')
     with app.app_context():
         from app import db
-        from app.models import Jornada, PredictionV2, Duelo
-        from app.utils import calculate_jornada_points
+        from app.models import Jornada
 
         try:
-            jornada = Jornada.query.filter_by(status='active').first()
-            if not jornada:
-                logger.info('cerrar_jornada: no hay jornada activa')
+            now = datetime.now(timezone.utc)
+            # Cierra toda jornada activa o próxima cuya fecha de fin ya pasó.
+            # (Antes solo miraba status='active' y una sola jornada, así que las
+            #  jornadas que se quedaban en 'upcoming' nunca se cerraban.)
+            pendientes = (
+                Jornada.query
+                .filter(
+                    Jornada.status.in_(['active', 'upcoming']),
+                    Jornada.date_end < now,
+                )
+                .order_by(Jornada.number.asc())
+                .all()
+            )
+            if not pendientes:
+                logger.info('cerrar_jornada: no hay jornadas pendientes de cierre')
                 return
 
-            jornada.status = 'finished'
-            db.session.commit()
-
-            jm_ids = [jm.id for jm in jornada.jornada_matches.all()]
-
-            # All users with predictions or in duelos
-            user_ids = {
-                p.user_id for p in
-                PredictionV2.query.filter(
-                    PredictionV2.jornada_match_id.in_(jm_ids)
-                ).all()
-            }
-            for duelo in Duelo.query.filter_by(jornada_id=jornada.id).all():
-                user_ids.add(duelo.player1_id)
-                user_ids.add(duelo.player2_id)
-
-            for uid in user_ids:
+            for jornada in pendientes:
                 try:
-                    calculate_jornada_points(uid, jornada.id, commit=False)
+                    _close_single_jornada(jornada)
                 except Exception as e:
-                    logger.error('Error puntos user %d jornada %d: %s', uid, jornada.id, e)
-
-            db.session.commit()
-            _update_division_positions(jornada.id)
-            logger.info('Jornada %d cerrada', jornada.number)
-
-            # Rotación de divisiones al final de cada vuelta (cada 15 jornadas)
-            from app.divisions import ROTATION_JORNADAS, TOTAL_JORNADAS, process_rotation
-            if jornada.number % ROTATION_JORNADAS == 0:
-                season = jornada.season
-                if season and season.status == 'active':
-                    is_final = (jornada.number >= TOTAL_JORNADAS)
-                    logger.info(
-                        'Jornada %d — rotación de divisiones (temporada %d, final=%s)',
-                        jornada.number, season.id, is_final,
-                    )
-                    process_rotation(season.id, close_season=is_final)
+                    logger.error('Error cerrando jornada %d: %s', jornada.id, e)
+                    db.session.rollback()
         except Exception as e:
             logger.error('Error en cerrar_jornada: %s', e)
             db.session.rollback()

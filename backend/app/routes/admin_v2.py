@@ -193,6 +193,36 @@ def publish_jornada(jornada_id):
     }), 200
 
 
+# ─── POST /api/v2/admin/jornada/<id>/close ──────────────────────────────────
+
+@admin_v2_bp.route('/jornada/<int:jornada_id>/close', methods=['POST'])
+@jwt_required()
+def close_jornada(jornada_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jornada = db.session.get(Jornada, jornada_id)
+    if not jornada:
+        return jsonify({'error': 'Jornada no encontrada'}), 404
+    if jornada.status not in ('upcoming', 'active'):
+        return jsonify({
+            'error': f'La jornada está en estado {jornada.status}, no se puede cerrar'
+        }), 400
+    if jornada.date_end.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+        return jsonify({'error': 'La jornada aún no ha terminado'}), 400
+
+    from app.scheduler import _close_single_jornada
+    try:
+        _close_single_jornada(jornada)
+    except Exception as e:
+        logger.exception('[close] jornada %d: fallo', jornada.id)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+    return jsonify({'message': f'Jornada {jornada.number} cerrada'}), 200
+
+
 # ─── GET /api/v2/admin/jornadas ──────────────────────────────────────────────
 
 @admin_v2_bp.route('/jornadas', methods=['GET'])

@@ -299,6 +299,8 @@ function jornadaRow(j) {
 
   const d = (iso) => iso ? new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' }) : '—';
   const canEditResults = j.status === 'upcoming' || j.status === 'active' || j.status === 'finished';
+  const terminada = j.date_end && new Date(j.date_end) < new Date();
+  const cerrable = terminada && (j.status === 'upcoming' || j.status === 'active');
 
   return `
     <div class="jv2-row" data-jornada-id="${j.id}">
@@ -316,6 +318,9 @@ function jornadaRow(j) {
         ` : ''}
         ${canEditResults ? `
           <button class="btn btn--ghost btn--xs jv2-results-btn" data-id="${j.id}" data-num="${j.number}">Resultados</button>
+        ` : ''}
+        ${cerrable ? `
+          <button class="btn btn--danger btn--xs jv2-close-btn" data-id="${j.id}" data-num="${j.number}">Cerrar jornada</button>
         ` : ''}
       </div>
     </div>
@@ -364,6 +369,23 @@ function attachJornadasEvents(container) {
         showToast(err.message, 'error');
         btn.disabled = false;
         btn.textContent = 'Publicar';
+      }
+    });
+  });
+
+  container.querySelectorAll('.jv2-close-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`¿Cerrar jornada ${btn.dataset.num}? Se calcularán los puntos y se resolverán los duelos. Esta acción es irreversible.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Cerrando…';
+      try {
+        const res = await api.adminV2.closeJornada(btn.dataset.id);
+        showToast(res.message || `Jornada ${btn.dataset.num} cerrada`);
+        await loadJornadasV2(document.getElementById('jornadasV2Section'));
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Cerrar jornada';
       }
     });
   });
