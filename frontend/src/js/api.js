@@ -107,6 +107,7 @@ export const api = {
     jornadaMatches: (id) => request(`/v2/admin/jornada/${id}/matches`),
     setResultado: (jmId, data) => request(`/v2/admin/jornada-match/${jmId}/resultado`, { method: 'POST', body: JSON.stringify(data) }),
     cancelMatch: (jmId) => request(`/v2/admin/jornada-match/${jmId}/cancel`, { method: 'POST' }),
+    generateBots: () => request('/v2/admin/bots/generate', { method: 'POST' }),
   },
 
   jornada: {

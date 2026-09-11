@@ -22,6 +22,12 @@ export async function renderAdmin(el) {
           <p class="admin-section__desc">Sincroniza el calendario cada 24h y actualiza partidos en vivo cada 5 min.</p>
           <button class="btn btn--primary" id="btnSync">Sincronizar ahora</button>
           <div id="syncResult"></div>
+          <p class="admin-section__desc" style="margin-top:12px">
+            El scheduler de Render (plan gratuito) no siempre despierta a tiempo — usa este botón si alguna
+            jornada se queda sin predicciones de bots.
+          </p>
+          <button class="btn btn--ghost" id="btnGenerateBots">🤖 Generar predicciones bots</button>
+          <div id="generateBotsResult"></div>
         </section>
 
         <section class="section admin-section">
@@ -103,6 +109,23 @@ function attachEvents(el) {
     } catch (err) {
       res.textContent = `Error: ${err.message}`;
       showToast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('btnGenerateBots')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btnGenerateBots');
+    const res = document.getElementById('generateBotsResult');
+    btn.disabled = true;
+    res.textContent = 'Generando…';
+    try {
+      const { message } = await api.adminV2.generateBots();
+      res.textContent = `✓ ${message}`;
+      showToast(message);
+    } catch (err) {
+      res.textContent = `Error: ${err.message}`;
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
     }
   });
 

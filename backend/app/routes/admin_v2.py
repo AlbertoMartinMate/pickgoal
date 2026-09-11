@@ -223,6 +223,48 @@ def close_jornada(jornada_id):
     return jsonify({'message': f'Jornada {jornada.number} cerrada'}), 200
 
 
+# ─── POST /api/v2/admin/bots/generate ───────────────────────────────────────
+# Alternativa manual al scheduler (poco fiable en el plan gratuito de Render):
+# genera las predicciones de bots que falten en toda jornada no-draft y, si
+# ya estaba finalizada, recalcula puntos/posiciones para que cuenten.
+
+@admin_v2_bp.route('/bots/generate', methods=['POST'])
+@jwt_required()
+def generate_bots_all():
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    from app.bots import generate_bot_predictions_v2
+    from app.scheduler import _recalculate_all_points
+
+    jornadas = Jornada.query.filter(Jornada.status.in_(['upcoming', 'active', 'finished'])).all()
+    detalle = []
+    for jornada in jornadas:
+        jm_ids = [jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()]
+        if not jm_ids:
+            continue
+        before = PredictionV2.query.filter(PredictionV2.jornada_match_id.in_(jm_ids)).count()
+        try:
+            generate_bot_predictions_v2(jornada.id)
+        except Exception as e:
+            logger.exception('[bots/generate] jornada %d: fallo', jornada.id)
+            db.session.rollback()
+            continue
+        added = PredictionV2.query.filter(PredictionV2.jornada_match_id.in_(jm_ids)).count() - before
+
+        if added and jornada.status == 'finished':
+            _recalculate_all_points(jornada)
+
+        if added:
+            detalle.append({'jornada': jornada.number, 'predicciones_creadas': added})
+
+    return jsonify({
+        'message': f'Predicciones de bots generadas en {len(detalle)} jornada(s)',
+        'detalle': detalle,
+    }), 200
+
+
 # ─── GET /api/v2/admin/jornadas ──────────────────────────────────────────────
 
 @admin_v2_bp.route('/jornadas', methods=['GET'])

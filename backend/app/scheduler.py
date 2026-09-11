@@ -496,19 +496,15 @@ def _run_bot_predictions_v2(app, jornada_id):
             logger.error('Error en bot_predictions_v2 jornada %d: %s', jornada_id, e)
 
 
-def _close_single_jornada(jornada):
+def _recalculate_all_points(jornada):
     """
-    Cierra una jornada concreta: marca status='finished', recalcula los puntos
-    de todos los participantes (predicciones + duelos), actualiza las posiciones
-    de división y, si toca, ejecuta la rotación de divisiones.
+    Recalcula los puntos de todos los participantes (predicciones + duelos) de
+    una jornada y actualiza las posiciones de división. No toca jornada.status.
     Asume estar dentro de un app_context.
     """
     from app import db
     from app.models import PredictionV2, Duelo
     from app.utils import calculate_jornada_points
-
-    jornada.status = 'finished'
-    db.session.commit()
 
     jm_ids = [jm.id for jm in jornada.jornada_matches.all()]
 
@@ -531,6 +527,20 @@ def _close_single_jornada(jornada):
 
     db.session.commit()
     _update_division_positions(jornada.id)
+
+
+def _close_single_jornada(jornada):
+    """
+    Cierra una jornada concreta: marca status='finished', recalcula puntos y
+    posiciones de división y, si toca, ejecuta la rotación de divisiones.
+    Asume estar dentro de un app_context.
+    """
+    from app import db
+
+    jornada.status = 'finished'
+    db.session.commit()
+
+    _recalculate_all_points(jornada)
     logger.info('Jornada %d cerrada', jornada.number)
 
     # Rotación de divisiones al final de cada vuelta (cada 15 jornadas)
