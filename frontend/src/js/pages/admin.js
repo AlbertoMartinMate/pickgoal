@@ -278,7 +278,24 @@ const COMP_LABELS = {
   BL1: '🇩🇪 Bundesliga',
   FL1: '🇫🇷 Ligue 1',
   PPL: '🇵🇹 Primeira Liga',
+  DED: '🇳🇱 Eredivisie',
+  ELC: '🇪🇸 LaLiga 2',
+  CDR: '🇪🇸 Copa del Rey',
+  UNL: '🌍 UEFA Nations League',
+  EC2024: '🌍 Eliminatorias Europa',
+  CLI: '🌎 Amistosos internacionales',
+  BSA: '🇧🇷 Brasileirao',
+  MLS: '🇺🇸 MLS',
 };
+
+const COMP_GROUPS = [
+  { key: 'principales',  label: '📌 Principales',  expandable: false, defaultChecked: true,  codes: ['PD', 'PL', 'CL'] },
+  { key: 'europa',       label: '🌍 Europa',       expandable: true,  defaultChecked: false, codes: ['BL1', 'SA', 'FL1', 'PPL', 'DED'] },
+  { key: 'espana',       label: '🇪🇸 España',       expandable: true,  defaultChecked: false, codes: ['ELC', 'CDR'] },
+  { key: 'selecciones',  label: '🌎 Selecciones',  expandable: true,  defaultChecked: false, codes: ['UNL', 'EC2024', 'CLI'] },
+  { key: 'otras',        label: '⚽ Otras ligas',   expandable: true,  defaultChecked: false, codes: ['BSA', 'MLS'] },
+];
+
 let _selectedMatches = [];   // {api_id, home_team, away_team, match_datetime, competition_code}
 let _editingJornadaId = null;
 
@@ -337,8 +354,13 @@ function renderJornadasPanel(jornadas) {
               <label class="form__label" style="font-size:11px">Hasta</label>
               <input class="form__input" type="date" id="jv2DateTo" style="width:150px" />
             </div>
-            <button class="btn btn--ghost btn--sm" id="btnBuscarPartidos" type="button">Buscar partidos</button>
           </div>
+
+          <div class="jv2-comp-filter-groups" id="jv2CompGroups">
+            ${renderCompFilterGroups()}
+          </div>
+
+          <button class="btn btn--ghost btn--sm" id="btnBuscarPartidos" type="button" style="align-self:flex-start">Buscar partidos</button>
         </div>
 
         <div id="jv2MatchPicker" style="display:none">
@@ -356,6 +378,32 @@ function renderJornadasPanel(jornadas) {
       </div>
     </div>
   `;
+}
+
+function renderCompFilterGroups() {
+  return COMP_GROUPS.map(g => {
+    const chips = g.codes.map(c => `<span class="jv2-comp-filter-chip">${COMP_LABELS[c] || c}</span>`).join('');
+    const check = `
+      <label class="jv2-comp-filter-check">
+        <input type="checkbox" class="jv2-group-check" data-group="${g.key}" ${g.defaultChecked ? 'checked' : ''} />
+        <span>${g.label}</span>
+      </label>
+    `;
+    if (!g.expandable) {
+      return `
+        <div class="jv2-comp-filter-group jv2-comp-filter-group--main">
+          ${check}
+          <div class="jv2-comp-filter-group__list">${chips}</div>
+        </div>
+      `;
+    }
+    return `
+      <details class="jv2-comp-filter-group jv2-comp-filter-group--collapsible">
+        <summary class="jv2-comp-filter-group__summary">${check}</summary>
+        <div class="jv2-comp-filter-group__list">${chips}</div>
+      </details>
+    `;
+  }).join('');
 }
 
 function jornadaRow(j) {
@@ -489,8 +537,12 @@ function attachJornadasEvents(container) {
     });
   });
 
-  container.querySelector('#jv2DateStart')?.addEventListener('change', syncDateRangeDefaults);
-  container.querySelector('#jv2DateEnd')?.addEventListener('change', syncDateRangeDefaults);
+  container.querySelector('#jv2DateStart')?.addEventListener('input', syncDateRangeDefaults);
+  container.querySelector('#jv2DateEnd')?.addEventListener('input', syncDateRangeDefaults);
+
+  container.querySelectorAll('.jv2-group-check').forEach(cb => {
+    cb.addEventListener('click', (e) => e.stopPropagation());
+  });
 }
 
 function syncDateRangeDefaults() {
@@ -528,10 +580,14 @@ async function buscarPartidos() {
   if (!dateFrom || !dateTo) { showToast('Selecciona el rango de fechas (Desde / Hasta)', 'error'); return; }
   if (dateFrom > dateTo) { showToast('"Desde" no puede ser posterior a "Hasta"', 'error'); return; }
 
+  const selectedGroupKeys = Array.from(document.querySelectorAll('.jv2-group-check:checked')).map(cb => cb.dataset.group);
+  const codes = COMP_GROUPS.filter(g => selectedGroupKeys.includes(g.key)).flatMap(g => g.codes);
+  if (codes.length === 0) { showToast('Selecciona al menos un grupo de competiciones', 'error'); return; }
+
   btn.disabled = true;
   btn.textContent = 'Buscando…';
   try {
-    const { matches } = await api.adminV2.partidos(dateFrom, dateTo);
+    const { matches } = await api.adminV2.partidos(dateFrom, dateTo, codes);
     renderMatchPicker(matches);
     document.getElementById('jv2MatchPicker').style.display = 'block';
   } catch (err) {

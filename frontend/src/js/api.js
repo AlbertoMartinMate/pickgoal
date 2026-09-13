@@ -97,7 +97,7 @@ export const api = {
   },
 
   adminV2: {
-    partidos: (dateFrom, dateTo) => request(`/v2/admin/partidos-disponibles?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`),
+    partidos: (dateFrom, dateTo, competitions) => request(`/v2/admin/partidos-disponibles?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}${competitions && competitions.length ? `&competitions=${encodeURIComponent(competitions.join(','))}` : ''}`),
     jornadas: () => request('/v2/admin/jornadas'),
     createJornada: (data) => request('/v2/admin/jornada', { method: 'POST', body: JSON.stringify(data) }),
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

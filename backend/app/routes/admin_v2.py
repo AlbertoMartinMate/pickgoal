@@ -14,13 +14,21 @@ admin_v2_bp = Blueprint('admin_v2', __name__)
 logger = logging.getLogger(__name__)
 
 COMP_META = {
-    'PD':  {'name': 'LaLiga',             'weight': 8,  'max_per_jornada': 4},
-    'PL':  {'name': 'Premier League',     'weight': 8,  'max_per_jornada': 4},
-    'CL':  {'name': 'Champions League',   'weight': 10, 'max_per_jornada': 4, 'max_display': 5},
-    'SA':  {'name': 'Serie A',            'weight': 7,  'max_per_jornada': 4},
-    'BL1': {'name': 'Bundesliga',         'weight': 7,  'max_per_jornada': 4},
-    'FL1': {'name': 'Ligue 1',            'weight': 6,  'max_per_jornada': 4},
-    'PPL': {'name': 'Primeira Liga',      'weight': 6,  'max_per_jornada': 4},
+    'PD':  {'name': 'LaLiga',                     'weight': 8,  'max_per_jornada': 4},
+    'PL':  {'name': 'Premier League',             'weight': 8,  'max_per_jornada': 4},
+    'CL':  {'name': 'Champions League',           'weight': 10, 'max_per_jornada': 4, 'max_display': 5},
+    'SA':  {'name': 'Serie A',                    'weight': 7,  'max_per_jornada': 4},
+    'BL1': {'name': 'Bundesliga',                 'weight': 7,  'max_per_jornada': 4},
+    'FL1': {'name': 'Ligue 1',                    'weight': 6,  'max_per_jornada': 4},
+    'PPL': {'name': 'Primeira Liga',              'weight': 6,  'max_per_jornada': 4},
+    'DED': {'name': 'Eredivisie',                 'weight': 6,  'max_per_jornada': 4},
+    'ELC': {'name': 'LaLiga 2',                   'weight': 5,  'max_per_jornada': 4},
+    'CDR': {'name': 'Copa del Rey',                'weight': 6,  'max_per_jornada': 4},
+    'UNL': {'name': 'UEFA Nations League',        'weight': 7,  'max_per_jornada': 4},
+    'EC2024': {'name': 'Eliminatorias Europa',    'weight': 7,  'max_per_jornada': 4},
+    'CLI': {'name': 'Amistosos internacionales',  'weight': 4,  'max_per_jornada': 4},
+    'BSA': {'name': 'Brasileirao',                'weight': 6,  'max_per_jornada': 4},
+    'MLS': {'name': 'MLS',                        'weight': 5,  'max_per_jornada': 4},
 }
 
 
@@ -63,6 +71,15 @@ def partidos_disponibles():
     except ValueError:
         return jsonify({'error': 'Formato de fecha inválido. Usa YYYY-MM-DD'}), 400
 
+    competitions_param = request.args.get('competitions', '').strip()
+    if competitions_param:
+        comp_codes = [c.strip().upper() for c in competitions_param.split(',') if c.strip()]
+        unknown = [c for c in comp_codes if c not in COMP_META]
+        if unknown:
+            return jsonify({'error': f'Competición(es) desconocida(s): {", ".join(unknown)}'}), 400
+    else:
+        comp_codes = list(COMP_META.keys())
+
     import os
     import requests as req
 
@@ -70,7 +87,7 @@ def partidos_disponibles():
     headers = {'X-Auth-Token': os.environ.get('FOOTBALL_API_KEY', '')}
 
     result = {}
-    for code in COMP_META:
+    for code in comp_codes:
         try:
             resp = req.get(
                 f'{base}/competitions/{code}/matches',

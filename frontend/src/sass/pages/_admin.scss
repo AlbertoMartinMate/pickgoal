@@ -451,6 +451,61 @@
   }
 }
 
+.jv2-comp-filter-groups {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+}
+
+.jv2-comp-filter-group {
+  border: 1px solid v.$border;
+  border-radius: v.$r-md;
+  padding: v.$sp-3;
+  background: v.$bg-surface;
+
+  &--main {
+    border-color: rgba(v.$accent, 0.25);
+  }
+
+  &__summary {
+    cursor: pointer;
+  }
+
+  &__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: v.$sp-2;
+    margin-top: v.$sp-2;
+  }
+}
+
+.jv2-comp-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$sp-2;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  color: v.$text;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    accent-color: v.$accent;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+}
+
+.jv2-comp-filter-chip {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: v.$r-full;
+  font-size: v.$fs-xs;
+  color: v.$text-muted;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid v.$border;
+}
+
 .jv2-match-list {
   display: flex;
   flex-direction: column;
