@@ -303,6 +303,43 @@
   }
 }
 
+// ─── Checklist semanal ───────────────────────────────────────────────────────
+.jv2-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-2;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    padding: v.$sp-3 v.$sp-4;
+    background: v.$bg-surface;
+    border: 1px solid v.$border;
+    border-radius: v.$r-md;
+
+    &--ok { border-color: rgba(v.$accent, 0.3); }
+    &--pending { border-color: rgba(v.$warning, 0.3); }
+  }
+
+  &__icon {
+    font-size: v.$fs-base;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-semi;
+    color: v.$text;
+    flex-shrink: 0;
+  }
+
+  &__detail {
+    font-size: v.$fs-xs;
+    color: v.$text-muted;
+  }
+}
+
 // ─── Jornadas V2 ─────────────────────────────────────────────────────────────
 .jv2-panel {
   display: flex;

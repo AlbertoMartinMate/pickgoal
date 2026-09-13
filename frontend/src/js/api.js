@@ -97,7 +97,7 @@ export const api = {
   },
 
   adminV2: {
-    partidos: (semana) => request(`/v2/admin/partidos-disponibles?semana=${encodeURIComponent(semana)}`),
+    partidos: (dateFrom, dateTo) => request(`/v2/admin/partidos-disponibles?date_from=${encodeURIComponent(dateFrom)}&date_to=${encodeURIComponent(dateTo)}`),
     jornadas: () => request('/v2/admin/jornadas'),
     createJornada: (data) => request('/v2/admin/jornada', { method: 'POST', body: JSON.stringify(data) }),
     updateJornada: (id, data) => request(`/v2/admin/jornada/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -108,6 +108,7 @@ export const api = {
     setResultado: (jmId, data) => request(`/v2/admin/jornada-match/${jmId}/resultado`, { method: 'POST', body: JSON.stringify(data) }),
     cancelMatch: (jmId) => request(`/v2/admin/jornada-match/${jmId}/cancel`, { method: 'POST' }),
     generateBots: () => request('/v2/admin/bots/generate', { method: 'POST' }),
+    weeklyChecklist: () => request('/v2/admin/weekly-checklist'),
   },
 
   jornada: {

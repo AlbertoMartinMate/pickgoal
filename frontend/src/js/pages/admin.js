@@ -17,6 +17,13 @@ export async function renderAdmin(el) {
       <div class="container">
         <h1 class="page-title">Panel de Administración</h1>
 
+        <section class="section admin-section" id="weeklyChecklistSection">
+          <h2 class="admin-section__title">Estado de la semana</h2>
+          <div id="weeklyChecklistContent">
+            <div class="loading"><div class="loading__spinner"></div></div>
+          </div>
+        </section>
+
         <section class="section admin-section">
           <h2 class="admin-section__title">Scheduler</h2>
           <p class="admin-section__desc">Sincroniza el calendario cada 24h y actualiza partidos en vivo cada 5 min.</p>
@@ -92,6 +99,7 @@ export async function renderAdmin(el) {
 
     attachEvents(el);
     loadJornadasV2(el);
+    loadWeeklyChecklist(el);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error: ${err.message}</p></div>`;
@@ -226,6 +234,40 @@ function userRow(u) {
   `;
 }
 
+// ─── Estado de la semana (checklist) ─────────────────────────────────────────
+
+async function loadWeeklyChecklist(el) {
+  const container = document.getElementById('weeklyChecklistContent');
+  if (!container) return;
+  try {
+    const { checklist } = await api.adminV2.weeklyChecklist();
+    container.innerHTML = renderChecklist(checklist);
+  } catch (err) {
+    container.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
+  }
+}
+
+function checklistItem(ok, label, detalle) {
+  return `
+    <div class="jv2-checklist__item ${ok ? 'jv2-checklist__item--ok' : 'jv2-checklist__item--pending'}">
+      <span class="jv2-checklist__icon">${ok ? '✅' : '⏳'}</span>
+      <span class="jv2-checklist__label">${label}</span>
+      <span class="jv2-checklist__detail">${detalle}</span>
+    </div>
+  `;
+}
+
+function renderChecklist(c) {
+  return `
+    <div class="jv2-checklist">
+      ${checklistItem(c.jornada_publicada.ok, 'Jornada actual publicada', c.jornada_publicada.detalle)}
+      ${checklistItem(c.predicciones_bots.ok, 'Predicciones bots generadas', c.predicciones_bots.detalle)}
+      ${checklistItem(c.jornada_anterior_cerrada.ok, 'Jornada anterior cerrada', c.jornada_anterior_cerrada.detalle)}
+      ${checklistItem(c.resultados_sincronizados.ok, 'Resultados sincronizados', c.resultados_sincronizados.detalle)}
+    </div>
+  `;
+}
+
 // ─── Gestión de Jornadas V2 ──────────────────────────────────────────────────
 
 const COMP_LABELS = {
@@ -253,9 +295,6 @@ async function loadJornadasV2(el) {
 }
 
 function renderJornadasPanel(jornadas) {
-  const today = new Date();
-  const nextWeek = nextIsoWeek(today);
-
   return `
     <div class="jv2-panel">
       <div class="jv2-panel__actions">
@@ -288,9 +327,16 @@ function renderJornadasPanel(jornadas) {
         </div>
 
         <div class="jv2-form__week-row">
-          <label class="form__label">Semana de partidos</label>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input class="form__input" type="week" id="jv2Week" value="${nextWeek}" style="width:180px" />
+          <label class="form__label">Buscar partidos por rango de fechas</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div class="form__group" style="min-width:0">
+              <label class="form__label" style="font-size:11px">Desde</label>
+              <input class="form__input" type="date" id="jv2DateFrom" style="width:150px" />
+            </div>
+            <div class="form__group" style="min-width:0">
+              <label class="form__label" style="font-size:11px">Hasta</label>
+              <input class="form__input" type="date" id="jv2DateTo" style="width:150px" />
+            </div>
             <button class="btn btn--ghost btn--sm" id="btnBuscarPartidos" type="button">Buscar partidos</button>
           </div>
         </div>
@@ -324,6 +370,8 @@ function jornadaRow(j) {
   const canEditResults = j.status === 'upcoming' || j.status === 'active' || j.status === 'finished';
   const terminada = j.date_end && new Date(j.date_end) < new Date();
   const cerrable = terminada && (j.status === 'upcoming' || j.status === 'active');
+  const canEdit = j.status !== 'finished';
+  const canDelete = j.status !== 'finished';
 
   return `
     <div class="jv2-row" data-jornada-id="${j.id}">
@@ -336,14 +384,18 @@ function jornadaRow(j) {
       <div class="jv2-row__actions">
         ${j.status === 'draft' ? `
           <button class="btn btn--primary btn--xs jv2-pub-btn" data-id="${j.id}" data-num="${j.number}">Publicar</button>
+        ` : ''}
+        ${canEdit ? `
           <button class="btn btn--ghost btn--xs jv2-edit-btn" data-id="${j.id}">Editar</button>
-          <button class="btn btn--danger btn--xs jv2-del-btn" data-id="${j.id}" data-num="${j.number}">Eliminar</button>
         ` : ''}
         ${canEditResults ? `
           <button class="btn btn--ghost btn--xs jv2-results-btn" data-id="${j.id}" data-num="${j.number}">Resultados</button>
         ` : ''}
         ${cerrable ? `
           <button class="btn btn--danger btn--xs jv2-close-btn" data-id="${j.id}" data-num="${j.number}">Cerrar jornada</button>
+        ` : ''}
+        ${canDelete ? `
+          <button class="btn btn--danger btn--xs jv2-del-btn" data-id="${j.id}" data-num="${j.number}">🗑️ Eliminar</button>
         ` : ''}
       </div>
     </div>
@@ -360,6 +412,8 @@ function attachJornadasEvents(container) {
     document.getElementById('jv2Number').value = '';
     document.getElementById('jv2DateStart').value = '';
     document.getElementById('jv2DateEnd').value = '';
+    document.getElementById('jv2DateFrom').value = '';
+    document.getElementById('jv2DateTo').value = '';
     document.getElementById('jv2MatchPicker').style.display = 'none';
     document.getElementById('jv2Form').style.display = 'block';
     updateCounter();
@@ -419,16 +473,33 @@ function attachJornadasEvents(container) {
 
   container.querySelectorAll('.jv2-del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm(`¿Eliminar jornada ${btn.dataset.num}?`)) return;
+      if (!confirm(`¿Eliminar la jornada ${btn.dataset.num}?`)) return;
+      if (!confirm('¿Seguro? Esta acción eliminará la jornada y todos sus partidos')) return;
+      btn.disabled = true;
+      btn.textContent = 'Eliminando…';
       try {
         await api.adminV2.deleteJornada(btn.dataset.id);
         showToast('Jornada eliminada');
-        loadJornadasV2(document.querySelector('#jornadasV2Content').parentElement.parentElement);
+        await loadJornadasV2(document.getElementById('jornadasV2Section'));
       } catch (err) {
         showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = '🗑️ Eliminar';
       }
     });
   });
+
+  container.querySelector('#jv2DateStart')?.addEventListener('change', syncDateRangeDefaults);
+  container.querySelector('#jv2DateEnd')?.addEventListener('change', syncDateRangeDefaults);
+}
+
+function syncDateRangeDefaults() {
+  const start = document.getElementById('jv2DateStart')?.value;
+  const end = document.getElementById('jv2DateEnd')?.value;
+  const from = document.getElementById('jv2DateFrom');
+  const to = document.getElementById('jv2DateTo');
+  if (from && start) from.value = start.slice(0, 10);
+  if (to && end) to.value = end.slice(0, 10);
 }
 
 async function abrirEdicion(id) {
@@ -443,6 +514,8 @@ async function abrirEdicion(id) {
   document.getElementById('jv2Number').value = j.number;
   if (j.date_start) document.getElementById('jv2DateStart').value = j.date_start.slice(0, 16);
   if (j.date_end)   document.getElementById('jv2DateEnd').value   = j.date_end.slice(0, 16);
+  if (j.date_start) document.getElementById('jv2DateFrom').value = j.date_start.slice(0, 10);
+  if (j.date_end)   document.getElementById('jv2DateTo').value   = j.date_end.slice(0, 10);
   document.getElementById('jv2MatchPicker').style.display = 'none';
   document.getElementById('jv2Form').style.display = 'block';
   updateCounter();
@@ -450,13 +523,15 @@ async function abrirEdicion(id) {
 
 async function buscarPartidos() {
   const btn = document.getElementById('btnBuscarPartidos');
-  const semana = document.getElementById('jv2Week').value;
-  if (!semana) { showToast('Selecciona una semana', 'error'); return; }
+  const dateFrom = document.getElementById('jv2DateFrom').value;
+  const dateTo = document.getElementById('jv2DateTo').value;
+  if (!dateFrom || !dateTo) { showToast('Selecciona el rango de fechas (Desde / Hasta)', 'error'); return; }
+  if (dateFrom > dateTo) { showToast('"Desde" no puede ser posterior a "Hasta"', 'error'); return; }
 
   btn.disabled = true;
   btn.textContent = 'Buscando…';
   try {
-    const { matches } = await api.adminV2.partidos(semana);
+    const { matches } = await api.adminV2.partidos(dateFrom, dateTo);
     renderMatchPicker(matches);
     document.getElementById('jv2MatchPicker').style.display = 'block';
   } catch (err) {
@@ -526,16 +601,21 @@ async function guardarJornada() {
   if (!number || !date_start || !date_end) {
     showToast('Completa número y fechas', 'error'); return;
   }
-  if (_selectedMatches.length !== 10) {
+  if (!editId && _selectedMatches.length !== 10) {
     showToast('Selecciona exactamente 10 partidos', 'error'); return;
+  }
+  if (editId && _selectedMatches.length > 0 && _selectedMatches.length !== 10) {
+    showToast('Si cambias los partidos, selecciona exactamente 10', 'error'); return;
   }
 
   const payload = {
     number,
     date_start: new Date(date_start).toISOString(),
     date_end:   new Date(date_end).toISOString(),
-    matches: _selectedMatches,
   };
+  if (_selectedMatches.length === 10) {
+    payload.matches = _selectedMatches;
+  }
 
   const btn = document.getElementById('btnGuardarJornada');
   btn.disabled = true;
@@ -736,20 +816,4 @@ async function reloadResultsPanel(jornadaId) {
   } catch (err) {
     showToast(`Error recargando: ${err.message}`, 'error');
   }
-}
-
-function isoWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-}
-
-function nextIsoWeek(date) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + 7);
-  const yyyy = next.getFullYear();
-  const ww = String(isoWeek(next)).padStart(2, '0');
-  return `${yyyy}-W${ww}`;
 }

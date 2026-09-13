@@ -4,11 +4,11 @@ Todos los endpoints requieren JWT y usuario admin.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import User, Match, Jornada, JornadaMatch, Season, Competition, PredictionV2
+from app.models import User, Match, Jornada, JornadaMatch, Season, Competition, PredictionV2, Duelo
 
 admin_v2_bp = Blueprint('admin_v2', __name__)
 logger = logging.getLogger(__name__)
@@ -43,14 +43,7 @@ def _get_or_create_competition(code):
     return comp
 
 
-def _week_range(semana: str):
-    """'YYYY-WW' → (date_from: date, date_to: date) Monday–Sunday."""
-    monday = datetime.strptime(f'{semana}-1', '%G-W%V-%u').date()
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-
-# ─── GET /api/v2/admin/partidos-disponibles?semana=YYYY-WW ───────────────────
+# ─── GET /api/v2/admin/partidos-disponibles?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD ─
 
 @admin_v2_bp.route('/partidos-disponibles', methods=['GET'])
 @jwt_required()
@@ -59,14 +52,16 @@ def partidos_disponibles():
     if err:
         return err, code
 
-    semana = request.args.get('semana', '').strip()
-    if not semana:
-        return jsonify({'error': 'Parámetro semana requerido (YYYY-WW)'}), 400
+    date_from_str = request.args.get('date_from', '').strip()
+    date_to_str = request.args.get('date_to', '').strip()
+    if not date_from_str or not date_to_str:
+        return jsonify({'error': 'Parámetros date_from y date_to requeridos (YYYY-MM-DD)'}), 400
 
     try:
-        date_from, date_to = _week_range(semana)
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
     except ValueError:
-        return jsonify({'error': 'Formato de semana inválido. Usa YYYY-WW'}), 400
+        return jsonify({'error': 'Formato de fecha inválido. Usa YYYY-MM-DD'}), 400
 
     import os
     import requests as req
@@ -94,7 +89,7 @@ def partidos_disponibles():
             logging.getLogger(__name__).warning('Error fetching %s: %s', code, e)
 
     total = sum(len(v) for v in result.values())
-    return jsonify({'semana': semana, 'date_from': date_from.isoformat(),
+    return jsonify({'date_from': date_from.isoformat(),
                     'date_to': date_to.isoformat(), 'matches': result, 'total': total})
 
 
@@ -265,6 +260,69 @@ def generate_bots_all():
     }), 200
 
 
+# ─── GET /api/v2/admin/weekly-checklist ─────────────────────────────────────
+
+@admin_v2_bp.route('/weekly-checklist', methods=['GET'])
+@jwt_required()
+def weekly_checklist():
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    now = datetime.now(timezone.utc)
+    now_naive = now.replace(tzinfo=None)
+
+    current = Jornada.query.filter(Jornada.status.in_(['upcoming', 'active'])) \
+        .order_by(Jornada.date_start.asc()).first()
+
+    checklist = {
+        'jornada_publicada': {
+            'ok': current is not None,
+            'detalle': f'Jornada {current.number} publicada' if current else 'No hay jornada publicada actualmente',
+        }
+    }
+
+    if current:
+        jm_list = JornadaMatch.query.filter_by(jornada_id=current.id).all()
+        jm_ids = [jm.id for jm in jm_list]
+        bot_ids = [u.id for u in User.query.filter_by(is_bot=True).all()]
+
+        bots_con_prediccion = 0
+        if jm_ids and bot_ids:
+            bots_con_prediccion = db.session.query(PredictionV2.user_id).filter(
+                PredictionV2.jornada_match_id.in_(jm_ids),
+                PredictionV2.user_id.in_(bot_ids),
+            ).distinct().count()
+
+        checklist['predicciones_bots'] = {
+            'ok': bool(bot_ids) and bots_con_prediccion >= len(bot_ids),
+            'detalle': f'{bots_con_prediccion}/{len(bot_ids)} bots con predicciones en jornada {current.number}',
+        }
+
+        pendientes = [jm for jm in jm_list
+                      if jm.match.match_datetime.replace(tzinfo=timezone.utc) < now
+                      and jm.status == 'scheduled']
+        checklist['resultados_sincronizados'] = {
+            'ok': len(pendientes) == 0,
+            'detalle': f'{len(pendientes)} partido(s) sin resultado' if pendientes else 'Todos los resultados al día',
+        }
+    else:
+        checklist['predicciones_bots'] = {'ok': False, 'detalle': 'Sin jornada publicada'}
+        checklist['resultados_sincronizados'] = {'ok': False, 'detalle': 'Sin jornada publicada'}
+
+    overdue = Jornada.query.filter(
+        Jornada.status.in_(['upcoming', 'active']),
+        Jornada.date_end < now_naive,
+    ).all()
+    checklist['jornada_anterior_cerrada'] = {
+        'ok': len(overdue) == 0,
+        'detalle': 'No hay jornadas pendientes de cerrar' if not overdue else
+                   f'Jornada(s) {", ".join(str(j.number) for j in overdue)} pendiente(s) de cerrar',
+    }
+
+    return jsonify({'checklist': checklist})
+
+
 # ─── GET /api/v2/admin/jornadas ──────────────────────────────────────────────
 
 @admin_v2_bp.route('/jornadas', methods=['GET'])
@@ -343,8 +401,8 @@ def update_jornada(jornada_id):
     jornada = db.session.get(Jornada, jornada_id)
     if not jornada:
         return jsonify({'error': 'Jornada no encontrada'}), 404
-    if jornada.status != 'draft':
-        return jsonify({'error': 'Solo se pueden editar jornadas en estado draft'}), 400
+    if jornada.status == 'finished':
+        return jsonify({'error': 'No se puede editar una jornada finalizada'}), 400
 
     data = request.get_json() or {}
     if 'date_start' in data:
@@ -358,7 +416,10 @@ def update_jornada(jornada_id):
     if matches_payload is not None:
         if len(matches_payload) != 10:
             return jsonify({'error': 'Debes seleccionar exactamente 10 partidos'}), 400
-        JornadaMatch.query.filter_by(jornada_id=jornada.id).delete()
+        jm_ids = [jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()]
+        if jm_ids:
+            PredictionV2.query.filter(PredictionV2.jornada_match_id.in_(jm_ids)).delete(synchronize_session=False)
+        JornadaMatch.query.filter_by(jornada_id=jornada.id).delete(synchronize_session=False)
         _upsert_jornada_matches(jornada.id, matches_payload)
 
     db.session.commit()
@@ -366,7 +427,7 @@ def update_jornada(jornada_id):
     return jsonify({'jornada': {**jornada.to_dict(), 'match_count': match_count}})
 
 
-# ─── DELETE /api/v2/admin/jornada/<id> (solo drafts) ────────────────────────
+# ─── DELETE /api/v2/admin/jornada/<id> (cualquier estado salvo finished) ────
 
 @admin_v2_bp.route('/jornada/<int:jornada_id>', methods=['DELETE'])
 @jwt_required()
@@ -378,10 +439,14 @@ def delete_jornada(jornada_id):
     jornada = db.session.get(Jornada, jornada_id)
     if not jornada:
         return jsonify({'error': 'Jornada no encontrada'}), 404
-    if jornada.status != 'draft':
-        return jsonify({'error': 'Solo se pueden eliminar jornadas en estado draft'}), 400
+    if jornada.status == 'finished':
+        return jsonify({'error': 'No se puede eliminar una jornada finalizada'}), 400
 
-    JornadaMatch.query.filter_by(jornada_id=jornada.id).delete()
+    jm_ids = [jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()]
+    if jm_ids:
+        PredictionV2.query.filter(PredictionV2.jornada_match_id.in_(jm_ids)).delete(synchronize_session=False)
+    Duelo.query.filter_by(jornada_id=jornada.id).delete(synchronize_session=False)
+    JornadaMatch.query.filter_by(jornada_id=jornada.id).delete(synchronize_session=False)
     db.session.delete(jornada)
     db.session.commit()
     return jsonify({'message': f'Jornada {jornada.number} eliminada'})
