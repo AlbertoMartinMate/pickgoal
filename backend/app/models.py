@@ -101,6 +101,8 @@ class Match(db.Model):
     last_updated = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id'), nullable=True)
     importance_score = db.Column(db.Float, nullable=True)
+    is_manual = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
+    result_type = db.Column(db.String(10))  # '90min', 'et', 'pen'
 
     predictions = db.relationship('Prediction', backref='match', lazy='dynamic', cascade='all, delete-orphan')
 
@@ -125,6 +127,8 @@ class Match(db.Model):
             'home_score_final': self.home_score_final,
             'away_score_final': self.away_score_final,
             'result_90': self.result_90,
+            'result_type': self.result_type,
+            'is_manual': self.is_manual,
             'last_updated': self.last_updated.isoformat() if self.last_updated else None,
         }
 

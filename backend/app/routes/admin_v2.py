@@ -4,6 +4,7 @@ Todos los endpoints requieren JWT y usuario admin.
 """
 
 import logging
+import time
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -497,6 +498,8 @@ def get_jornada_matches_admin(jornada_id):
             'home_score_90': m.home_score_90,
             'away_score_90': m.away_score_90,
             'result_90': m.result_90,
+            'result_type': m.result_type,
+            'is_manual': m.is_manual,
             'odds_1': jm.odds_1,
             'odds_x': jm.odds_x,
             'odds_2': jm.odds_2,
@@ -523,6 +526,7 @@ def set_jornada_match_resultado(jm_id):
     home = data.get('home_score')
     away = data.get('away_score')
     result_90_override = data.get('result_90')
+    result_type = data.get('result_type')
 
     if home is None or away is None:
         return jsonify({'error': 'Se requieren home_score y away_score'}), 400
@@ -532,6 +536,8 @@ def set_jornada_match_resultado(jm_id):
         return jsonify({'error': 'Los marcadores deben ser números enteros'}), 400
     if result_90_override is not None and result_90_override not in ('1', 'X', '2'):
         return jsonify({'error': 'result_90 debe ser 1, X o 2'}), 400
+    if result_type is not None and result_type not in ('90min', 'et', 'pen'):
+        return jsonify({'error': 'result_type debe ser 90min, et o pen'}), 400
 
     from app.utils import recalculate_v2_for_match, compute_result_90
 
@@ -541,6 +547,8 @@ def set_jornada_match_resultado(jm_id):
     match.home_score_final = home
     match.away_score_final = away
     match.result_90 = result_90_override if result_90_override is not None else compute_result_90(home, away)
+    match.result_type = result_type or '90min'
+    match.is_manual = True
     match.status = 'finished'
     jm.status = 'finished'
     db.session.commit()
@@ -576,6 +584,65 @@ def cancel_jornada_match(jm_id):
     db.session.commit()
 
     return jsonify({'message': f'Partido cancelado. {len(user_ids)} usuario(s) afectado(s).'}), 200
+
+
+# ─── POST /api/v2/admin/jornada/<id>/match/manual ───────────────────────────
+
+@admin_v2_bp.route('/jornada/<int:jornada_id>/match/manual', methods=['POST'])
+@jwt_required()
+def add_manual_match(jornada_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jornada = db.session.get(Jornada, jornada_id)
+    if not jornada:
+        return jsonify({'error': 'Jornada no encontrada'}), 404
+    if jornada.status == 'finished':
+        return jsonify({'error': 'No se puede añadir partidos a una jornada finalizada'}), 400
+
+    data = request.get_json() or {}
+    home_team = (data.get('home_team') or '').strip()
+    away_team = (data.get('away_team') or '').strip()
+    dt_str = data.get('match_datetime', '')
+    comp_code = data.get('competition_code', 'CLI')
+
+    if not home_team or not away_team:
+        return jsonify({'error': 'home_team y away_team son obligatorios'}), 400
+
+    try:
+        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00')).replace(tzinfo=None)
+    except (ValueError, AttributeError):
+        return jsonify({'error': 'match_datetime inválido (usa ISO 8601)'}), 400
+
+    comp = _get_or_create_competition(comp_code)
+
+    # Synthetic api_id: negative millisecond timestamp (unique, never collides with real API IDs)
+    temp_api_id = -int(time.time() * 1000)
+    match = Match(
+        api_id=temp_api_id,
+        phase='group',
+        home_team=home_team,
+        away_team=away_team,
+        match_datetime=dt,
+        status='scheduled',
+        competition_id=comp.id,
+        is_manual=True,
+    )
+    db.session.add(match)
+    db.session.flush()
+    match.api_id = -match.id  # stable negative ID based on PK
+
+    if not JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first():
+        db.session.add(JornadaMatch(jornada_id=jornada_id, match_id=match.id))
+
+    db.session.commit()
+
+    return jsonify({
+        'message': 'Partido manual añadido',
+        'match_id': match.id,
+        'jornada_match_id': JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first().id,
+    }), 201
 
 
 # ─── Helper ──────────────────────────────────────────────────────────────────

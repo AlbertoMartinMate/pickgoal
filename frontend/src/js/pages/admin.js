@@ -736,7 +736,8 @@ function matchStatusBadge(m) {
     const score = (m.home_score_90 != null && m.away_score_90 != null)
       ? ` ${m.home_score_90}–${m.away_score_90}`
       : '';
-    return `<span class="admin-match-badge admin-match-badge--done">🟢 Finalizado${score}</span>`;
+    const manualTag = m.is_manual ? ' <span class="admin-match-badge admin-match-badge--manual">🔒 Manual</span>' : '';
+    return `<span class="admin-match-badge admin-match-badge--done">🟢 Finalizado${score}</span>${manualTag}`;
   }
   const now = Date.now();
   const kickoff = new Date(m.match_datetime).getTime();
@@ -761,6 +762,17 @@ function renderResultsPanel(matches, jornadaId) {
   return `
     <div class="jv2-results-toolbar">
       <button class="btn btn--ghost btn--xs jv2-sync-btn" data-jornada-id="${jornadaId}">🔄 Sincronizar resultados ahora</button>
+      <button class="btn btn--ghost btn--xs jv2-add-manual-btn">➕ Partido manual</button>
+    </div>
+    <div class="jv2-manual-form" style="display:none">
+      <div class="jv2-manual-form__fields">
+        <input type="text" class="form__input jv2-manual-home" placeholder="Equipo local" maxlength="60" />
+        <span class="jv2-manual-form__vs">vs</span>
+        <input type="text" class="form__input jv2-manual-away" placeholder="Equipo visitante" maxlength="60" />
+        <input type="datetime-local" class="form__input jv2-manual-dt" />
+        <button class="btn btn--primary btn--xs jv2-manual-save-btn">Añadir</button>
+        <button class="btn btn--ghost btn--xs jv2-manual-cancel-btn">Cancelar</button>
+      </div>
     </div>
     <div class="jv2-results-table">
       ${sorted.map(m => {
@@ -787,6 +799,11 @@ function renderResultsPanel(matches, jornadaId) {
                   <option value="X" ${m.result_90 === 'X' ? 'selected' : ''}>X</option>
                   <option value="2" ${m.result_90 === '2' ? 'selected' : ''}>2</option>
                 </select>
+                <select class="form__input jv2-result-type-select" style="width:72px" title="Tipo de resultado">
+                  <option value="90min" ${(m.result_type ?? '90min') === '90min' ? 'selected' : ''}>90 min</option>
+                  <option value="et" ${m.result_type === 'et' ? 'selected' : ''}>Prórroga</option>
+                  <option value="pen" ${m.result_type === 'pen' ? 'selected' : ''}>Penaltis</option>
+                </select>
                 <button class="btn btn--primary btn--xs jv2-save-result-btn" data-jm-id="${m.jornada_match_id}">Guardar</button>
                 <button class="btn btn--danger btn--xs jv2-cancel-match-btn" data-jm-id="${m.jornada_match_id}" data-home="${m.home_team}" data-away="${m.away_team}">Cancelar</button>
               `}
@@ -799,6 +816,41 @@ function renderResultsPanel(matches, jornadaId) {
 }
 
 function attachResultsEvents(panel, jornadaId) {
+  panel.querySelector('.jv2-add-manual-btn')?.addEventListener('click', () => {
+    const form = panel.querySelector('.jv2-manual-form');
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  });
+
+  panel.querySelector('.jv2-manual-cancel-btn')?.addEventListener('click', () => {
+    panel.querySelector('.jv2-manual-form').style.display = 'none';
+  });
+
+  panel.querySelector('.jv2-manual-save-btn')?.addEventListener('click', async () => {
+    const home = panel.querySelector('.jv2-manual-home').value.trim();
+    const away = panel.querySelector('.jv2-manual-away').value.trim();
+    const dt   = panel.querySelector('.jv2-manual-dt').value;
+
+    if (!home || !away) { showToast('Introduce los dos equipos', 'error'); return; }
+    if (!dt)             { showToast('Introduce la fecha y hora', 'error'); return; }
+
+    const saveBtn = panel.querySelector('.jv2-manual-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '…';
+    try {
+      await api.adminV2.addManualMatch(jornadaId, {
+        home_team: home,
+        away_team: away,
+        match_datetime: new Date(dt).toISOString(),
+      });
+      showToast('Partido manual añadido');
+      await reloadResultsPanel(jornadaId);
+    } catch (err) {
+      showToast(err.message, 'error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Añadir';
+    }
+  });
+
   panel.querySelector('.jv2-sync-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true;
@@ -818,9 +870,10 @@ function attachResultsEvents(panel, jornadaId) {
     btn.addEventListener('click', async () => {
       const jmId = btn.dataset.jmId;
       const row = panel.querySelector(`.jv2-results-row[data-jm-id="${jmId}"]`);
-      const homeVal = row.querySelector('.jv2-score-input[data-side="home"]')?.value;
-      const awayVal = row.querySelector('.jv2-score-input[data-side="away"]')?.value;
-      const r90Val  = row.querySelector('.jv2-r90-select')?.value || undefined;
+      const homeVal       = row.querySelector('.jv2-score-input[data-side="home"]')?.value;
+      const awayVal       = row.querySelector('.jv2-score-input[data-side="away"]')?.value;
+      const r90Val        = row.querySelector('.jv2-r90-select')?.value || undefined;
+      const resultTypeVal = row.querySelector('.jv2-result-type-select')?.value || '90min';
 
       if (homeVal === '' || awayVal === '') {
         showToast('Introduce los dos marcadores', 'error');
@@ -830,7 +883,7 @@ function attachResultsEvents(panel, jornadaId) {
       btn.disabled = true;
       btn.textContent = '…';
       try {
-        const payload = { home_score: parseInt(homeVal), away_score: parseInt(awayVal) };
+        const payload = { home_score: parseInt(homeVal), away_score: parseInt(awayVal), result_type: resultTypeVal };
         if (r90Val) payload.result_90 = r90Val;
         await api.adminV2.setResultado(jmId, payload);
         showToast('Resultado guardado y puntos recalculados');

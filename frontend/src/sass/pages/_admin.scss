@@ -288,6 +288,12 @@
     color: #ff9900;
     border: 1px solid rgba(255, 140, 0, 0.3);
   }
+
+  &--manual {
+    background: rgba(160, 100, 255, 0.12);
+    color: #b87fff;
+    border: 1px solid rgba(160, 100, 255, 0.3);
+  }
 }
 
 .admin-result-footer {
@@ -588,7 +594,39 @@
 .jv2-results-toolbar {
   display: flex;
   justify-content: flex-end;
+  gap: v.$sp-2;
   margin-bottom: v.$sp-3;
+}
+
+.jv2-manual-form {
+  margin-bottom: v.$sp-3;
+  padding: v.$sp-3;
+  background: v.$bg-surface;
+  border: 1px solid rgba(160, 100, 255, 0.3);
+  border-radius: v.$r-md;
+
+  &__fields {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-2;
+    flex-wrap: wrap;
+  }
+
+  &__vs {
+    color: var(--text-muted, #888);
+    font-size: v.$fs-sm;
+    flex-shrink: 0;
+  }
+
+  .form__input {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  input[type="datetime-local"] {
+    flex: 0 0 auto;
+    min-width: 160px;
+  }
 }
 
 .jv2-results-table {

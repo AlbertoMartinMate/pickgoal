@@ -58,12 +58,13 @@ def sync_full_calendar(app):
                     if away_team != 'TBD' or existing.away_team == 'TBD':
                         existing.away_team = away_team
                     existing.match_datetime = dt
-                    existing.status = status
-                    existing.home_score_90 = home_90
-                    existing.away_score_90 = away_90
-                    existing.home_score_final = home_final
-                    existing.away_score_final = away_final
-                    existing.result_90 = result
+                    if not existing.is_manual:
+                        existing.status = status
+                        existing.home_score_90 = home_90
+                        existing.away_score_90 = away_90
+                        existing.home_score_final = home_final
+                        existing.away_score_final = away_final
+                        existing.result_90 = result
                 else:
                     new_match = Match(
                         api_id=api_id, phase=phase, group_name=group_name,
@@ -109,6 +110,8 @@ def sync_live_matches(app):
             for m in live_data:
                 existing = Match.query.filter_by(api_id=m['id']).first()
                 if not existing:
+                    continue
+                if existing.is_manual:
                     continue
                 prev_status = existing.status
                 existing.status = map_api_status(m['status'])
