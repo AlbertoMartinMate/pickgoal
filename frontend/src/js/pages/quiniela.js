@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { showToast, formatDate, leagueGateHtml, pointsModalHtml, attachPointsModal } from '../ui.js';
 
-const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final']);
+const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw']);
 
 let _openPointsModal = null;
 

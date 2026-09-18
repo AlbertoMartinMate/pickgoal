@@ -9,6 +9,7 @@ const PHASE_SHORT_LABELS = {
   semis: 'Semis',
   third: '3º y 4º',
   final: 'Final',
+  no_draw: 'Sin empate',
 };
 
 let editMode = false;

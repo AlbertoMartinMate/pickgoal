@@ -82,7 +82,7 @@ class User(db.Model):
 class Match(db.Model):
     __tablename__ = 'matches'
 
-    PHASES = ['group', 'r32', 'r16', 'quarters', 'semis', 'third', 'final']
+    PHASES = ['group', 'r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw']
     STATUSES = ['scheduled', 'live', 'finished']
 
     id = db.Column(db.Integer, primary_key=True)

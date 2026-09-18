@@ -117,7 +117,7 @@ function matchTag(m) {
     : `<span class="tag tag--open">Abierto hasta ${formatDateTime(m.opens_until)}</span>`;
 }
 
-const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final']);
+const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw']);
 
 function matchRow(m) {
   const cancelled = m.jm_status === 'cancelled';

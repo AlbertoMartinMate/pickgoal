@@ -766,10 +766,36 @@ function renderResultsPanel(matches, jornadaId) {
     </div>
     <div class="jv2-manual-form" style="display:none">
       <div class="jv2-manual-form__fields">
-        <input type="text" class="form__input jv2-manual-home" placeholder="Equipo local" maxlength="60" />
+        <input type="text" class="form__input jv2-manual-home" placeholder="Equipo / Jugador local" maxlength="60" />
         <span class="jv2-manual-form__vs">vs</span>
-        <input type="text" class="form__input jv2-manual-away" placeholder="Equipo visitante" maxlength="60" />
+        <input type="text" class="form__input jv2-manual-away" placeholder="Equipo / Jugador visitante" maxlength="60" />
         <input type="datetime-local" class="form__input jv2-manual-dt" />
+      </div>
+      <div class="jv2-manual-form__type-row">
+        <label class="jv2-manual-form__type-label">Tipo:</label>
+        <label class="jv2-manual-form__type-option">
+          <input type="radio" name="jv2-manual-type-${jornadaId}" class="jv2-manual-type" value="1x2" checked /> 1X2 (con empate)
+        </label>
+        <label class="jv2-manual-form__type-option">
+          <input type="radio" name="jv2-manual-type-${jornadaId}" class="jv2-manual-type" value="12" /> 12 (sin empate — tenis, NBA…)
+        </label>
+      </div>
+      <div class="jv2-manual-form__odds-row">
+        <span class="jv2-manual-form__odds-label">Cuotas:</span>
+        <label class="jv2-manual-form__odds-item">
+          <span>1</span>
+          <input type="number" class="form__input jv2-manual-odds1" step="0.01" min="1" max="99" placeholder="2.50" style="width:72px" />
+        </label>
+        <label class="jv2-manual-form__odds-item jv2-manual-oddsx-wrap">
+          <span>X</span>
+          <input type="number" class="form__input jv2-manual-oddsx" step="0.01" min="1" max="99" placeholder="3.20" style="width:72px" />
+        </label>
+        <label class="jv2-manual-form__odds-item">
+          <span>2</span>
+          <input type="number" class="form__input jv2-manual-odds2" step="0.01" min="1" max="99" placeholder="2.80" style="width:72px" />
+        </label>
+      </div>
+      <div class="jv2-manual-form__actions">
         <button class="btn btn--primary btn--xs jv2-manual-save-btn">Añadir</button>
         <button class="btn btn--ghost btn--xs jv2-manual-cancel-btn">Cancelar</button>
       </div>
@@ -825,10 +851,23 @@ function attachResultsEvents(panel, jornadaId) {
     panel.querySelector('.jv2-manual-form').style.display = 'none';
   });
 
+  // Toggle odds_x visibility when type changes
+  panel.querySelectorAll('.jv2-manual-type').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const noX = panel.querySelector('.jv2-manual-type:checked')?.value === '12';
+      const xWrap = panel.querySelector('.jv2-manual-oddsx-wrap');
+      if (xWrap) xWrap.style.display = noX ? 'none' : '';
+    });
+  });
+
   panel.querySelector('.jv2-manual-save-btn')?.addEventListener('click', async () => {
-    const home = panel.querySelector('.jv2-manual-home').value.trim();
-    const away = panel.querySelector('.jv2-manual-away').value.trim();
-    const dt   = panel.querySelector('.jv2-manual-dt').value;
+    const home    = panel.querySelector('.jv2-manual-home').value.trim();
+    const away    = panel.querySelector('.jv2-manual-away').value.trim();
+    const dt      = panel.querySelector('.jv2-manual-dt').value;
+    const noDraw  = panel.querySelector('.jv2-manual-type:checked')?.value === '12';
+    const odds1   = panel.querySelector('.jv2-manual-odds1').value;
+    const oddsx   = panel.querySelector('.jv2-manual-oddsx').value;
+    const odds2   = panel.querySelector('.jv2-manual-odds2').value;
 
     if (!home || !away) { showToast('Introduce los dos equipos', 'error'); return; }
     if (!dt)             { showToast('Introduce la fecha y hora', 'error'); return; }
@@ -837,11 +876,17 @@ function attachResultsEvents(panel, jornadaId) {
     saveBtn.disabled = true;
     saveBtn.textContent = '…';
     try {
-      await api.adminV2.addManualMatch(jornadaId, {
+      const payload = {
         home_team: home,
         away_team: away,
         match_datetime: new Date(dt).toISOString(),
-      });
+        no_draw: noDraw,
+      };
+      if (odds1) payload.odds_1 = parseFloat(odds1);
+      if (!noDraw && oddsx) payload.odds_x = parseFloat(oddsx);
+      if (odds2) payload.odds_2 = parseFloat(odds2);
+
+      await api.adminV2.addManualMatch(jornadaId, payload);
       showToast('Partido manual añadido');
       await reloadResultsPanel(jornadaId);
     } catch (err) {

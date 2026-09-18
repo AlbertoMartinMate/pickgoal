@@ -604,12 +604,18 @@
   background: v.$bg-surface;
   border: 1px solid rgba(160, 100, 255, 0.3);
   border-radius: v.$r-md;
+  display: flex;
+  flex-direction: column;
+  gap: v.$sp-3;
 
   &__fields {
     display: flex;
     align-items: center;
     gap: v.$sp-2;
     flex-wrap: wrap;
+
+    .form__input { flex: 1; min-width: 120px; }
+    input[type="datetime-local"] { flex: 0 0 auto; min-width: 160px; }
   }
 
   &__vs {
@@ -618,14 +624,50 @@
     flex-shrink: 0;
   }
 
-  .form__input {
-    flex: 1;
-    min-width: 120px;
+  &__type-row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+    font-size: v.$fs-sm;
   }
 
-  input[type="datetime-local"] {
-    flex: 0 0 auto;
-    min-width: 160px;
+  &__type-label {
+    color: v.$text-muted;
+    flex-shrink: 0;
+  }
+
+  &__type-option {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-1;
+    cursor: pointer;
+    color: v.$text;
+  }
+
+  &__odds-row {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-3;
+    flex-wrap: wrap;
+    font-size: v.$fs-sm;
+  }
+
+  &__odds-label {
+    color: v.$text-muted;
+    flex-shrink: 0;
+  }
+
+  &__odds-item {
+    display: flex;
+    align-items: center;
+    gap: v.$sp-1;
+    font-weight: v.$fw-semi;
+  }
+
+  &__actions {
+    display: flex;
+    gap: v.$sp-2;
   }
 }
 

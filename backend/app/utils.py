@@ -78,7 +78,7 @@ def parse_match_datetime(utc_str: str) -> datetime:
     return datetime.fromisoformat(utc_str).replace(tzinfo=timezone.utc)
 
 
-KNOCKOUT_PHASES = {'r32', 'r16', 'quarters', 'semis', 'third', 'final'}
+KNOCKOUT_PHASES = {'r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw'}
 
 
 def compute_result_90(home: int, away: int) -> str:
