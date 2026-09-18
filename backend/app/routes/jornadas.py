@@ -56,6 +56,7 @@ def _build_jornada_payload(jornada, user_id):
             'home_team': match.home_team,
             'away_team': match.away_team,
             'match_datetime': dt_utc.isoformat(),
+            'phase': match.phase,
             'status': match.status,
             'jm_status': jm.status,
             'result_90': match.result_90,
@@ -146,8 +147,11 @@ def save_prediction():
     if jm.match.is_locked():
         return jsonify({'error': 'Este partido ya está bloqueado'}), 403
 
-    if predicted_result not in ('1', 'X', '2'):
-        return jsonify({'error': 'Resultado inválido'}), 400
+    from app.utils import KNOCKOUT_PHASES
+    is_knockout = jm.match.phase in KNOCKOUT_PHASES
+    valid_results = ('1', '2') if is_knockout else ('1', 'X', '2')
+    if predicted_result not in valid_results:
+        return jsonify({'error': 'Resultado inválido' + (' (fase knockout: solo 1 o 2)' if is_knockout else '')}), 400
 
     if not isinstance(units, int) or units < 0 or units > MAX_UNITS_PER_MATCH:
         return jsonify({'error': f'Unidades inválidas (0-{MAX_UNITS_PER_MATCH})'}), 400

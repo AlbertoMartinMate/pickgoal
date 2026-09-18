@@ -539,15 +539,19 @@ def set_jornada_match_resultado(jm_id):
     if result_type is not None and result_type not in ('90min', 'et', 'pen'):
         return jsonify({'error': 'result_type debe ser 90min, et o pen'}), 400
 
-    from app.utils import recalculate_v2_for_match, compute_result_90
+    from app.utils import recalculate_v2_for_match, compute_match_result
 
     match = jm.match
     match.home_score_90 = home
     match.away_score_90 = away
     match.home_score_final = home
     match.away_score_final = away
-    match.result_90 = result_90_override if result_90_override is not None else compute_result_90(home, away)
-    match.result_type = result_type or '90min'
+    effective_result_type = result_type or '90min'
+    if result_90_override is not None:
+        match.result_90 = result_90_override
+    else:
+        match.result_90 = compute_match_result(match.phase, home, away, home, away)
+    match.result_type = effective_result_type
     match.is_manual = True
     match.status = 'finished'
     jm.status = 'finished'

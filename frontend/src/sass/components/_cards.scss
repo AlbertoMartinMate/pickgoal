@@ -115,11 +115,25 @@
   border: 1px solid rgba(v.$accent, 0.2);
 }
 
+.jornada-match__knockout-label {
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-semi;
+  color: v.$text-muted;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: v.$sp-1;
+}
+
 .result-selector {
   display: flex;
   gap: v.$sp-2;
   justify-content: center;
   width: 100%;
+
+  &--knockout &__option {
+    width: 72px;
+  }
 
   &__option {
     display: flex;

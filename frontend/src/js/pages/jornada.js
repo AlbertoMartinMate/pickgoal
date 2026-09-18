@@ -117,10 +117,13 @@ function matchTag(m) {
     : `<span class="tag tag--open">Abierto hasta ${formatDateTime(m.opens_until)}</span>`;
 }
 
+const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final']);
+
 function matchRow(m) {
   const cancelled = m.jm_status === 'cancelled';
   const locked = m.predict_locked;
   const s = state[m.jornada_match_id] ?? { predicted_result: null, units: 0 };
+  const isKnockout = KNOCKOUT_PHASES.has(m.phase);
 
   return `
     <div class="match-card jornada-match ${locked ? 'match-card--locked' : ''} ${cancelled ? 'match-card--cancelled' : ''}" data-jm-id="${m.jornada_match_id}">
@@ -140,12 +143,13 @@ function matchRow(m) {
       </div>
       <div class="jornada-odds">
         <span class="jornada-odds__item"><b>1</b> (${formatOdds(m.odds_1)})</span>
-        <span class="jornada-odds__item"><b>X</b> (${formatOdds(m.odds_x)})</span>
+        ${!isKnockout ? `<span class="jornada-odds__item"><b>X</b> (${formatOdds(m.odds_x)})</span>` : ''}
         <span class="jornada-odds__item"><b>2</b> (${formatOdds(m.odds_2)})</span>
       </div>
       <div class="jornada-match__controls ${locked ? 'jornada-match__controls--disabled' : ''}">
-        <div class="result-selector">
-          ${['1', 'X', '2'].map(r => `
+        ${isKnockout ? `<p class="jornada-match__knockout-label">Ganador</p>` : ''}
+        <div class="result-selector ${isKnockout ? 'result-selector--knockout' : ''}">
+          ${(isKnockout ? ['1', '2'] : ['1', 'X', '2']).map(r => `
             <label class="result-selector__option">
               <input type="radio" name="result-${m.jornada_match_id}" value="${r}" ${s.predicted_result === r ? 'checked' : ''} ${locked ? 'disabled' : ''} />
               ${r}
@@ -227,8 +231,10 @@ function attachHandlers(el, jornadas, activeIdx) {
 async function savePrediction(jmId) {
   const s = state[jmId];
 
+  const matchData = currentJornadaData?.matches?.find(m => m.jornada_match_id === parseInt(jmId));
+  const isKo = matchData && KNOCKOUT_PHASES.has(matchData.phase);
   if (!s.predicted_result) {
-    showToast('Selecciona un resultado 1X2', 'error');
+    showToast(isKo ? 'Selecciona el ganador (1 o 2)' : 'Selecciona un resultado 1X2', 'error');
     return;
   }
   if (totalUnits > MAX_UNITS) {

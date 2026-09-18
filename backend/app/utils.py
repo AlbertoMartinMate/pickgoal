@@ -78,12 +78,27 @@ def parse_match_datetime(utc_str: str) -> datetime:
     return datetime.fromisoformat(utc_str).replace(tzinfo=timezone.utc)
 
 
+KNOCKOUT_PHASES = {'r32', 'r16', 'quarters', 'semis', 'third', 'final'}
+
+
 def compute_result_90(home: int, away: int) -> str:
     if home > away:
         return '1'
     elif home == away:
         return 'X'
     return '2'
+
+
+def compute_match_result(phase: str, home_90: int, away_90: int,
+                         home_final: int = None, away_final: int = None) -> str:
+    """For knockout phases use final scores (winner); for group use 90-min result."""
+    if phase in KNOCKOUT_PHASES:
+        hf = home_final if home_final is not None else home_90
+        af = away_final if away_final is not None else away_90
+        if hf is None or af is None:
+            return compute_result_90(home_90, away_90)
+        return '1' if hf > af else '2'
+    return compute_result_90(home_90, away_90)
 
 
 def calculate_prediction_points(prediction, match):

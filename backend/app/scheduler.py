@@ -15,7 +15,7 @@ def sync_full_calendar(app):
         from app import db
         from app.models import Match
         from app.utils import (fetch_wc_matches, map_api_phase, map_api_status,
-                               parse_match_datetime, compute_result_90)
+                               parse_match_datetime, compute_result_90, compute_match_result)
         try:
             matches_data = fetch_wc_matches()
             for m in matches_data:
@@ -46,7 +46,7 @@ def sync_full_calendar(app):
                         away_final = (away_90 or 0) + 1
                         home_final = home_90
 
-                result = compute_result_90(home_90, away_90) if home_90 is not None and status == 'finished' else None
+                result = compute_match_result(phase, home_90, away_90, home_final, away_final) if home_90 is not None and status == 'finished' else None
 
                 if existing:
                     existing.phase = phase
@@ -89,8 +89,8 @@ def sync_live_matches(app):
         from app import db
         from app.models import Match
         from app.utils import (fetch_live_matches, fetch_match_by_api_id,
-                               map_api_status, compute_result_90,
-                               recalculate_match_predictions)
+                               map_api_status, compute_result_90, compute_match_result,
+                               KNOCKOUT_PHASES, recalculate_match_predictions)
         try:
             live_data = fetch_live_matches()
             live_api_ids = {m['id'] for m in live_data}
@@ -115,12 +115,17 @@ def sync_live_matches(app):
                     continue
                 prev_status = existing.status
                 existing.status = map_api_status(m['status'])
-                score = m.get('score', {}).get('fullTime', {})
-                existing.home_score_90 = score.get('home')
-                existing.away_score_90 = score.get('away')
+                score = m.get('score', {})
+                full_time = score.get('fullTime', {})
+                penalties = score.get('penalties', {})
+                existing.home_score_90 = full_time.get('home')
+                existing.away_score_90 = full_time.get('away')
+                home_final = penalties.get('home') if penalties.get('home') is not None else existing.home_score_90
+                away_final = penalties.get('away') if penalties.get('away') is not None else existing.away_score_90
                 if existing.home_score_90 is not None:
-                    existing.result_90 = compute_result_90(
-                        existing.home_score_90, existing.away_score_90
+                    existing.result_90 = compute_match_result(
+                        existing.phase, existing.home_score_90, existing.away_score_90,
+                        home_final, away_final
                     )
                 if prev_status != 'finished' and existing.status == 'finished':
                     db.session.commit()
