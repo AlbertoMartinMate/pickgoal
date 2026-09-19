@@ -665,6 +665,8 @@ def add_manual_match(jornada_id):
             away_team=away_team,
             match_datetime=dt,
             status='scheduled',
+            result_type='12' if no_draw else '1X2',
+            last_updated=datetime.utcnow(),
             competition_id=comp.id,
             is_manual=True,
         )
@@ -698,88 +700,6 @@ def add_manual_match(jornada_id):
         'match_id': match.id,
         'jornada_match_id': jm.id,
     }), 201
-
-
-# ─── POST /api/v2/admin/debug/match-insert ───────────────────────────────────
-# Endpoint temporal de diagnóstico — eliminar tras resolver el 500 en match/manual
-
-@admin_v2_bp.route('/debug/match-insert', methods=['POST'])
-@jwt_required()
-def debug_match_insert():
-    user, err, code = _require_admin()
-    if err:
-        return err, code
-
-    import re
-
-    steps = []
-    try:
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
-        steps.append('rollback_inicial_ok')
-
-        comp = Competition.query.filter_by(code='CLI').first()
-        steps.append(f'comp_found={comp is not None} id={getattr(comp, "id", None)}')
-
-        # Variante A: todos los campos opcionales explícitos, sin competition_id
-        test_api_id = -(int(time.time()) + random.randint(100_001, 200_000))
-        m = Match(
-            api_id=test_api_id,
-            phase='group',
-            home_team='__debug_home__',
-            away_team='__debug_away__',
-            match_datetime=datetime.utcnow(),
-            status='scheduled',
-            last_updated=datetime.utcnow(),
-            is_manual=True,
-            # competition_id intencionalmente omitido (nullable=True en modelo)
-        )
-        db.session.add(m)
-        db.session.flush()
-        steps.append(f'variante_A_ok id={m.id}')
-        db.session.rollback()
-
-        # Variante B: igual pero CON competition_id
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
-        test_api_id2 = -(int(time.time()) + random.randint(200_001, 300_000))
-        m2 = Match(
-            api_id=test_api_id2,
-            phase='group',
-            home_team='__debug_home2__',
-            away_team='__debug_away2__',
-            match_datetime=datetime.utcnow(),
-            status='scheduled',
-            last_updated=datetime.utcnow(),
-            competition_id=comp.id if comp else None,
-            is_manual=True,
-        )
-        db.session.add(m2)
-        db.session.flush()
-        steps.append(f'variante_B_ok id={m2.id}')
-        db.session.rollback()
-        steps.append('rollback_final_ok')
-
-        return jsonify({'ok': True, 'steps': steps}), 200
-
-    except Exception as exc:
-        db.session.rollback()
-        error_str = str(exc)
-        # Extraer nombre de columna del mensaje de PostgreSQL
-        col_match = re.search(r'null value in column ["\']?(\w+)["\']?', error_str)
-        error_column = col_match.group(1) if col_match else 'no_detectado'
-        logger.exception('[debug_match_insert] fallo en paso %s columna=%s', steps, error_column)
-        return jsonify({
-            'ok': False,
-            'steps': steps,
-            'error_column': error_column,
-            'error': error_str[:500],
-            'type': type(exc).__name__,
-        }), 500
 
 
 # ─── Helper ──────────────────────────────────────────────────────────────────
