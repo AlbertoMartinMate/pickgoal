@@ -4,6 +4,7 @@ Todos los endpoints requieren JWT y usuario admin.
 """
 
 import logging
+import random
 import time
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
@@ -650,8 +651,10 @@ def add_manual_match(jornada_id):
     phase = 'no_draw' if no_draw else 'group'
 
     try:
-        # Synthetic api_id: negative millisecond timestamp, replaced by -PK after flush
-        temp_api_id = -int(time.time() * 1000)
+        # Temporary api_id: negative seconds-timestamp + random salt to avoid overflow.
+        # db.Integer is 32-bit (max 2_147_483_647); millisecond timestamps overflow it.
+        # Replaced by -match.id (guaranteed unique) after the first flush.
+        temp_api_id = -(int(time.time()) + random.randint(0, 100_000))
         match = Match(
             api_id=temp_api_id,
             phase=phase,
