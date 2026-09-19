@@ -640,39 +640,55 @@ def add_manual_match(jornada_id):
         except (TypeError, ValueError):
             return jsonify({'error': 'odds_x debe ser un número'}), 400
 
-    comp = _get_or_create_competition(comp_code)
+    try:
+        comp = _get_or_create_competition(comp_code)
+    except Exception as exc:
+        logger.exception('[add_manual_match] fallo al obtener/crear competición code=%s', comp_code)
+        db.session.rollback()
+        return jsonify({'error': f'Error creando competición: {exc}'}), 500
+
     phase = 'no_draw' if no_draw else 'group'
 
-    # Synthetic api_id: negative millisecond timestamp (unique, never collides with real API IDs)
-    temp_api_id = -int(time.time() * 1000)
-    match = Match(
-        api_id=temp_api_id,
-        phase=phase,
-        home_team=home_team,
-        away_team=away_team,
-        match_datetime=dt,
-        status='scheduled',
-        competition_id=comp.id,
-        is_manual=True,
-    )
-    db.session.add(match)
-    db.session.flush()
-    match.api_id = -match.id  # stable negative ID based on PK
-
-    jm = JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first()
-    if not jm:
-        jm = JornadaMatch(jornada_id=jornada_id, match_id=match.id)
-        db.session.add(jm)
+    try:
+        # Synthetic api_id: negative millisecond timestamp, replaced by -PK after flush
+        temp_api_id = -int(time.time() * 1000)
+        match = Match(
+            api_id=temp_api_id,
+            phase=phase,
+            home_team=home_team,
+            away_team=away_team,
+            match_datetime=dt,
+            status='scheduled',
+            competition_id=comp.id,
+            is_manual=True,
+        )
+        db.session.add(match)
+        db.session.flush()
+        match.api_id = -match.id  # stable negative ID, never collides with real API IDs
         db.session.flush()
 
-    if odds_1 is not None:
-        jm.odds_1 = float(odds_1)
-    if odds_2 is not None:
-        jm.odds_2 = float(odds_2)
-    if odds_x is not None and not no_draw:
-        jm.odds_x = float(odds_x)
+        jm = JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first()
+        if not jm:
+            jm = JornadaMatch(jornada_id=jornada_id, match_id=match.id)
+            db.session.add(jm)
+            db.session.flush()
 
-    db.session.commit()
+        if odds_1 is not None:
+            jm.odds_1 = float(odds_1)
+        if odds_2 is not None:
+            jm.odds_2 = float(odds_2)
+        if odds_x is not None and not no_draw:
+            jm.odds_x = float(odds_x)
+
+        db.session.commit()
+        logger.info('[add_manual_match] partido %d añadido a jornada %d', match.id, jornada_id)
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception(
+            '[add_manual_match] fallo DB: jornada=%d home=%s away=%s comp=%s',
+            jornada_id, home_team, away_team, comp_code,
+        )
+        return jsonify({'error': f'Error guardando partido: {exc}'}), 500
 
     return jsonify({
         'message': 'Partido manual añadido',
