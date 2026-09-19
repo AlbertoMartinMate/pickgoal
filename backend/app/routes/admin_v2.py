@@ -700,6 +700,59 @@ def add_manual_match(jornada_id):
     }), 201
 
 
+# ─── POST /api/v2/admin/debug/match-insert ───────────────────────────────────
+# Endpoint temporal de diagnóstico — eliminar tras resolver el 500 en match/manual
+
+@admin_v2_bp.route('/debug/match-insert', methods=['POST'])
+@jwt_required()
+def debug_match_insert():
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    steps = []
+    try:
+        steps.append('session_ok')
+
+        # Paso 1: ¿la sesión está limpia?
+        in_transaction = db.session.in_transaction()
+        steps.append(f'in_transaction={in_transaction}')
+
+        # Paso 2: ¿competition lookup funciona?
+        comp = Competition.query.filter_by(code='CLI').first()
+        steps.append(f'comp_found={comp is not None} id={getattr(comp, "id", None)}')
+
+        # Paso 3: ¿Match insert mínimo funciona?
+        test_api_id = -(int(time.time()) + random.randint(100_001, 200_000))
+        m = Match(
+            api_id=test_api_id,
+            phase='group',
+            home_team='__debug_home__',
+            away_team='__debug_away__',
+            match_datetime=datetime.utcnow(),
+            status='scheduled',
+            competition_id=comp.id if comp else None,
+            is_manual=True,
+        )
+        db.session.add(m)
+        db.session.flush()
+        steps.append(f'match_flush_ok id={m.id}')
+
+        m.api_id = -m.id
+        steps.append(f'api_id_set={m.api_id}')
+
+        # Limpieza: no guardar el partido de prueba
+        db.session.rollback()
+        steps.append('rollback_ok')
+
+        return jsonify({'ok': True, 'steps': steps}), 200
+
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('[debug_match_insert] fallo en paso: %s', steps)
+        return jsonify({'ok': False, 'steps': steps, 'error': str(exc), 'type': type(exc).__name__}), 500
+
+
 # ─── Helper ──────────────────────────────────────────────────────────────────
 
 def _upsert_jornada_matches(jornada_id, matches_payload):
