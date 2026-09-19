@@ -712,17 +712,18 @@ def debug_match_insert():
 
     steps = []
     try:
-        steps.append('session_ok')
+        # Limpiar cualquier transacción sucia de requests anteriores
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        steps.append('rollback_inicial_ok')
 
-        # Paso 1: ¿la sesión está limpia?
-        in_transaction = db.session.in_transaction()
-        steps.append(f'in_transaction={in_transaction}')
-
-        # Paso 2: ¿competition lookup funciona?
+        # Paso 1: ¿competition lookup funciona?
         comp = Competition.query.filter_by(code='CLI').first()
         steps.append(f'comp_found={comp is not None} id={getattr(comp, "id", None)}')
 
-        # Paso 3: ¿Match insert mínimo funciona?
+        # Paso 2: ¿Match insert mínimo funciona?
         test_api_id = -(int(time.time()) + random.randint(100_001, 200_000))
         m = Match(
             api_id=test_api_id,
@@ -743,7 +744,7 @@ def debug_match_insert():
 
         # Limpieza: no guardar el partido de prueba
         db.session.rollback()
-        steps.append('rollback_ok')
+        steps.append('rollback_final_ok')
 
         return jsonify({'ok': True, 'steps': steps}), 200
 
