@@ -365,8 +365,7 @@ function renderJornadasPanel(jornadas) {
 
         <div id="jv2MatchPicker" style="display:none">
           <div class="jv2-counter">
-            Seleccionados: <strong id="jv2Count">0</strong> / 10
-            <span id="jv2CountWarn" class="jv2-counter__warn" style="display:none">Selecciona exactamente 10</span>
+            Seleccionados: <strong id="jv2Count">0</strong>
           </div>
           <div id="jv2MatchList" class="jv2-match-list"></div>
         </div>
@@ -643,9 +642,7 @@ function renderMatchPicker(matchesByComp) {
 
 function updateCounter() {
   const el = document.getElementById('jv2Count');
-  const warn = document.getElementById('jv2CountWarn');
   if (el) el.textContent = _selectedMatches.length;
-  if (warn) warn.style.display = (_selectedMatches.length > 0 && _selectedMatches.length !== 10) ? 'inline' : 'none';
 }
 
 async function guardarJornada() {
@@ -657,19 +654,12 @@ async function guardarJornada() {
   if (!number || !date_start || !date_end) {
     showToast('Completa número y fechas', 'error'); return;
   }
-  if (!editId && _selectedMatches.length !== 10) {
-    showToast('Selecciona exactamente 10 partidos', 'error'); return;
-  }
-  if (editId && _selectedMatches.length > 0 && _selectedMatches.length !== 10) {
-    showToast('Si cambias los partidos, selecciona exactamente 10', 'error'); return;
-  }
-
   const payload = {
     number,
     date_start: new Date(date_start).toISOString(),
     date_end:   new Date(date_end).toISOString(),
   };
-  if (_selectedMatches.length === 10) {
+  if (_selectedMatches.length > 0) {
     payload.matches = _selectedMatches;
   }
 

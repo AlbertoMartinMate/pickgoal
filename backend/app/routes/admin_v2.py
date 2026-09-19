@@ -137,6 +137,10 @@ def publish_jornada(jornada_id):
     if jornada.status != 'draft':
         return jsonify({'error': f'La jornada ya está en estado {jornada.status}'}), 400
 
+    match_count = JornadaMatch.query.filter_by(jornada_id=jornada_id).count()
+    if match_count != 10:
+        return jsonify({'error': f'La jornada debe tener exactamente 10 partidos para publicar (tiene {match_count})'}), 400
+
     from app.utils import calculate_odds
     from app.routes.duelos import assign_duelos
     from app.models import DivisionMember, PushSubscription
@@ -375,8 +379,8 @@ def create_jornada():
 
     if not all([number, date_start_str, date_end_str]):
         return jsonify({'error': 'number, date_start y date_end son obligatorios'}), 400
-    if not matches_payload or len(matches_payload) != 10:
-        return jsonify({'error': 'Debes seleccionar exactamente 10 partidos'}), 400
+    if len(matches_payload) > 10:
+        return jsonify({'error': 'Máximo 10 partidos por jornada'}), 400
 
     try:
         date_start = datetime.fromisoformat(date_start_str.replace('Z', '+00:00'))
