@@ -710,20 +710,20 @@ def debug_match_insert():
     if err:
         return err, code
 
+    import re
+
     steps = []
     try:
-        # Limpiar cualquier transacción sucia de requests anteriores
         try:
             db.session.rollback()
         except Exception:
             pass
         steps.append('rollback_inicial_ok')
 
-        # Paso 1: ¿competition lookup funciona?
         comp = Competition.query.filter_by(code='CLI').first()
         steps.append(f'comp_found={comp is not None} id={getattr(comp, "id", None)}')
 
-        # Paso 2: ¿Match insert mínimo funciona?
+        # Variante A: todos los campos opcionales explícitos, sin competition_id
         test_api_id = -(int(time.time()) + random.randint(100_001, 200_000))
         m = Match(
             api_id=test_api_id,
@@ -732,17 +732,35 @@ def debug_match_insert():
             away_team='__debug_away__',
             match_datetime=datetime.utcnow(),
             status='scheduled',
-            competition_id=comp.id if comp else None,
+            last_updated=datetime.utcnow(),
             is_manual=True,
+            # competition_id intencionalmente omitido (nullable=True en modelo)
         )
         db.session.add(m)
         db.session.flush()
-        steps.append(f'match_flush_ok id={m.id}')
+        steps.append(f'variante_A_ok id={m.id}')
+        db.session.rollback()
 
-        m.api_id = -m.id
-        steps.append(f'api_id_set={m.api_id}')
-
-        # Limpieza: no guardar el partido de prueba
+        # Variante B: igual pero CON competition_id
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        test_api_id2 = -(int(time.time()) + random.randint(200_001, 300_000))
+        m2 = Match(
+            api_id=test_api_id2,
+            phase='group',
+            home_team='__debug_home2__',
+            away_team='__debug_away2__',
+            match_datetime=datetime.utcnow(),
+            status='scheduled',
+            last_updated=datetime.utcnow(),
+            competition_id=comp.id if comp else None,
+            is_manual=True,
+        )
+        db.session.add(m2)
+        db.session.flush()
+        steps.append(f'variante_B_ok id={m2.id}')
         db.session.rollback()
         steps.append('rollback_final_ok')
 
@@ -750,8 +768,18 @@ def debug_match_insert():
 
     except Exception as exc:
         db.session.rollback()
-        logger.exception('[debug_match_insert] fallo en paso: %s', steps)
-        return jsonify({'ok': False, 'steps': steps, 'error': str(exc), 'type': type(exc).__name__}), 500
+        error_str = str(exc)
+        # Extraer nombre de columna del mensaje de PostgreSQL
+        col_match = re.search(r'null value in column ["\']?(\w+)["\']?', error_str)
+        error_column = col_match.group(1) if col_match else 'no_detectado'
+        logger.exception('[debug_match_insert] fallo en paso %s columna=%s', steps, error_column)
+        return jsonify({
+            'ok': False,
+            'steps': steps,
+            'error_column': error_column,
+            'error': error_str[:500],
+            'type': type(exc).__name__,
+        }), 500
 
 
 # ─── Helper ──────────────────────────────────────────────────────────────────
