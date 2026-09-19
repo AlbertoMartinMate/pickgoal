@@ -641,19 +641,22 @@ def add_manual_match(jornada_id):
         except (TypeError, ValueError):
             return jsonify({'error': 'odds_x debe ser un número'}), 400
 
-    try:
-        comp = _get_or_create_competition(comp_code)
-    except Exception as exc:
-        logger.exception('[add_manual_match] fallo al obtener/crear competición code=%s', comp_code)
-        db.session.rollback()
-        return jsonify({'error': f'Error creando competición: {exc}'}), 500
-
     phase = 'no_draw' if no_draw else 'group'
 
     try:
-        # Temporary api_id: negative seconds-timestamp + random salt to avoid overflow.
-        # db.Integer is 32-bit (max 2_147_483_647); millisecond timestamps overflow it.
-        # Replaced by -match.id (guaranteed unique) after the first flush.
+        # Lookup competition inside no_autoflush to prevent premature autoflush
+        # triggering on a dirty session and causing PendingRollbackError (gkpj).
+        with db.session.no_autoflush:
+            comp = Competition.query.filter_by(code=comp_code).first()
+            if not comp:
+                meta = COMP_META.get(comp_code, {'name': comp_code, 'weight': 5, 'max_per_jornada': 4})
+                comp = Competition(code=comp_code, name=meta['name'],
+                                   weight=meta['weight'], max_per_jornada=meta['max_per_jornada'])
+                db.session.add(comp)
+                db.session.flush()  # only when new, to get comp.id
+
+        # Temporary api_id within 32-bit signed range (millisecond timestamps overflow it).
+        # Replaced by -match.id after the first flush, which is guaranteed unique.
         temp_api_id = -(int(time.time()) + random.randint(0, 100_000))
         match = Match(
             api_id=temp_api_id,
@@ -666,15 +669,12 @@ def add_manual_match(jornada_id):
             is_manual=True,
         )
         db.session.add(match)
-        db.session.flush()
-        match.api_id = -match.id  # stable negative ID, never collides with real API IDs
-        db.session.flush()
+        db.session.flush()          # assigns match.id
+        match.api_id = -match.id   # stable unique negative ID; included in commit below
 
-        jm = JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first()
-        if not jm:
-            jm = JornadaMatch(jornada_id=jornada_id, match_id=match.id)
-            db.session.add(jm)
-            db.session.flush()
+        # Always a brand-new match, so JornadaMatch can never already exist
+        jm = JornadaMatch(jornada_id=jornada_id, match_id=match.id)
+        db.session.add(jm)
 
         if odds_1 is not None:
             jm.odds_1 = float(odds_1)
