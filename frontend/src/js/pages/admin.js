@@ -414,7 +414,7 @@ function jornadaRow(j) {
   }[j.status] || `<span class="admin-match-badge">${j.status}</span>`;
 
   const d = (iso) => iso ? new Date(iso).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' }) : '—';
-  const canEditResults = j.status === 'upcoming' || j.status === 'active' || j.status === 'finished';
+  const canEditResults = j.status === 'draft' || j.status === 'upcoming' || j.status === 'active' || j.status === 'finished';
   const terminada = j.date_end && new Date(j.date_end) < new Date();
   const cerrable = terminada && (j.status === 'upcoming' || j.status === 'active');
   const canEdit = j.status !== 'finished';
