@@ -702,6 +702,42 @@ def add_manual_match(jornada_id):
     }), 201
 
 
+# ─── DELETE /api/v2/admin/jornada-match/<id> ────────────────────────────────
+
+@admin_v2_bp.route('/jornada-match/<int:jm_id>', methods=['DELETE'])
+@jwt_required()
+def delete_manual_match(jm_id):
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    jm = db.session.get(JornadaMatch, jm_id)
+    if not jm:
+        return jsonify({'error': 'Partido no encontrado'}), 404
+
+    match = db.session.get(Match, jm.match_id)
+    if not match or not match.is_manual:
+        return jsonify({'error': 'Solo se pueden eliminar partidos manuales'}), 400
+
+    try:
+        PredictionV2.query.filter_by(jornada_match_id=jm_id).delete(synchronize_session=False)
+        db.session.delete(jm)
+        db.session.flush()
+
+        other_jm = JornadaMatch.query.filter_by(match_id=match.id).first()
+        if not other_jm:
+            db.session.delete(match)
+
+        db.session.commit()
+        logger.info('[delete_manual_match] jornada_match %d eliminado', jm_id)
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception('[delete_manual_match] fallo DB: jm_id=%d', jm_id)
+        return jsonify({'error': f'Error eliminando partido: {exc}'}), 500
+
+    return jsonify({'message': 'Partido manual eliminado'}), 200
+
+
 # ─── Helper ──────────────────────────────────────────────────────────────────
 
 def _upsert_jornada_matches(jornada_id, matches_payload):

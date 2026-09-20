@@ -108,6 +108,7 @@ export const api = {
     setResultado: (jmId, data) => request(`/v2/admin/jornada-match/${jmId}/resultado`, { method: 'POST', body: JSON.stringify(data) }),
     cancelMatch: (jmId) => request(`/v2/admin/jornada-match/${jmId}/cancel`, { method: 'POST' }),
     addManualMatch: (jornadaId, data) => request(`/v2/admin/jornada/${jornadaId}/match/manual`, { method: 'POST', body: JSON.stringify(data) }),
+    deleteManualMatch: (jmId) => request(`/v2/admin/jornada-match/${jmId}`, { method: 'DELETE' }),
     generateBots: () => request('/v2/admin/bots/generate', { method: 'POST' }),
     weeklyChecklist: () => request('/v2/admin/weekly-checklist'),
   },

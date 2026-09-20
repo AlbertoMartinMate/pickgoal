@@ -822,6 +822,7 @@ function renderResultsPanel(matches, jornadaId) {
                 </select>
                 <button class="btn btn--primary btn--xs jv2-save-result-btn" data-jm-id="${m.jornada_match_id}">Guardar</button>
                 <button class="btn btn--danger btn--xs jv2-cancel-match-btn" data-jm-id="${m.jornada_match_id}" data-home="${m.home_team}" data-away="${m.away_team}">Cancelar</button>
+                ${m.is_manual ? `<button class="btn btn--danger btn--xs jv2-delete-manual-btn" data-jm-id="${m.jornada_match_id}" data-home="${m.home_team}" data-away="${m.away_team}">🗑️ Eliminar</button>` : ''}
               `}
             </div>
           </div>
@@ -945,6 +946,24 @@ function attachResultsEvents(panel, jornadaId) {
         showToast(err.message, 'error');
         btn.disabled = false;
         btn.textContent = 'Cancelar';
+      }
+    });
+  });
+
+  panel.querySelectorAll('.jv2-delete-manual-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const { jmId, home, away } = btn.dataset;
+      if (!confirm(`¿Eliminar el partido manual ${home} vs ${away}? Se borrarán todas las predicciones asociadas.`)) return;
+      btn.disabled = true;
+      btn.textContent = '…';
+      try {
+        const { message } = await api.adminV2.deleteManualMatch(jmId);
+        showToast(message);
+        await reloadResultsPanel(jornadaId);
+      } catch (err) {
+        showToast(err.message, 'error');
+        btn.disabled = false;
+        btn.textContent = '🗑️ Eliminar';
       }
     });
   });
