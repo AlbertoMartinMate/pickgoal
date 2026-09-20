@@ -102,7 +102,7 @@ class Match(db.Model):
     competition_id = db.Column(db.Integer, db.ForeignKey('competitions.id'), nullable=True)
     importance_score = db.Column(db.Float, nullable=True)
     is_manual = db.Column(db.Boolean, default=False, nullable=False, server_default='false')
-    result_type = db.Column(db.String(10))  # '90min', 'et', 'pen'
+    result_type = db.Column(db.String(10))  # '90m', 'ET', 'PEN', '1X2', '12'
 
     predictions = db.relationship('Prediction', backref='match', lazy='dynamic', cascade='all, delete-orphan')
 

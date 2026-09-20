@@ -541,8 +541,8 @@ def set_jornada_match_resultado(jm_id):
         return jsonify({'error': 'Los marcadores deben ser números enteros'}), 400
     if result_90_override is not None and result_90_override not in ('1', 'X', '2'):
         return jsonify({'error': 'result_90 debe ser 1, X o 2'}), 400
-    if result_type is not None and result_type not in ('90min', 'et', 'pen'):
-        return jsonify({'error': 'result_type debe ser 90min, et o pen'}), 400
+    if result_type is not None and result_type not in ('90m', 'ET', 'PEN'):
+        return jsonify({'error': 'result_type debe ser 90m, ET o PEN'}), 400
 
     from app.utils import recalculate_v2_for_match, compute_match_result
 
@@ -551,7 +551,7 @@ def set_jornada_match_resultado(jm_id):
     match.away_score_90 = away
     match.home_score_final = home
     match.away_score_final = away
-    effective_result_type = result_type or '90min'
+    effective_result_type = result_type or '90m'
     if result_90_override is not None:
         match.result_90 = result_90_override
     else:

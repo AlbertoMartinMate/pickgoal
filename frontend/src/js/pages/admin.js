@@ -816,9 +816,9 @@ function renderResultsPanel(matches, jornadaId) {
                   <option value="2" ${m.result_90 === '2' ? 'selected' : ''}>2</option>
                 </select>
                 <select class="form__input jv2-result-type-select" style="width:72px" title="Tipo de resultado">
-                  <option value="90min" ${(m.result_type ?? '90min') === '90min' ? 'selected' : ''}>90 min</option>
-                  <option value="et" ${m.result_type === 'et' ? 'selected' : ''}>Prórroga</option>
-                  <option value="pen" ${m.result_type === 'pen' ? 'selected' : ''}>Penaltis</option>
+                  <option value="90m" ${(m.result_type ?? '90m') === '90m' ? 'selected' : ''}>90 min</option>
+                  <option value="ET" ${m.result_type === 'ET' ? 'selected' : ''}>Prórroga</option>
+                  <option value="PEN" ${m.result_type === 'PEN' ? 'selected' : ''}>Penaltis</option>
                 </select>
                 <button class="btn btn--primary btn--xs jv2-save-result-btn" data-jm-id="${m.jornada_match_id}">Guardar</button>
                 <button class="btn btn--danger btn--xs jv2-cancel-match-btn" data-jm-id="${m.jornada_match_id}" data-home="${m.home_team}" data-away="${m.away_team}">Cancelar</button>
@@ -909,7 +909,7 @@ function attachResultsEvents(panel, jornadaId) {
       const homeVal       = row.querySelector('.jv2-score-input[data-side="home"]')?.value;
       const awayVal       = row.querySelector('.jv2-score-input[data-side="away"]')?.value;
       const r90Val        = row.querySelector('.jv2-r90-select')?.value || undefined;
-      const resultTypeVal = row.querySelector('.jv2-result-type-select')?.value || '90min';
+      const resultTypeVal = row.querySelector('.jv2-result-type-select')?.value || '90m';
 
       if (homeVal === '' || awayVal === '') {
         showToast('Introduce los dos marcadores', 'error');
