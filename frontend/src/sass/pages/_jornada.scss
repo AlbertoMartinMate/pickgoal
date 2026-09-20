@@ -173,6 +173,22 @@
     color: v.$accent;
     background: v.$accent-dim;
   }
+
+  &--finished {
+    opacity: 0.7;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-left: v.$sp-1;
+    padding: 1px 6px;
+    border-radius: v.$r-full;
+    font-size: 10px;
+    font-weight: v.$fw-bold;
+    background: rgba(255, 255, 255, 0.06);
+    color: v.$text-muted;
+    vertical-align: middle;
+  }
 }
 
 // ─── Tags de estado de partido ───────────────────────────────────────────────

@@ -168,35 +168,98 @@ function buildPastDueloHtml(info, duelo, me) {
   const resultBadge = RESULT_BADGE[info.status];
 
   const matches = duelo?.matches ?? [];
+
+  // ── Calcular métricas del footer ──────────────────────────────────────────
   let correctCount = 0;
+  let betsTotal = 0;
+  let totalWagered = 0;
+  let penaltyCount = 0;
+
   for (const m of matches) {
-    if (m.result_90 != null && m.my_prediction?.predicted_result === m.result_90) correctCount++;
+    if (m.jm_status === 'cancelled') continue;
+    if (m.my_prediction) {
+      totalWagered += m.my_prediction.units_wagered;
+      if (m.status === 'finished' && m.result_90 != null) {
+        betsTotal += m.my_prediction.points_earned ?? 0;
+        if (m.my_prediction.predicted_result === m.result_90) correctCount++;
+      }
+    } else if (m.status === 'finished' && m.result_90 != null) {
+      penaltyCount++;
+    }
   }
+
+  const unusedUnits = 20 - totalWagered;
   const bonus = correctCount >= 10 ? 10 : correctCount >= 9 ? 5 : correctCount >= 8 ? 2 : 0;
   const isPleno = correctCount >= 10;
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function winOdds(m) {
+    if (!m.result_90) return '—';
+    const map = { '1': m.odds_1, 'X': m.odds_x, '2': m.odds_2 };
+    const v = map[m.result_90];
+    return v != null ? parseFloat(v).toFixed(2) : '—';
+  }
+
+  function ptsBadge(pred, result_90) {
+    if (!result_90) return '—';
+    if (!pred) return '<span class="pts-label pts-label--penalty">-1 pt</span>';
+    if (pred.predicted_result === result_90)
+      return `<span class="pts-label pts-label--win">+${fmtPts(pred.points_earned ?? 0)} pts</span>`;
+    return '<span class="pts-label pts-label--loss">0 pts</span>';
+  }
+
+  // ── Filas de partidos ─────────────────────────────────────────────────────
   const matchRows = matches.map(m => {
-    const myPred = m.my_prediction?.predicted_result ?? '—';
-    const actual = m.result_90 ?? (m.status === 'finished' ? '?' : '—');
-    let ptsCel = '—';
-    if (m.result_90 != null) {
-      if (!m.my_prediction) {
-        ptsCel = '<span class="pts-label pts-label--penalty">-1 pt</span>';
-      } else if (myPred === actual) {
-        ptsCel = `<span class="pts-label pts-label--win">+${fmtPts(m.my_prediction.points_earned)} pts</span>`;
-      } else {
-        ptsCel = '<span class="pts-label pts-label--loss">0 pts</span>';
-      }
-    }
+    const myPU  = m.my_prediction
+      ? `${m.my_prediction.predicted_result} · ${m.my_prediction.units_wagered}u`
+      : '—';
+    const rivPU = m.rival_prediction
+      ? `${m.rival_prediction.predicted_result} · ${m.rival_prediction.units_wagered}u`
+      : (m.started ? '—' : '?');
+    const score = m.result_90 != null
+      ? `${m.home_score_90 ?? '?'}–${m.away_score_90 ?? '?'} (${m.result_90})`
+      : '—';
+
     return `
       <tr>
         <td class="duelo-breakdown__teams">${m.home_team} vs ${m.away_team}</td>
-        <td class="duelo-breakdown__pick">${myPred}</td>
-        <td class="duelo-breakdown__result">${actual}</td>
-        <td class="duelo-breakdown__pts">${ptsCel}</td>
+        <td class="duelo-breakdown__odds">${winOdds(m)}</td>
+        <td class="duelo-breakdown__pick">${myPU}</td>
+        <td class="duelo-breakdown__pick duelo-breakdown__pick--rival">${rivPU}</td>
+        <td class="duelo-breakdown__result">${score}</td>
+        <td class="duelo-breakdown__pts">${ptsBadge(m.my_prediction, m.result_90)}</td>
+        <td class="duelo-breakdown__pts duelo-breakdown__pts--rival">${ptsBadge(m.rival_prediction, m.result_90)}</td>
       </tr>
     `;
   }).join('');
+
+  // ── Footer del desglose ───────────────────────────────────────────────────
+  const footerRows = `
+    <tr class="duelo-breakdown__footer-row">
+      <td colspan="5" class="duelo-breakdown__total-label">Ganancias apuestas</td>
+      <td class="duelo-breakdown__pts" colspan="2">+${fmtPts(betsTotal)} pts</td>
+    </tr>
+    <tr class="duelo-breakdown__footer-row">
+      <td colspan="5" class="duelo-breakdown__total-label">Sin apostar (${unusedUnits}u)</td>
+      <td class="duelo-breakdown__pts" colspan="2">+${fmtPts(unusedUnits)} pts</td>
+    </tr>
+    ${penaltyCount > 0 ? `
+    <tr class="duelo-breakdown__footer-row">
+      <td colspan="5" class="duelo-breakdown__total-label">Penalización (${penaltyCount} partido${penaltyCount > 1 ? 's' : ''} sin pred.)</td>
+      <td class="duelo-breakdown__pts duelo-breakdown__pts--penalty" colspan="2">−${penaltyCount} pt${penaltyCount > 1 ? 's' : ''}</td>
+    </tr>` : ''}
+    ${bonus > 0 ? `
+    <tr class="duelo-breakdown__footer-row">
+      <td colspan="5" class="duelo-breakdown__total-label">
+        ${isPleno ? '🎯 ¡Pleno! ' : ''}Bonus (${correctCount}/10 aciertos)
+      </td>
+      <td class="duelo-breakdown__pts duelo-breakdown__pts--bonus" colspan="2">+${bonus} pts</td>
+    </tr>` : ''}
+    <tr class="duelo-breakdown__footer-row duelo-breakdown__footer-row--total">
+      <td colspan="5" class="duelo-breakdown__total-label">Total</td>
+      <td class="duelo-breakdown__total-pts" colspan="2">${fmtPts(info.my_points)} pts</td>
+    </tr>
+  `;
 
   const breakdownHtml = matches.length > 0 ? `
     <h2 class="section-title">Partido a partido</h2>
@@ -204,20 +267,17 @@ function buildPastDueloHtml(info, duelo, me) {
       <table class="duelo-breakdown__table">
         <thead>
           <tr>
-            <th>Partido</th><th>Tu pred.</th><th>Resultado</th><th>Pts</th>
+            <th>Partido</th>
+            <th>Cuota</th>
+            <th>Mi pred/u</th>
+            <th>${rivalName}</th>
+            <th>Resultado</th>
+            <th>Mis pts</th>
+            <th>Rival pts</th>
           </tr>
         </thead>
         <tbody>${matchRows}</tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3" class="duelo-breakdown__total-label">
-              ${isPleno ? '<span class="duelo-pleno-badge">🎯 ¡Pleno!</span>' : ''}
-              ${bonus > 0 && !isPleno ? `<span class="duelo-pleno-badge">🎯 Bonus (${correctCount}/10): +${bonus} pts</span>` : ''}
-              Total
-            </td>
-            <td class="duelo-breakdown__total-pts">${fmtPts(info.my_points)} pts</td>
-          </tr>
-        </tfoot>
+        <tfoot>${footerRows}</tfoot>
       </table>
     </div>
   ` : '';

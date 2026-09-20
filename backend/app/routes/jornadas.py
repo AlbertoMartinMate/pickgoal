@@ -103,12 +103,20 @@ def public_jornada_info():
 @jwt_required()
 def list_jornadas():
     user_id = int(get_jwt_identity())
-    jornadas = (
+    active = (
         Jornada.query
         .filter(Jornada.status.in_(['upcoming', 'active']))
         .order_by(Jornada.date_start.asc())
         .all()
     )
+    finished = (
+        Jornada.query
+        .filter_by(status='finished')
+        .order_by(Jornada.date_start.desc())
+        .limit(10)
+        .all()
+    )
+    jornadas = active + finished
     return jsonify({'jornadas': [_build_jornada_payload(j, user_id) for j in jornadas]}), 200
 
 

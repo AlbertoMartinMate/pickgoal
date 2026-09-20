@@ -318,10 +318,22 @@
     }
   }
 
-  &__teams  { color: v.$text; }
-  &__pick   { color: v.$accent; font-weight: v.$fw-semi; text-align: center; }
-  &__result { color: v.$text-muted; text-align: center; }
-  &__pts    { text-align: right; }
+  &__teams        { color: v.$text; min-width: 120px; }
+  &__odds         { color: v.$text-muted; text-align: center; white-space: nowrap; }
+  &__pick         { color: v.$accent; font-weight: v.$fw-semi; text-align: center; white-space: nowrap;
+                    &--rival { color: v.$info; } }
+  &__result       { color: v.$text-muted; text-align: center; white-space: nowrap; }
+  &__pts          { text-align: right; white-space: nowrap;
+                    &--rival   { color: v.$info; }
+                    &--penalty { color: v.$warning; }
+                    &--bonus   { color: v.$accent; } }
+
+  &__footer-row td { border-bottom: none; padding-top: v.$sp-1; padding-bottom: v.$sp-1; }
+  &__footer-row--total td {
+    padding-top: v.$sp-3;
+    border-top: 1px solid v.$border-light;
+    font-weight: v.$fw-bold;
+  }
 
   &__total-label {
     color: v.$text-muted;

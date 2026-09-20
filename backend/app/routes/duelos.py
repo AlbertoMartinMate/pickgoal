@@ -68,9 +68,13 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
             'away_team': match.away_team,
             'match_datetime': match.match_datetime.replace(tzinfo=timezone.utc).isoformat(),
             'status': match.status,
+            'jm_status': jm.status,
             'result_90': match.result_90,
             'home_score_90': match.home_score_90,
             'away_score_90': match.away_score_90,
+            'odds_1': jm.odds_1,
+            'odds_x': jm.odds_x,
+            'odds_2': jm.odds_2,
             'started': started,
             'my_prediction': {
                 'predicted_result': my_pred.predicted_result,
@@ -80,6 +84,7 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
             'rival_prediction': {
                 'predicted_result': rival_pred.predicted_result,
                 'units_wagered': rival_pred.units_wagered,
+                'points_earned': round(rival_pred.points_earned or 0, 2),
             } if rival_pred else None,
         })
     return result

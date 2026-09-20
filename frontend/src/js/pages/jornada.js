@@ -43,13 +43,19 @@ function renderJornadaList(el, jornadas, activeIdx) {
   const openMatches = matches.filter(m => !m.predict_locked);
   lastOpenMatchId = openMatches.length === 1 ? openMatches[0].jornada_match_id : null;
 
+  const isFinished = jornada.status === 'finished';
+
   const tabs = jornadas.length > 1
     ? `<div class="jornada-tabs">
-        ${jornadas.map((j, i) => `
-          <button class="jornada-tab ${i === activeIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
-            J${j.jornada.number} · ${formatDayMonth(j.jornada.date_start)}–${formatDayMonth(j.jornada.date_end)}
-          </button>
-        `).join('')}
+        ${jornadas.map((j, i) => {
+          const fin = j.jornada.status === 'finished';
+          return `
+            <button class="jornada-tab ${i === activeIdx ? 'jornada-tab--active' : ''} ${fin ? 'jornada-tab--finished' : ''}" data-idx="${i}">
+              J${j.jornada.number} · ${formatDayMonth(j.jornada.date_start)}–${formatDayMonth(j.jornada.date_end)}
+              ${fin ? '<span class="jornada-tab__badge">Finalizada</span>' : ''}
+            </button>
+          `;
+        }).join('')}
        </div>`
     : '';
 
@@ -60,7 +66,7 @@ function renderJornadaList(el, jornadas, activeIdx) {
         <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
       </div>
       ${tabs}
-      <div class="units-counter" id="unitsCounter"></div>
+      ${!isFinished ? '<div class="units-counter" id="unitsCounter"></div>' : ''}
       <div class="jornada-matches">
         ${matches.map(matchRow).join('')}
       </div>
@@ -128,8 +134,9 @@ function matchPtsLabel(m) {
     if (!pred) {
       return '<span class="jornada-pts-label jornada-pts-label--penalty">-1 pt ⚠️</span>';
     }
+    const pts = pred.points_earned ?? 0;
     if (pred.predicted_result === m.result_90) {
-      return `<span class="jornada-pts-label jornada-pts-label--win">+${fmtPts(pred.points_earned)} pts</span>`;
+      return `<span class="jornada-pts-label jornada-pts-label--win">+${fmtPts(pts)} pts</span>`;
     }
     return '<span class="jornada-pts-label jornada-pts-label--loss">0 pts</span>';
   }
