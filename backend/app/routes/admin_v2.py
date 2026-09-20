@@ -557,10 +557,20 @@ def set_jornada_match_resultado(jm_id):
     else:
         match.result_90 = compute_match_result(match.phase, home, away, home, away)
     match.result_type = effective_result_type
+    match.last_updated = datetime.utcnow()
     match.is_manual = True
     match.status = 'finished'
     jm.status = 'finished'
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception(
+            '[set_resultado] IntegrityError jm_id=%d match_id=%d home=%s away=%s result_type=%s result_90=%s',
+            jm_id, match.id, home, away, effective_result_type, match.result_90,
+        )
+        return jsonify({'error': f'Error guardando resultado: {exc}'}), 500
 
     recalculate_v2_for_match(match)
 
