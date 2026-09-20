@@ -99,9 +99,10 @@ async function loadDueloJornada(el, jornadaInfo, me) {
 
   const isLive = jornadaInfo.jornada_status === 'active' || jornadaInfo.jornada_status === 'upcoming';
 
-  if (isLive) {
-    try {
-      const { duelo } = await api.duelo.current(jornadaInfo.jornada_id);
+  try {
+    const { duelo } = await api.duelo.current(jornadaInfo.jornada_id);
+
+    if (isLive) {
       if (!duelo) {
         content.innerHTML = emptyDueloHtml();
         return;
@@ -114,12 +115,12 @@ async function loadDueloJornada(el, jornadaInfo, me) {
         refreshTracker(jornadaInfo.jornada_id, me.username, rivalName);
         _trackerInterval = setInterval(() => refreshTracker(jornadaInfo.jornada_id, me.username, rivalName), 60_000);
       }
-    } catch (err) {
-      content.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
+    } else {
+      content.innerHTML = buildPastDueloHtml(jornadaInfo, duelo, me);
+      renderDivisionStandings(content, jornadaInfo.division_league_id, me.id);
     }
-  } else {
-    content.innerHTML = buildPastDueloHtml(jornadaInfo, me);
-    renderDivisionStandings(content, jornadaInfo.division_league_id, me.id);
+  } catch (err) {
+    content.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
   }
 }
 
@@ -162,9 +163,64 @@ function buildActiveDueloHtml(duelo, me) {
 
 // ─── Past jornada HTML ────────────────────────────────────────────────────────
 
-function buildPastDueloHtml(info, me) {
+function buildPastDueloHtml(info, duelo, me) {
   const rivalName = info.rival?.username ?? (info.is_bye ? 'Descanso' : '—');
   const resultBadge = RESULT_BADGE[info.status];
+
+  const matches = duelo?.matches ?? [];
+  let correctCount = 0;
+  for (const m of matches) {
+    if (m.result_90 != null && m.my_prediction?.predicted_result === m.result_90) correctCount++;
+  }
+  const bonus = correctCount >= 10 ? 10 : correctCount >= 9 ? 5 : correctCount >= 8 ? 2 : 0;
+  const isPleno = correctCount >= 10;
+
+  const matchRows = matches.map(m => {
+    const myPred = m.my_prediction?.predicted_result ?? '—';
+    const actual = m.result_90 ?? (m.status === 'finished' ? '?' : '—');
+    let ptsCel = '—';
+    if (m.result_90 != null) {
+      if (!m.my_prediction) {
+        ptsCel = '<span class="pts-label pts-label--penalty">-1 pt</span>';
+      } else if (myPred === actual) {
+        ptsCel = `<span class="pts-label pts-label--win">+${fmtPts(m.my_prediction.points_earned)} pts</span>`;
+      } else {
+        ptsCel = '<span class="pts-label pts-label--loss">0 pts</span>';
+      }
+    }
+    return `
+      <tr>
+        <td class="duelo-breakdown__teams">${m.home_team} vs ${m.away_team}</td>
+        <td class="duelo-breakdown__pick">${myPred}</td>
+        <td class="duelo-breakdown__result">${actual}</td>
+        <td class="duelo-breakdown__pts">${ptsCel}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const breakdownHtml = matches.length > 0 ? `
+    <h2 class="section-title">Partido a partido</h2>
+    <div class="duelo-breakdown">
+      <table class="duelo-breakdown__table">
+        <thead>
+          <tr>
+            <th>Partido</th><th>Tu pred.</th><th>Resultado</th><th>Pts</th>
+          </tr>
+        </thead>
+        <tbody>${matchRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" class="duelo-breakdown__total-label">
+              ${isPleno ? '<span class="duelo-pleno-badge">🎯 ¡Pleno!</span>' : ''}
+              ${bonus > 0 && !isPleno ? `<span class="duelo-pleno-badge">🎯 Bonus (${correctCount}/10): +${bonus} pts</span>` : ''}
+              Total
+            </td>
+            <td class="duelo-breakdown__total-pts">${fmtPts(info.my_points)} pts</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  ` : '';
 
   return `
     <div class="duelo-card duelo-card--finished">
@@ -181,6 +237,8 @@ function buildPastDueloHtml(info, me) {
         </div>
       </div>
     </div>
+
+    ${breakdownHtml}
 
     <h2 class="section-title">Clasificación divisional</h2>
     <div id="divisionStandings"><div class="loading"><div class="loading__spinner"></div></div></div>

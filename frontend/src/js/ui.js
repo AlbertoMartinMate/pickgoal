@@ -47,6 +47,14 @@ export function pointsModalHtml() {
             <li>Si aciertas el resultado (1X2), ganas <strong>unidades × cuota</strong> del partido.</li>
             <li>Las unidades que no uses se convierten directamente en puntos.</li>
             <li class="points-modal__note">Si un partido se cancela, sus unidades van al bote de "no usadas".</li>
+            <li class="points-modal__note">⚠️ Si no predices un partido → <strong>-1 punto</strong> de penalización (mínimo 0).</li>
+            <li>🎯 <strong>Bonificación por aciertos:</strong>
+              <ul class="points-modal__list points-modal__list--inner">
+                <li>8/10 → <strong>+2 pts</strong></li>
+                <li>9/10 → <strong>+5 pts</strong></li>
+                <li>10/10 → <strong>+10 pts</strong> (¡Pleno!)</li>
+              </ul>
+            </li>
           </ul>
         </div>
 

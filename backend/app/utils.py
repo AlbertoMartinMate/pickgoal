@@ -439,7 +439,8 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
     Calculates and persists total points for a user in a jornada:
       - Sum of points_earned across all non-cancelled PredictionV2 rows
       - Plus unused units (20 - sum of units_wagered on non-cancelled matches)
-    Units wagered on cancelled matches are refunded via the unused-units pool.
+      - Penalty: -1 per finished non-cancelled match without prediction (min 0)
+      - Bonus: +2/+5/+10 for 8/9/10 correct predictions
     Updates Duelo if one exists. Returns total points.
     """
     from app.models import JornadaMatch, PredictionV2, Duelo
@@ -457,17 +458,43 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
     # Units on cancelled matches don't count toward the 20-unit budget (they're refunded)
     units_used = sum(p.units_wagered for p in preds if p.jornada_match_id not in cancelled_jm_ids)
     points_from_bets = 0.0
+    correct_count = 0
+    pred_jm_ids = set()
 
     for pred in preds:
         if pred.jornada_match_id in cancelled_jm_ids:
             pred.points_earned = 0.0
             continue
-        earned = calculate_v2_points(pred, pred.jornada_match.match)
+        pred_jm_ids.add(pred.jornada_match_id)
+        match = pred.jornada_match.match
+        earned = calculate_v2_points(pred, match)
         pred.points_earned = earned
         points_from_bets += earned
+        if match.result_90 is not None and pred.predicted_result == match.result_90:
+            correct_count += 1
 
     unused_units = MAX_UNITS - units_used
     total = round(points_from_bets + unused_units, 2)
+
+    # Penalty: -1 per finished non-cancelled match without prediction
+    missed = sum(
+        1 for jm in jm_list
+        if jm.status != 'cancelled'
+        and jm.match.status == 'finished'
+        and jm.id not in pred_jm_ids
+    )
+    total = max(0.0, round(total - missed, 2))
+
+    # Bonus for correct predictions: 8→+2, 9→+5, 10→+10
+    if correct_count >= 10:
+        bonus = 10
+    elif correct_count >= 9:
+        bonus = 5
+    elif correct_count >= 8:
+        bonus = 2
+    else:
+        bonus = 0
+    total = round(total + bonus, 2)
 
     # Update duelo live points
     from app import db

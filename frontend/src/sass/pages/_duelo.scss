@@ -286,3 +286,72 @@
     }
   }
 }
+
+// ─── Desglose partido a partido (jornadas finalizadas) ───────────────────────
+.duelo-breakdown {
+  margin-bottom: v.$sp-8;
+  overflow-x: auto;
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: v.$fs-sm;
+
+    th {
+      text-align: left;
+      padding: v.$sp-2 v.$sp-3;
+      color: v.$text-muted;
+      font-weight: v.$fw-semi;
+      border-bottom: 1px solid v.$border;
+    }
+
+    td {
+      padding: v.$sp-2 v.$sp-3;
+      border-bottom: 1px solid v.$border;
+      vertical-align: middle;
+    }
+
+    tfoot td {
+      padding-top: v.$sp-3;
+      border-top: 1px solid v.$border-light;
+      border-bottom: none;
+    }
+  }
+
+  &__teams  { color: v.$text; }
+  &__pick   { color: v.$accent; font-weight: v.$fw-semi; text-align: center; }
+  &__result { color: v.$text-muted; text-align: center; }
+  &__pts    { text-align: right; }
+
+  &__total-label {
+    color: v.$text-muted;
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+  }
+
+  &__total-pts {
+    color: v.$accent;
+    font-weight: v.$fw-black;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.pts-label {
+  font-weight: v.$fw-semi;
+  &--win     { color: v.$accent; }
+  &--loss    { color: v.$danger; }
+  &--penalty { color: v.$warning; }
+}
+
+.duelo-pleno-badge {
+  display: inline-block;
+  background: v.$accent-dim;
+  color: v.$accent;
+  border: 1px solid rgba(v.$accent, 0.3);
+  border-radius: v.$r-full;
+  padding: 2px 10px;
+  font-size: v.$fs-xs;
+  font-weight: v.$fw-bold;
+  margin-right: v.$sp-2;
+}

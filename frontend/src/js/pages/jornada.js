@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { showToast, formatDate, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { showToast, formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
 
 const MAX_UNITS = 20;
 const MAX_UNITS_PER_MATCH = 5;
@@ -119,6 +119,26 @@ function matchTag(m) {
 
 const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw']);
 
+function matchPtsLabel(m) {
+  if (m.jm_status === 'cancelled') return '';
+  const pred = m.prediction;
+  const resultKnown = m.status === 'finished' && m.result_90 != null;
+
+  if (resultKnown) {
+    if (!pred) {
+      return '<span class="jornada-pts-label jornada-pts-label--penalty">-1 pt ⚠️</span>';
+    }
+    if (pred.predicted_result === m.result_90) {
+      return `<span class="jornada-pts-label jornada-pts-label--win">+${fmtPts(pred.points_earned)} pts</span>`;
+    }
+    return '<span class="jornada-pts-label jornada-pts-label--loss">0 pts</span>';
+  }
+
+  if (!pred || !pred.units_wagered) return '';
+  const isLive = m.predict_locked;
+  return `<span class="jornada-pts-label jornada-pts-label--${isLive ? 'live' : 'pending'}">${pred.units_wagered}u${isLive ? ' en juego' : ' apostadas'}</span>`;
+}
+
 function matchRow(m) {
   const cancelled = m.jm_status === 'cancelled';
   const locked = m.predict_locked;
@@ -138,6 +158,7 @@ function matchRow(m) {
             ? `<span class="score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`
             : '<span class="score score--dash">vs</span>'
           }
+          ${matchPtsLabel(m)}
         </div>
         <span class="team team--away">${m.away_team}</span>
       </div>
