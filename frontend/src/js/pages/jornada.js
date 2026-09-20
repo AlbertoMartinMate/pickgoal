@@ -78,6 +78,10 @@ function renderJornadaList(el, jornadas, activeIdx) {
   updateLastMatchWarning();
   attachHandlers(el, jornadas, activeIdx);
   attachPointsModal(el);
+
+  requestAnimationFrame(() => {
+    el.querySelector('.jornada-tab--active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  });
 }
 
 function emptyStateHtml() {
@@ -125,6 +129,13 @@ function matchTag(m) {
 
 const KNOCKOUT_PHASES = new Set(['r32', 'r16', 'quarters', 'semis', 'third', 'final', 'no_draw']);
 
+function calcWinPts(pred, result_90, m) {
+  const oddsMap = { '1': m.odds_1, 'X': m.odds_x, '2': m.odds_2 };
+  const odds = oddsMap[result_90];
+  if (odds != null) return Math.round(pred.units_wagered * parseFloat(odds) * 100) / 100;
+  return pred.points_earned ?? 0;
+}
+
 function matchPtsLabel(m) {
   if (m.jm_status === 'cancelled') return '';
   const pred = m.prediction;
@@ -134,8 +145,8 @@ function matchPtsLabel(m) {
     if (!pred) {
       return '<span class="jornada-pts-label jornada-pts-label--penalty">-1 pt ⚠️</span>';
     }
-    const pts = pred.points_earned ?? 0;
     if (pred.predicted_result === m.result_90) {
+      const pts = calcWinPts(pred, m.result_90, m);
       return `<span class="jornada-pts-label jornada-pts-label--win">+${fmtPts(pts)} pts</span>`;
     }
     return '<span class="jornada-pts-label jornada-pts-label--loss">0 pts</span>';

@@ -74,6 +74,10 @@ export async function renderDuelo(el) {
 
     attachPointsModal(el);
 
+    requestAnimationFrame(() => {
+      el.querySelector('.jornada-tab--active')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    });
+
     el.querySelectorAll('.jornada-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         el.querySelectorAll('.jornada-tab').forEach(t => t.classList.remove('jornada-tab--active'));

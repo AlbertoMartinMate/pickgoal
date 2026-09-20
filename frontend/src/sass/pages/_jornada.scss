@@ -148,11 +148,20 @@
 .jornada-tabs {
   display: flex;
   gap: v.$sp-2;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   margin-bottom: v.$sp-4;
+  padding-bottom: v.$sp-1;
+
+  &::-webkit-scrollbar { display: none; }
 }
 
 .jornada-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  scroll-snap-align: center;
   padding: v.$sp-2 v.$sp-3;
   border-radius: v.$r-md;
   border: 1px solid v.$border;
