@@ -9,6 +9,7 @@ let state = {};
 let totalUnits = 0;
 let lastOpenMatchId = null;
 let currentJornadaData = null;
+let openMatchesForSave = [];
 
 export async function renderJornada(el) {
   el.innerHTML = '<div class="loading"><div class="loading__spinner"></div></div>';
@@ -41,6 +42,7 @@ function renderJornadaList(el, jornadas, activeIdx) {
   totalUnits = units_used;
 
   const openMatches = matches.filter(m => !m.predict_locked);
+  openMatchesForSave = openMatches;
   lastOpenMatchId = openMatches.length === 1 ? openMatches[0].jornada_match_id : null;
 
   const isFinished = jornada.status === 'finished';
@@ -70,12 +72,20 @@ function renderJornadaList(el, jornadas, activeIdx) {
       <div class="jornada-matches">
         ${matches.map(matchRow).join('')}
       </div>
+      ${!isFinished && openMatches.length > 0 ? `
+        <div class="jornada-save-all" id="jornadaSaveAll">
+          <button class="jornada-save-all__btn" id="jornadaSaveAllBtn">
+            💾 Guardar predicciones (0/${openMatches.length} predichos)
+          </button>
+        </div>
+      ` : ''}
       ${pointsModalHtml()}
     </div>
   `;
 
   renderUnitsCounter();
   updateLastMatchWarning();
+  updateSaveAllBtn();
   attachHandlers(el, jornadas, activeIdx);
   attachPointsModal(el);
 
@@ -200,10 +210,7 @@ function matchRow(m) {
           <input type="number" id="units-${m.jornada_match_id}" class="jornada-units__input" min="0" max="${MAX_UNITS_PER_MATCH}" value="${s.units}" ${locked ? 'disabled' : ''} />
         </div>
       </div>
-      ${!locked ? `
-        <div class="jornada-match__warning" id="warning-${m.jornada_match_id}"></div>
-        <button class="btn btn--primary btn--full jornada-match__save-btn" data-jm-id="${m.jornada_match_id}">Guardar</button>
-      ` : ''}
+      ${!locked ? `<div class="jornada-match__warning" id="warning-${m.jornada_match_id}"></div>` : ''}
     </div>
   `;
 }
@@ -234,6 +241,7 @@ function recalcTotalUnits() {
   totalUnits = Object.values(state).reduce((sum, s) => sum + (s.predicted_result ? s.units : 0), 0);
   renderUnitsCounter();
   updateLastMatchWarning();
+  updateSaveAllBtn();
 }
 
 function attachHandlers(el, jornadas, activeIdx) {
@@ -262,42 +270,59 @@ function attachHandlers(el, jornadas, activeIdx) {
       state[jmId].units = v;
       recalcTotalUnits();
     });
-
-    card.querySelector('.jornada-match__save-btn')?.addEventListener('click', () => savePrediction(jmId));
   });
+
+  document.getElementById('jornadaSaveAllBtn')?.addEventListener('click', saveAllPredictions);
 }
 
-async function savePrediction(jmId) {
-  const s = state[jmId];
+function updateSaveAllBtn() {
+  const btn = document.getElementById('jornadaSaveAllBtn');
+  if (!btn) return;
+  const predicted = openMatchesForSave.filter(m => state[m.jornada_match_id]?.predicted_result).length;
+  const total = openMatchesForSave.length;
+  btn.textContent = `💾 Guardar predicciones (${predicted}/${total} predichos)`;
+}
 
-  const matchData = currentJornadaData?.matches?.find(m => m.jornada_match_id === parseInt(jmId));
-  const isKo = matchData && KNOCKOUT_PHASES.has(matchData.phase);
-  if (!s.predicted_result) {
-    showToast(isKo ? 'Selecciona el ganador (1 o 2)' : 'Selecciona un resultado 1X2', 'error');
-    return;
+async function saveAllPredictions() {
+  const missing = openMatchesForSave.filter(m => !state[m.jornada_match_id]?.predicted_result);
+  if (missing.length > 0) {
+    const confirmed = confirm(
+      `⚠️ Te quedan ${missing.length} partido${missing.length !== 1 ? 's' : ''} sin predecir (−1 pt cada uno).\n\n¿Guardar igualmente?`
+    );
+    if (!confirmed) return;
   }
+
   if (totalUnits > MAX_UNITS) {
     showToast(`Superas el máximo de ${MAX_UNITS} unidades`, 'error');
     return;
   }
 
-  const btn = document.querySelector(`.jornada-match__save-btn[data-jm-id="${jmId}"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const toPred = openMatchesForSave.filter(m => state[m.jornada_match_id]?.predicted_result);
+  if (!toPred.length) {
+    showToast('No hay predicciones que guardar', 'error');
+    return;
+  }
 
-  try {
-    await api.jornada.predict({
-      jornada_match_id: jmId,
-      predicted_result: s.predicted_result,
-      units: s.units,
-    });
-    showToast('Predicción guardada');
-    if (btn) btn.textContent = '✓ Guardada';
-  } catch (err) {
-    showToast(err.message || 'Error al guardar', 'error');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      setTimeout(() => { if (btn) btn.textContent = 'Guardar'; }, 2000);
-    }
+  const btn = document.getElementById('jornadaSaveAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+  const results = await Promise.allSettled(
+    toPred.map(m => api.jornada.predict({
+      jornada_match_id: m.jornada_match_id,
+      predicted_result: state[m.jornada_match_id].predicted_result,
+      units: state[m.jornada_match_id].units,
+    }))
+  );
+
+  const errors = results.filter(r => r.status === 'rejected').length;
+  if (errors === 0) {
+    showToast(`${toPred.length} predicción${toPred.length !== 1 ? 'es' : ''} guardadas ✓`);
+  } else {
+    showToast(`${errors} error${errors !== 1 ? 'es' : ''} al guardar`, 'error');
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    updateSaveAllBtn();
   }
 }
