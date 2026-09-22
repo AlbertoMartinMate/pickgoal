@@ -151,26 +151,37 @@ function calcWinPts(pred, result_90, m) {
   return pred.points_earned ?? 0;
 }
 
-// Total points for a jornada tab: finished matches count for real, matches
-// currently in play are projected as wins (units × cuota) since the final
-// result isn't known yet; matches not yet started don't count.
+// Estimated points for a jornada tab:
+//   unidades_sin_apostar + unidades_en_juego_si_aciertan + puntos_ya_ganados
+// Finished matches count for real (or -1 penalty if never predicted); any
+// other prediction (open or in play) is projected as a win at its odds,
+// since the final result isn't known yet; units never wagered are credited
+// 1:1 — the 20-unit baseline everyone starts a jornada with.
 function calcJornadaPoints(jData) {
-  let total = 0;
+  let totalWagered = 0;
+  let earnedOrProjected = 0;
+  let penalty = 0;
+
   for (const m of jData.matches) {
     if (m.jm_status === 'cancelled') continue;
     const pred = m.prediction;
     const resultKnown = m.status === 'finished' && m.result_90 != null;
 
+    if (pred && pred.units_wagered) totalWagered += pred.units_wagered;
+
     if (resultKnown) {
-      if (!pred) { total -= 1; continue; }
-      if (pred.predicted_result === m.result_90) total += calcWinPts(pred, m.result_90, m);
+      if (!pred) { penalty += 1; continue; }
+      if (pred.predicted_result === m.result_90) earnedOrProjected += calcWinPts(pred, m.result_90, m);
       continue;
     }
 
-    if (m.predict_locked && pred && pred.units_wagered) {
-      total += calcWinPts(pred, pred.predicted_result, m);
+    if (pred && pred.units_wagered) {
+      earnedOrProjected += calcWinPts(pred, pred.predicted_result, m);
     }
   }
+
+  const unusedUnits = Math.max(0, MAX_UNITS - totalWagered);
+  const total = Math.max(0, earnedOrProjected + unusedUnits - penalty);
   return Math.round(total * 100) / 100;
 }
 

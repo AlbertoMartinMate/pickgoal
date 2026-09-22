@@ -19,11 +19,6 @@ def _get_active_jornada():
     )
 
 
-def _get_user_jornada_points(user_id, jornada_id):
-    from app.utils import calculate_jornada_points
-    return calculate_jornada_points(user_id, jornada_id, commit=False)
-
-
 def _match_started(match):
     dt_utc = match.match_datetime.replace(tzinfo=timezone.utc)
     return match.status != 'scheduled' or datetime.now(timezone.utc) >= dt_utc
@@ -113,8 +108,9 @@ def get_current_duelo():
     rival_id = duelo.player2_id if is_p1 else duelo.player1_id
     rival = User.query.get(rival_id)
 
-    my_points = _get_user_jornada_points(user_id, jornada.id)
-    rival_points = _get_user_jornada_points(rival_id, jornada.id)
+    from app.utils import estimate_jornada_points
+    my_points = estimate_jornada_points(user_id, jornada.id)
+    rival_points = estimate_jornada_points(rival_id, jornada.id)
 
     if duelo.winner_id is None:
         status = 'en_curso'
@@ -162,8 +158,18 @@ def list_duelos():
         rival = User.query.get(rival_id)
         is_bye = duelo.player1_id == duelo.player2_id
 
-        my_points = duelo.points_player1 if is_p1 else duelo.points_player2
-        rival_points = duelo.points_player2 if is_p1 else duelo.points_player1
+        if jornada.status == 'finished':
+            my_points = duelo.points_player1 if is_p1 else duelo.points_player2
+            rival_points = duelo.points_player2 if is_p1 else duelo.points_player1
+        else:
+            # Not-yet-finished jornadas: the persisted points_player1/2 columns
+            # only update when calculate_jornada_points runs for that user
+            # (prediction save, admin action, scheduler poll), so they default
+            # to 0 until then. Show the optimistic display estimate instead —
+            # 20-unit baseline plus any pending bet projected as a win.
+            from app.utils import estimate_jornada_points
+            my_points = estimate_jornada_points(user_id, jornada.id)
+            rival_points = my_points if is_bye else estimate_jornada_points(rival_id, jornada.id)
 
         if duelo.winner_id is None and jornada.status != 'finished':
             status = 'en_curso'
@@ -247,10 +253,12 @@ def get_current_duelo_detail():
                 # Includes both not-yet-started and in-progress matches
                 units_at_stake += pred.units_wagered
 
+        from app.utils import estimate_jornada_points
         return {
             'points_earned': round(points_earned, 2),
             'units_at_stake': units_at_stake,
             'units_unbet': (20 - total_wagered) if reveal_unbet else None,
+            'estimated_points': estimate_jornada_points(uid, jornada.id),
         }
 
     me_detail = _compute(user_id, reveal_unbet=True)

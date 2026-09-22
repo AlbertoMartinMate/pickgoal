@@ -541,6 +541,64 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
     return total
 
 
+def estimate_jornada_points(user_id: int, jornada_id: int) -> float:
+    """
+    Optimistic display estimate of a user's jornada points, for jornadas/duelos
+    that haven't finished yet:
+      unidades_sin_apostar + unidades_en_juego_si_aciertan + puntos_ya_ganados
+    Unlike calculate_jornada_points, a pending prediction (on a match that
+    hasn't finished, whether locked/live or still open) is projected as a
+    win at its odds instead of counting as 0 until the real result is known.
+    Doesn't persist anything or touch Duelo — display only.
+    """
+    from app.models import JornadaMatch, PredictionV2
+
+    MAX_UNITS = 20
+
+    jm_list = JornadaMatch.query.filter_by(jornada_id=jornada_id).all()
+    jm_ids = [jm.id for jm in jm_list]
+    cancelled_jm_ids = {jm.id for jm in jm_list if jm.status == 'cancelled'}
+
+    preds = {
+        p.jornada_match_id: p
+        for p in PredictionV2.query.filter_by(user_id=user_id)
+            .filter(PredictionV2.jornada_match_id.in_(jm_ids)).all()
+    }
+
+    total_wagered = 0
+    projected = 0.0
+    penalty = 0
+
+    for jm in jm_list:
+        if jm.id in cancelled_jm_ids:
+            continue
+        pred = preds.get(jm.id)
+        match = jm.match
+        result_known = match.status == 'finished' and match.result_90 is not None
+
+        if pred:
+            total_wagered += pred.units_wagered
+
+        if result_known:
+            if not pred:
+                penalty += 1
+                continue
+            if pred.predicted_result == match.result_90:
+                odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
+                odds = odds_map.get(match.result_90) or 1.0
+                projected += round(pred.units_wagered * odds, 2)
+            continue
+
+        if pred and pred.units_wagered:
+            odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
+            odds = odds_map.get(pred.predicted_result) or 1.0
+            projected += round(pred.units_wagered * odds, 2)
+
+    unused_units = max(0, MAX_UNITS - total_wagered)
+    total = projected + unused_units - penalty
+    return round(max(0.0, total), 2)
+
+
 def recalculate_v2_for_match(match):
     """Update PredictionV2 points and live duelo scores after a match finishes."""
     from app.models import JornadaMatch, Jornada, PredictionV2

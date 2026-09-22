@@ -66,10 +66,14 @@ export async function renderDuelo(el) {
 
     const tabs = duelos.map((d, i) => {
       const { icon, cls } = dueloTabResult(d);
+      const ptsCls = d.jornada_status === 'finished' ? 'finished' : d.jornada_status === 'active' ? 'active' : 'upcoming';
+      const score = `${fmtPts(d.my_points)}-${d.is_bye ? '—' : fmtPts(d.rival_points)}`;
       return `
-        <button class="jornada-tab ${i === defaultIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
+        <button class="jornada-tab jornada-tab--stacked ${i === defaultIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
           <span class="jornada-tab__num">J${d.jornada_number}</span>
-          ${icon ? `<span class="jornada-tab__result jornada-tab__result--${cls}">${icon}</span>` : ''}
+          <span class="jornada-tab__pts jornada-tab__pts--${ptsCls}">
+            ${score}${icon ? ` <span class="jornada-tab__result jornada-tab__result--${cls}">${icon}</span>` : ''}
+          </span>
         </button>
       `;
     }).join('');
@@ -352,7 +356,7 @@ function buildTrackerHtml(detail, myName, rivalName) {
     return `
       <div class="duelo-tracker__col">
         <div class="duelo-tracker__player">${name}</div>
-        <div class="duelo-tracker__pts">${fmtPts(d.points_earned)}</div>
+        <div class="duelo-tracker__pts">${fmtPts(d.estimated_points)}</div>
         <div class="duelo-tracker__rows">
           <div class="duelo-tracker__row">
             <span class="duelo-tracker__icon">✅</span>
@@ -378,7 +382,7 @@ function buildTrackerHtml(detail, myName, rivalName) {
     <div class="duelo-tracker__inner">
       ${col(myName, me)}
       <div class="duelo-tracker__divider">VS</div>
-      ${col(rivalName, rival ?? { points_earned: 0, units_at_stake: 0, units_unbet: null })}
+      ${col(rivalName, rival ?? { points_earned: 0, units_at_stake: 0, units_unbet: null, estimated_points: 0 })}
     </div>
     <div class="duelo-tracker__note">Actualizado hace unos segundos · se refresca cada minuto</div>
   `;
