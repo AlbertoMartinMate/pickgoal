@@ -196,6 +196,9 @@
 
 .jornada-tab {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: v.$sp-1;
   white-space: nowrap;
   scroll-snap-align: center;
   padding: v.$sp-2 v.$sp-3;
@@ -223,16 +226,38 @@
     opacity: 0.7;
   }
 
-  &__badge {
-    display: inline-block;
-    margin-left: v.$sp-1;
-    padding: 1px 6px;
-    border-radius: v.$r-full;
-    font-size: 10px;
+  // Jornada tabs: number on top, points below
+  &--stacked {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 56px;
+  }
+
+  &__num {
+    font-size: v.$fs-sm;
     font-weight: v.$fw-bold;
-    background: rgba(255, 255, 255, 0.06);
-    color: v.$text-muted;
-    vertical-align: middle;
+    color: inherit;
+  }
+
+  // ─── Points subtitle (jornada tabs) ─────────────────────────────────────
+  &__pts {
+    font-size: v.$fs-xs;
+    font-weight: v.$fw-semi;
+
+    &--finished { color: v.$accent; }
+    &--active   { color: v.$info; }
+    &--upcoming { color: v.$text-dim; }
+  }
+
+  // ─── Result indicator (duelo tabs) ──────────────────────────────────────
+  &__result {
+    font-size: v.$fs-sm;
+    font-weight: v.$fw-black;
+
+    &--win  { color: v.$accent; }
+    &--loss { color: v.$danger; }
+    &--draw { color: v.$text-dim; }
+    &--live { color: v.$warning; }
   }
 }
 

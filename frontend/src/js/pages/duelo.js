@@ -21,9 +21,19 @@ const RESULT_BADGE = {
   empate:  '🤝 Empate',
 };
 
-function fmtDayMonth(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+function dueloTabResult(d) {
+  if (d.is_bye) return { icon: '', cls: '' };
+
+  const live = d.jornada_status === 'active' || d.jornada_status === 'upcoming';
+  if (live) {
+    const icon = d.my_points > d.rival_points ? '✓' : d.my_points < d.rival_points ? '✗' : '=';
+    return { icon, cls: 'live' };
+  }
+
+  if (d.status === 'ganado') return { icon: '✓', cls: 'win' };
+  if (d.status === 'perdido') return { icon: '✗', cls: 'loss' };
+  if (d.status === 'empate') return { icon: '=', cls: 'draw' };
+  return { icon: '', cls: '' };
 }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
@@ -54,11 +64,15 @@ export async function renderDuelo(el) {
     );
     const defaultIdx = activeIdx >= 0 ? activeIdx : duelos.length - 1;
 
-    const tabs = duelos.map((d, i) => `
-      <button class="jornada-tab ${i === defaultIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
-        J${d.jornada_number} · ${fmtDayMonth(d.jornada_date_start)}–${fmtDayMonth(d.jornada_date_end)}
-      </button>
-    `).join('');
+    const tabs = duelos.map((d, i) => {
+      const { icon, cls } = dueloTabResult(d);
+      return `
+        <button class="jornada-tab ${i === defaultIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
+          <span class="jornada-tab__num">J${d.jornada_number}</span>
+          ${icon ? `<span class="jornada-tab__result jornada-tab__result--${cls}">${icon}</span>` : ''}
+        </button>
+      `;
+    }).join('');
 
     el.innerHTML = `
       <div class="container">

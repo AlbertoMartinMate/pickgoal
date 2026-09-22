@@ -22,7 +22,11 @@ export async function renderJornada(el) {
       return;
     }
 
-    renderJornadaList(el, jornadas, 0);
+    const sorted = [...jornadas].sort((a, b) => a.jornada.number - b.jornada.number);
+    const liveIdx = sorted.findIndex(j => j.jornada.status === 'active' || j.jornada.status === 'upcoming');
+    const activeIdx = liveIdx >= 0 ? liveIdx : sorted.length - 1;
+
+    renderJornadaList(el, sorted, activeIdx);
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando jornadas: ${err.message}</p></div>`;
   }
@@ -51,10 +55,11 @@ function renderJornadaList(el, jornadas, activeIdx) {
     ? `<div class="jornada-tabs">
         ${jornadas.map((j, i) => {
           const fin = j.jornada.status === 'finished';
+          const { pts, cls } = jornadaTabPts(j);
           return `
-            <button class="jornada-tab ${i === activeIdx ? 'jornada-tab--active' : ''} ${fin ? 'jornada-tab--finished' : ''}" data-idx="${i}">
-              J${j.jornada.number} · ${formatDayMonth(j.jornada.date_start)}–${formatDayMonth(j.jornada.date_end)}
-              ${fin ? '<span class="jornada-tab__badge">Finalizada</span>' : ''}
+            <button class="jornada-tab jornada-tab--stacked ${i === activeIdx ? 'jornada-tab--active' : ''} ${fin ? 'jornada-tab--finished' : ''}" data-idx="${i}">
+              <span class="jornada-tab__num">J${j.jornada.number}</span>
+              <span class="jornada-tab__pts jornada-tab__pts--${cls}">${fmtPts(pts)}pts</span>
             </button>
           `;
         }).join('')}
@@ -144,6 +149,36 @@ function calcWinPts(pred, result_90, m) {
   const odds = oddsMap[result_90];
   if (odds != null) return Math.round(pred.units_wagered * parseFloat(odds) * 100) / 100;
   return pred.points_earned ?? 0;
+}
+
+// Total points for a jornada tab: finished matches count for real, matches
+// currently in play are projected as wins (units × cuota) since the final
+// result isn't known yet; matches not yet started don't count.
+function calcJornadaPoints(jData) {
+  let total = 0;
+  for (const m of jData.matches) {
+    if (m.jm_status === 'cancelled') continue;
+    const pred = m.prediction;
+    const resultKnown = m.status === 'finished' && m.result_90 != null;
+
+    if (resultKnown) {
+      if (!pred) { total -= 1; continue; }
+      if (pred.predicted_result === m.result_90) total += calcWinPts(pred, m.result_90, m);
+      continue;
+    }
+
+    if (m.predict_locked && pred && pred.units_wagered) {
+      total += calcWinPts(pred, pred.predicted_result, m);
+    }
+  }
+  return Math.round(total * 100) / 100;
+}
+
+function jornadaTabPts(jData) {
+  const pts = calcJornadaPoints(jData);
+  const status = jData.jornada.status;
+  const cls = status === 'finished' ? 'finished' : status === 'active' ? 'active' : 'upcoming';
+  return { pts, cls };
 }
 
 function matchPtsLabel(m) {
