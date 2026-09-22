@@ -85,53 +85,43 @@ export async function renderHome(el) {
   }
 }
 
-async function renderGuest(el) {
-  const LAUNCH_DATE = new Date('2026-08-15T00:00:00Z');
-  const isLaunched = new Date() >= LAUNCH_DATE;
-
-  let jornadaInfo = null;
-  if (isLaunched) {
-    try { jornadaInfo = await api.jornada.info(); } catch (_) {}
-  }
-
+function renderGuest(el) {
   el.innerHTML = `
     <section class="hero">
       <div class="hero__content">
         <img src="${heroImg}" alt="PickGoal" class="hero__logo-img" />
+        <h1 class="hero__title">PickGoal</h1>
+        <p class="hero__subtitle">La liga de pronósticos de fútbol</p>
         <div class="hero__cta">
-          <a href="#/register" class="btn btn--primary btn--lg">Registrarse</a>
+          <a href="#/register" class="btn btn--primary btn--lg">🚀 Crear cuenta gratis</a>
           <a href="#/login" class="btn btn--ghost btn--lg">Ya tengo cuenta</a>
         </div>
       </div>
     </section>
 
-    <div class="container">
-      ${pickgoalLeagueCard(jornadaInfo, isLaunched)}
-    </div>
-
     <section class="how-it-works container">
-      <h2 class="how-it-works__title">¿Cómo funciona?</h2>
       <div class="how-it-works__grid">
         <div class="how-step">
           <span class="how-step__icon">⚽</span>
-          <div class="how-step__num">1</div>
           <h3 class="how-step__title">Predice los partidos</h3>
-          <p class="how-step__desc">Elige el resultado 1X2 de LaLiga, Premier League y Champions cada jornada</p>
+          <p class="how-step__desc">LaLiga, Premier League y Champions League cada semana</p>
         </div>
         <div class="how-step">
-          <span class="how-step__icon">⚔️</span>
-          <div class="how-step__num">2</div>
-          <h3 class="how-step__title">Gana duelos 1vs1</h3>
-          <p class="how-step__desc">Cada jornada te enfrentas a un rival de tu división para sumar puntos</p>
+          <span class="how-step__icon">🏆</span>
+          <h3 class="how-step__title">Duelos 1vs1</h3>
+          <p class="how-step__desc">Enfréntate a otro jugador cada jornada y sube de división</p>
         </div>
         <div class="how-step">
-          <span class="how-step__icon">👑</span>
-          <div class="how-step__num">3</div>
-          <h3 class="how-step__title">Sube de división</h3>
-          <p class="how-step__desc">Los mejores ascienden. ¿Llegarás a lo más alto de la PickGoal League?</p>
+          <span class="how-step__icon">🎯</span>
+          <h3 class="how-step__title">Sistema de unidades</h3>
+          <p class="how-step__desc">20 unidades por jornada — apuesta más en los que más confías</p>
         </div>
       </div>
     </section>
+
+    <div class="container">
+      ${prizeBanner()}
+    </div>
   `;
 }
 
