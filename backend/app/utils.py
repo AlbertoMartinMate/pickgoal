@@ -543,12 +543,15 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
 
 def estimate_jornada_points(user_id: int, jornada_id: int) -> float:
     """
-    Optimistic display estimate of a user's jornada points, for jornadas/duelos
-    that haven't finished yet:
-      unidades_sin_apostar + unidades_en_juego_si_aciertan + puntos_ya_ganados
-    Unlike calculate_jornada_points, a pending prediction (on a match that
-    hasn't finished, whether locked/live or still open) is projected as a
-    win at its odds instead of counting as 0 until the real result is known.
+    Display estimate of a user's jornada points, for jornadas/duelos that
+    haven't finished yet:
+      unidades_sin_apostar + unidades_en_juego + puntos_ya_ganados
+    Only a match with a KNOWN result counts via odds (win) or 0 (loss), or
+    -1 penalty if never predicted. A pending prediction (match still open
+    or live, result not known yet) counts at face value — NOT projected as
+    a win via odds, since nothing's decided. That keeps the total at
+    exactly MAX_UNITS until the first match actually finishes:
+    (20 - apostado) + apostado = 20.
     Doesn't persist anything or touch Duelo — display only.
     """
     from app.models import JornadaMatch, PredictionV2
@@ -566,7 +569,8 @@ def estimate_jornada_points(user_id: int, jornada_id: int) -> float:
     }
 
     total_wagered = 0
-    projected = 0.0
+    real = 0.0
+    pending = 0
     penalty = 0
 
     for jm in jm_list:
@@ -586,16 +590,14 @@ def estimate_jornada_points(user_id: int, jornada_id: int) -> float:
             if pred.predicted_result == match.result_90:
                 odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
                 odds = odds_map.get(match.result_90) or 1.0
-                projected += round(pred.units_wagered * odds, 2)
+                real += round(pred.units_wagered * odds, 2)
             continue
 
         if pred and pred.units_wagered:
-            odds_map = {'1': jm.odds_1, 'X': jm.odds_x, '2': jm.odds_2}
-            odds = odds_map.get(pred.predicted_result) or 1.0
-            projected += round(pred.units_wagered * odds, 2)
+            pending += pred.units_wagered
 
     unused_units = max(0, MAX_UNITS - total_wagered)
-    total = projected + unused_units - penalty
+    total = real + pending + unused_units - penalty
     return round(max(0.0, total), 2)
 
 

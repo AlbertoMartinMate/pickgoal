@@ -12,6 +12,13 @@
   border: 1px solid v.$border;
   border-radius: v.$r-md;
 
+  // Stays visible while scrolling through the match list, just below the
+  // fixed navbar (an opaque background is required so matches don't show
+  // through underneath).
+  position: sticky;
+  top: v.$navbar-h;
+  z-index: 10;
+
   &__bar {
     flex: 1;
     height: 8px;
@@ -247,6 +254,17 @@
     &--finished { color: v.$accent; }
     &--active   { color: v.$info; }
     &--upcoming { color: v.$text-dim; }
+  }
+
+  &__badge {
+    padding: 1px 6px;
+    border-radius: v.$r-full;
+    font-size: 9px;
+    font-weight: v.$fw-bold;
+    background: rgba(255, 255, 255, 0.06);
+    color: v.$text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   // ─── Result indicator (duelo tabs) ──────────────────────────────────────

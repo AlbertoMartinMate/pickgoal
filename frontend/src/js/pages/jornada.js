@@ -60,6 +60,7 @@ function renderJornadaList(el, jornadas, activeIdx) {
             <button class="jornada-tab jornada-tab--stacked ${i === activeIdx ? 'jornada-tab--active' : ''} ${fin ? 'jornada-tab--finished' : ''}" data-idx="${i}">
               <span class="jornada-tab__num">J${j.jornada.number}</span>
               <span class="jornada-tab__pts jornada-tab__pts--${cls}">${fmtPts(pts)}pts</span>
+              ${fin ? '<span class="jornada-tab__badge">Finalizada</span>' : ''}
             </button>
           `;
         }).join('')}
@@ -151,15 +152,16 @@ function calcWinPts(pred, result_90, m) {
   return pred.points_earned ?? 0;
 }
 
-// Estimated points for a jornada tab:
-//   unidades_sin_apostar + unidades_en_juego_si_aciertan + puntos_ya_ganados
-// Finished matches count for real (or -1 penalty if never predicted); any
-// other prediction (open or in play) is projected as a win at its odds,
-// since the final result isn't known yet; units never wagered are credited
-// 1:1 — the 20-unit baseline everyone starts a jornada with.
+// Estimated points for a jornada tab: unidades_sin_apostar + unidades_en_juego + puntos_ya_ganados.
+// Only matches with a KNOWN result count via odds (win) or 0 (loss), or -1
+// penalty if never predicted. A pending prediction (match still open or live,
+// result not known yet) counts at face value — NOT projected as a win via
+// odds, since nothing's decided. That keeps the total at exactly 20 until
+// the first match actually finishes: (20 - apostado) + apostado = 20.
 function calcJornadaPoints(jData) {
   let totalWagered = 0;
-  let earnedOrProjected = 0;
+  let real = 0;
+  let pending = 0;
   let penalty = 0;
 
   for (const m of jData.matches) {
@@ -171,17 +173,15 @@ function calcJornadaPoints(jData) {
 
     if (resultKnown) {
       if (!pred) { penalty += 1; continue; }
-      if (pred.predicted_result === m.result_90) earnedOrProjected += calcWinPts(pred, m.result_90, m);
+      if (pred.predicted_result === m.result_90) real += calcWinPts(pred, m.result_90, m);
       continue;
     }
 
-    if (pred && pred.units_wagered) {
-      earnedOrProjected += calcWinPts(pred, pred.predicted_result, m);
-    }
+    if (pred && pred.units_wagered) pending += pred.units_wagered;
   }
 
   const unusedUnits = Math.max(0, MAX_UNITS - totalWagered);
-  const total = Math.max(0, earnedOrProjected + unusedUnits - penalty);
+  const total = Math.max(0, real + pending + unusedUnits - penalty);
   return Math.round(total * 100) / 100;
 }
 

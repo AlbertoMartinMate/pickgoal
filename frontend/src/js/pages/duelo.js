@@ -24,8 +24,11 @@ const RESULT_BADGE = {
 function dueloTabResult(d) {
   if (d.is_bye) return { icon: '', cls: '' };
 
-  const live = d.jornada_status === 'active' || d.jornada_status === 'upcoming';
-  if (live) {
+  // Upcoming: nothing has started, so my_points/rival_points are always
+  // both exactly 20 — showing a "=" or a "20-20" score is just noise.
+  if (d.jornada_status === 'upcoming') return { icon: '', cls: '' };
+
+  if (d.jornada_status === 'active') {
     const icon = d.my_points > d.rival_points ? '✓' : d.my_points < d.rival_points ? '✗' : '=';
     return { icon, cls: 'live' };
   }
@@ -66,14 +69,19 @@ export async function renderDuelo(el) {
 
     const tabs = duelos.map((d, i) => {
       const { icon, cls } = dueloTabResult(d);
-      const ptsCls = d.jornada_status === 'finished' ? 'finished' : d.jornada_status === 'active' ? 'active' : 'upcoming';
+      // Upcoming (nothing started yet): score is always 20-20 — no signal,
+      // so skip the subtitle row entirely and just show the jornada number.
+      const showScore = d.jornada_status !== 'upcoming';
+      const ptsCls = d.jornada_status === 'finished' ? 'finished' : 'active';
       const score = `${fmtPts(d.my_points)}-${d.is_bye ? '—' : fmtPts(d.rival_points)}`;
       return `
         <button class="jornada-tab jornada-tab--stacked ${i === defaultIdx ? 'jornada-tab--active' : ''}" data-idx="${i}">
           <span class="jornada-tab__num">J${d.jornada_number}</span>
-          <span class="jornada-tab__pts jornada-tab__pts--${ptsCls}">
-            ${score}${icon ? ` <span class="jornada-tab__result jornada-tab__result--${cls}">${icon}</span>` : ''}
-          </span>
+          ${showScore ? `
+            <span class="jornada-tab__pts jornada-tab__pts--${ptsCls}">
+              ${score}${icon ? ` <span class="jornada-tab__result jornada-tab__result--${cls}">${icon}</span>` : ''}
+            </span>
+          ` : ''}
         </button>
       `;
     }).join('');
