@@ -448,7 +448,10 @@
   color: v.$text-muted;
   margin-bottom: v.$sp-3;
 
-  strong { color: v.$accent; font-variant-numeric: tabular-nums; }
+  strong { font-variant-numeric: tabular-nums; }
+
+  &--incomplete strong { color: v.$warning; }
+  &--complete strong { color: v.$accent; }
 
   &__warn {
     margin-left: v.$sp-3;

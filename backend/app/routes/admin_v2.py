@@ -441,8 +441,8 @@ def update_jornada(jornada_id):
 
     matches_payload = data.get('matches')
     if matches_payload is not None:
-        if len(matches_payload) != 10:
-            return jsonify({'error': 'Debes seleccionar exactamente 10 partidos'}), 400
+        if len(matches_payload) > 10:
+            return jsonify({'error': 'Máximo 10 partidos por jornada'}), 400
         jm_ids = [jm.id for jm in JornadaMatch.query.filter_by(jornada_id=jornada.id).all()]
         if jm_ids:
             PredictionV2.query.filter(PredictionV2.jornada_match_id.in_(jm_ids)).delete(synchronize_session=False)

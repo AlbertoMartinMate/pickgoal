@@ -364,8 +364,8 @@ function renderJornadasPanel(jornadas) {
         </div>
 
         <div id="jv2MatchPicker" style="display:none">
-          <div class="jv2-counter">
-            Seleccionados: <strong id="jv2Count">0</strong>
+          <div class="jv2-counter jv2-counter--incomplete" id="jv2Counter">
+            <strong id="jv2Count">0/10</strong> partidos seleccionados
           </div>
           <div id="jv2MatchList" class="jv2-match-list"></div>
         </div>
@@ -430,7 +430,7 @@ function jornadaRow(j) {
       </div>
       <div class="jv2-row__actions">
         ${j.status === 'draft' ? `
-          <button class="btn btn--primary btn--xs jv2-pub-btn" data-id="${j.id}" data-num="${j.number}">Publicar</button>
+          <button class="btn btn--primary btn--xs jv2-pub-btn" data-id="${j.id}" data-num="${j.number}" data-count="${j.match_count}">Publicar</button>
         ` : ''}
         ${canEdit ? `
           <button class="btn btn--ghost btn--xs jv2-edit-btn" data-id="${j.id}">Editar</button>
@@ -482,6 +482,11 @@ function attachJornadasEvents(container) {
 
   container.querySelectorAll('.jv2-pub-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
+      const count = parseInt(btn.dataset.count, 10);
+      if (count !== 10) {
+        showToast(`La jornada debe tener exactamente 10 partidos para publicar (tiene ${count})`, 'error');
+        return;
+      }
       if (!confirm(`¿Publicar jornada ${btn.dataset.num}? Se calcularán cuotas, se asignarán duelos y se notificará a los usuarios.`)) return;
       btn.disabled = true;
       btn.textContent = 'Publicando…';
@@ -642,7 +647,13 @@ function renderMatchPicker(matchesByComp) {
 
 function updateCounter() {
   const el = document.getElementById('jv2Count');
-  if (el) el.textContent = _selectedMatches.length;
+  if (el) el.textContent = `${_selectedMatches.length}/10`;
+  const box = document.getElementById('jv2Counter');
+  if (box) {
+    const complete = _selectedMatches.length === 10;
+    box.classList.toggle('jv2-counter--complete', complete);
+    box.classList.toggle('jv2-counter--incomplete', !complete);
+  }
 }
 
 async function guardarJornada() {
