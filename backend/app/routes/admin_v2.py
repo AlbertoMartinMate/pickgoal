@@ -403,11 +403,15 @@ def create_jornada():
         date_end=date_end.replace(tzinfo=None),
         status='draft',
     )
-    db.session.add(jornada)
-    db.session.flush()
-
-    _upsert_jornada_matches(jornada.id, matches_payload)
-    db.session.commit()
+    try:
+        db.session.add(jornada)
+        db.session.flush()
+        _upsert_jornada_matches(jornada.id, matches_payload)
+        db.session.commit()
+    except Exception as e:
+        logger.exception('[create_jornada] jornada %s: fallo creando partidos', number)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
     return jsonify({'jornada': {**jornada.to_dict(), 'match_count': len(matches_payload)}}), 201
 
