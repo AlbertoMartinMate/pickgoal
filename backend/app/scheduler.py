@@ -73,6 +73,7 @@ def sync_full_calendar(app):
                         home_score_90=home_90, away_score_90=away_90,
                         home_score_final=home_final, away_score_final=away_final,
                         result_90=result,
+                        is_manual=False, result_type='1X2',
                     )
                     db.session.add(new_match)
 

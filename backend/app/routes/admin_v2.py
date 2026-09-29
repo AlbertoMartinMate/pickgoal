@@ -777,6 +777,8 @@ def _upsert_jornada_matches(jornada_id, matches_payload):
                 match_datetime=dt,
                 status='scheduled',
                 competition_id=comp.id,
+                is_manual=False,
+                result_type='1X2',
             )
             db.session.add(match)
             db.session.flush()
