@@ -482,11 +482,8 @@ function attachJornadasEvents(container) {
 
   container.querySelectorAll('.jv2-pub-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const count = parseInt(btn.dataset.count, 10);
-      if (count !== 10) {
-        showToast(`La jornada debe tener exactamente 10 partidos para publicar (tiene ${count})`, 'error');
-        return;
-      }
+      // El nº de partidos lo valida el backend: data-count puede estar desfasado
+      // tras añadir/eliminar partidos manuales desde el panel de resultados.
       if (!confirm(`¿Publicar jornada ${btn.dataset.num}? Se calcularán cuotas, se asignarán duelos y se notificará a los usuarios.`)) return;
       btn.disabled = true;
       btn.textContent = 'Publicando…';
@@ -987,6 +984,11 @@ async function reloadResultsPanel(jornadaId) {
     const { matches } = await api.adminV2.jornadaMatches(jornadaId);
     panel.innerHTML = renderResultsPanel(matches, jornadaId);
     attachResultsEvents(panel, jornadaId);
+    const row = document.querySelector(`.jv2-row[data-jornada-id="${jornadaId}"]`);
+    const countEl = row?.querySelector('.jv2-row__matches');
+    if (countEl) countEl.textContent = `${matches.length} partidos`;
+    const pubBtn = row?.querySelector('.jv2-pub-btn');
+    if (pubBtn) pubBtn.dataset.count = matches.length;
   } catch (err) {
     showToast(`Error recargando: ${err.message}`, 'error');
   }
