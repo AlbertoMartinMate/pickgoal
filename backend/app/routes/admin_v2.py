@@ -835,9 +835,6 @@ def fix_orphan_duelos():
 
     orphan_users = list(real_ids - ids_in_calendar)
 
-    if not orphan_users:
-        return jsonify({'message': 'No hay usuarios sin duelo en esta vuelta', 'vuelta': vuelta}), 200
-
     all_members_ids = {m.user_id for m in DivisionMember.query.filter_by(league_id=league_id).all()}
     # IDs (bots ya borrados) que siguen en el calendario sin ser miembros
     missing_ids = sorted(ids_in_calendar - all_members_ids)
@@ -854,6 +851,39 @@ def fix_orphan_duelos():
                 entry_ids.append(e.id)
         fixed.append({'user_id': uid, 'replaced_id': old_id, 'entry_ids': entry_ids})
 
+    # Sincroniza los duelos ya creados de la jornada actual con el calendario:
+    # borra los que apuntan a bots ya eliminados y crea los que falten.
+    duelos_removed = duelos_created = 0
+    jornada_duelos = Duelo.query.filter_by(
+        jornada_id=last_jornada.id, division_league_id=league_id
+    ).all()
+    if jornada_duelos:
+        for d in jornada_duelos:
+            if d.player1_id not in all_members_ids or d.player2_id not in all_members_ids:
+                db.session.delete(d)
+                duelos_removed += 1
+        db.session.flush()
+
+        with_duelo = set()
+        for d in Duelo.query.filter_by(jornada_id=last_jornada.id, division_league_id=league_id).all():
+            with_duelo.update((d.player1_id, d.player2_id))
+
+        round_in_vuelta = (last_jornada.number - 1) % ROTATION_JORNADAS + 1
+        for e in cal_entries:
+            if e.round_number != round_in_vuelta:
+                continue
+            p2 = e.player2_id if e.player2_id is not None else e.player1_id
+            if e.player1_id in with_duelo or p2 in with_duelo:
+                continue
+            db.session.add(Duelo(
+                jornada_id=last_jornada.id,
+                division_league_id=league_id,
+                player1_id=e.player1_id,
+                player2_id=p2,
+            ))
+            with_duelo.update((e.player1_id, p2))
+            duelos_created += 1
+
     db.session.commit()
 
     return jsonify({
@@ -861,5 +891,7 @@ def fix_orphan_duelos():
         'jornada': last_jornada.number,
         'league_id': league_id,
         'fixed': fixed,
+        'duelos_removed': duelos_removed,
+        'duelos_created': duelos_created,
         'still_missing': list(set(orphan_users) - {f['user_id'] for f in fixed}),
     }), 200

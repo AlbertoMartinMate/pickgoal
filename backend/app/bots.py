@@ -180,12 +180,13 @@ def displace_bot(league_id, new_user_id=None):
     """
     Remove the highest-ranked bot from league_id when a real user joins.
     If new_user_id is provided, creates a DivisionMember for them inheriting
-    the bot's division, position and season points, and replaces the bot in
-    the DueloCalendar of the current vuelta so the new user has rivals.
+    the bot's division, position and season points, takes over the bot's
+    Duelo records (so computed standings keep the inherited position and
+    points) and replaces the bot in the DueloCalendar of the current vuelta.
     Returns a dict with displacement info, or None if no bots found.
     """
     from app import db
-    from app.models import DivisionMember, DueloCalendar, Jornada
+    from app.models import DivisionMember, DueloCalendar, Duelo, Jornada
     from app.divisions import ROTATION_JORNADAS
 
     best_bot = (
@@ -226,6 +227,19 @@ def displace_bot(league_id, new_user_id=None):
                 season_total_points=inherited_total_points,
             )
             db.session.add(dm)
+
+            # Transfer Duelo records so computed standings keep the bot's record
+            for duelo in Duelo.query.filter(
+                Duelo.division_league_id == league_id,
+                Duelo.player1_id == displaced_id,
+            ).all():
+                duelo.player1_id = new_user_id
+
+            for duelo in Duelo.query.filter(
+                Duelo.division_league_id == league_id,
+                Duelo.player2_id == displaced_id,
+            ).all():
+                duelo.player2_id = new_user_id
 
             current_jornada = (
                 Jornada.query
