@@ -178,34 +178,39 @@ def generate_bot_predictions_v2(jornada_id):
 
 def displace_bot(league_id, new_user_id=None):
     """
-    Remove the lowest-ranked bot from league_id when a real user joins.
+    Remove the highest-ranked bot from league_id when a real user joins.
     If new_user_id is provided, creates a DivisionMember for them inheriting
-    the bot's division and position.
+    the bot's division, position and season points, and replaces the bot in
+    the DueloCalendar of the current vuelta so the new user has rivals.
     Returns a dict with displacement info, or None if no bots found.
     """
     from app import db
-    from app.models import DivisionMember
+    from app.models import DivisionMember, DueloCalendar, Jornada
+    from app.divisions import ROTATION_JORNADAS
 
-    worst_bot = (
+    best_bot = (
         DivisionMember.query
         .filter_by(league_id=league_id, is_bot=True)
         .order_by(
-            DivisionMember.season_div_points.asc(),
-            DivisionMember.season_total_points.asc(),
+            DivisionMember.season_div_points.desc(),
+            DivisionMember.season_total_points.desc(),
         )
         .first()
     )
 
-    if not worst_bot:
+    if not best_bot:
         logger.info('displace_bot: no hay bots en liga %d', league_id)
         return None
 
-    displaced_id = worst_bot.user_id
-    inherited_division = worst_bot.division
-    inherited_position = worst_bot.position
+    displaced_id = best_bot.user_id
+    inherited_division = best_bot.division
+    inherited_position = best_bot.position
+    inherited_div_points = best_bot.season_div_points
+    inherited_total_points = best_bot.season_total_points
 
-    db.session.delete(worst_bot)
+    db.session.delete(best_bot)
 
+    patched_entries = 0
     if new_user_id:
         already = DivisionMember.query.filter_by(
             league_id=league_id, user_id=new_user_id
@@ -217,18 +222,40 @@ def displace_bot(league_id, new_user_id=None):
                 is_bot=False,
                 division=inherited_division,
                 position=inherited_position,
+                season_div_points=inherited_div_points,
+                season_total_points=inherited_total_points,
             )
             db.session.add(dm)
 
+            current_jornada = (
+                Jornada.query
+                .filter(Jornada.status.in_(['upcoming', 'active']))
+                .order_by(Jornada.number.desc())
+                .first()
+            )
+            if current_jornada:
+                vuelta = (current_jornada.number - 1) // ROTATION_JORNADAS + 1
+                entries = DueloCalendar.query.filter_by(
+                    league_id=league_id, vuelta=vuelta
+                ).all()
+                for e in entries:
+                    if e.player1_id == displaced_id:
+                        e.player1_id = new_user_id
+                        patched_entries += 1
+                    if e.player2_id == displaced_id:
+                        e.player2_id = new_user_id
+                        patched_entries += 1
+
     db.session.commit()
     logger.info(
-        'Bot %d desplazado de liga %d; nuevo usuario: %s',
-        displaced_id, league_id, new_user_id,
+        'Bot %d desplazado de liga %d; nuevo usuario: %s; calendario parcheado: %d entradas',
+        displaced_id, league_id, new_user_id, patched_entries,
     )
     return {
         'displaced_bot_id': displaced_id,
         'league_id': league_id,
         'new_user_id': new_user_id,
+        'calendar_entries_patched': patched_entries,
     }
 
 

@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import User, Match, Jornada, JornadaMatch, Season, Competition, PredictionV2, Duelo
+from app.models import User, Match, Jornada, JornadaMatch, Season, Competition, PredictionV2, Duelo, DivisionMember, DueloCalendar
 
 admin_v2_bp = Blueprint('admin_v2', __name__)
 logger = logging.getLogger(__name__)
@@ -791,3 +791,75 @@ def _upsert_jornada_matches(jornada_id, matches_payload):
                 jornada_id=jornada_id,
                 match_id=match.id,
             ))
+
+
+# ─── POST /api/v2/admin/fix-orphan-duelos ────────────────────────────────────
+
+@admin_v2_bp.route('/fix-orphan-duelos', methods=['POST'])
+@jwt_required()
+def fix_orphan_duelos():
+    """
+    Parche puntual: asigna entradas de DueloCalendar a usuarios reales que
+    se registraron antes del fix de displace_bot y no tienen rival en la
+    vuelta actual.
+    """
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    from app.divisions import ROTATION_JORNADAS
+
+    data = request.get_json() or {}
+    league_id = data.get('league_id', 4)
+
+    last_jornada = (
+        Jornada.query
+        .filter(Jornada.status.in_(['upcoming', 'active']))
+        .order_by(Jornada.number.desc())
+        .first()
+    )
+    if not last_jornada:
+        return jsonify({'error': 'No hay jornada upcoming/active'}), 400
+
+    vuelta = (last_jornada.number - 1) // ROTATION_JORNADAS + 1
+
+    real_members = DivisionMember.query.filter_by(league_id=league_id, is_bot=False).all()
+    real_ids = {m.user_id for m in real_members}
+
+    cal_entries = DueloCalendar.query.filter_by(league_id=league_id, vuelta=vuelta).all()
+    ids_in_calendar = set()
+    for e in cal_entries:
+        ids_in_calendar.add(e.player1_id)
+        if e.player2_id is not None:
+            ids_in_calendar.add(e.player2_id)
+
+    orphan_users = list(real_ids - ids_in_calendar)
+
+    if not orphan_users:
+        return jsonify({'message': 'No hay usuarios sin duelo en esta vuelta', 'vuelta': vuelta}), 200
+
+    all_members_ids = {m.user_id for m in DivisionMember.query.filter_by(league_id=league_id).all()}
+    # IDs (bots ya borrados) que siguen en el calendario sin ser miembros
+    missing_ids = sorted(ids_in_calendar - all_members_ids)
+
+    fixed = []
+    for uid, old_id in zip(orphan_users, missing_ids):
+        entry_ids = []
+        for e in cal_entries:
+            if e.player1_id == old_id:
+                e.player1_id = uid
+                entry_ids.append(e.id)
+            if e.player2_id == old_id:
+                e.player2_id = uid
+                entry_ids.append(e.id)
+        fixed.append({'user_id': uid, 'replaced_id': old_id, 'entry_ids': entry_ids})
+
+    db.session.commit()
+
+    return jsonify({
+        'vuelta': vuelta,
+        'jornada': last_jornada.number,
+        'league_id': league_id,
+        'fixed': fixed,
+        'still_missing': list(set(orphan_users) - {f['user_id'] for f in fixed}),
+    }), 200
