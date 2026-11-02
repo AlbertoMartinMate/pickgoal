@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "es.pickgoal.twa",
+    "sha256_cert_fingerprints": ["74:7D:50:31:49:A0:00:F0:47:CA:5C:08:B1:6A:61:57:63:24:4B:0A:9D:C9:95:F8:F9:85:D1:C2:23:17:E3:DF"]
+  }
+}]
