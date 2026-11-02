@@ -273,6 +273,90 @@ def displace_bot(league_id, new_user_id=None):
     }
 
 
+def replace_inactive_users(league_id, vuelta):
+    """
+    At the end of a vuelta, replace with a bot any real user in league_id who:
+      1. Registered before jornada (vuelta*ROTATION_JORNADAS - 6) of that vuelta
+         (i.e. they had at least 9 jornadas in the vuelta to predict)
+      2. Made no PredictionV2 in any of the vuelta's 15 jornadas
+    Must be called BEFORE process_rotation so the bot inherits the user's
+    position and is correctly counted in ascensos/descensos.
+    Returns list of dicts with info about each replaced user.
+    """
+    from app import db
+    from app.models import User, DivisionMember, Jornada, JornadaMatch, PredictionV2
+    from app.divisions import ROTATION_JORNADAS
+
+    first_num = (vuelta - 1) * ROTATION_JORNADAS + 1
+    last_num = vuelta * ROTATION_JORNADAS
+    cutoff_num = last_num - 6  # 9th jornada of this vuelta
+
+    vuelta_jornadas = (
+        Jornada.query
+        .filter(
+            Jornada.number >= first_num,
+            Jornada.number <= last_num,
+            Jornada.status == 'finished',
+        )
+        .all()
+    )
+    if not vuelta_jornadas:
+        logger.info('replace_inactive_users: sin jornadas terminadas en vuelta %d', vuelta)
+        return []
+
+    cutoff_jornada = next((j for j in vuelta_jornadas if j.number == cutoff_num), None)
+    if not cutoff_jornada:
+        logger.warning('replace_inactive_users: jornada de corte %d no encontrada', cutoff_num)
+        return []
+
+    vuelta_jornada_ids = [j.id for j in vuelta_jornadas]
+    jm_ids = [
+        jm.id
+        for jid in vuelta_jornada_ids
+        for jm in JornadaMatch.query.filter_by(jornada_id=jid).all()
+    ]
+    if not jm_ids:
+        logger.info('replace_inactive_users: sin partidos en vuelta %d liga %d', vuelta, league_id)
+        return []
+
+    real_members = DivisionMember.query.filter_by(league_id=league_id, is_bot=False).all()
+    replaced = []
+
+    for dm in real_members:
+        user = db.session.get(User, dm.user_id)
+        if not user or user.is_bot:
+            continue
+
+        # Must have registered before the 9th jornada of the vuelta
+        if user.created_at >= cutoff_jornada.date_start:
+            continue
+
+        # Must have no predictions at all in any of the vuelta's jornadas
+        has_pred = PredictionV2.query.filter(
+            PredictionV2.user_id == dm.user_id,
+            PredictionV2.jornada_match_id.in_(jm_ids),
+        ).first() is not None
+        if has_pred:
+            continue
+
+        logger.info(
+            'replace_inactive_users: usuario %d (%s) inactivo — vuelta %d liga %d → sustituyendo',
+            dm.user_id, user.username, vuelta, league_id,
+        )
+        new_bot_ids = replace_user_with_bot(dm.user_id)
+        replaced.append({
+            'user_id': dm.user_id,
+            'username': user.username,
+            'new_bot_ids': new_bot_ids,
+        })
+
+    logger.info(
+        'replace_inactive_users: %d usuario(s) sustituido(s) en vuelta %d liga %d',
+        len(replaced), vuelta, league_id,
+    )
+    return replaced
+
+
 def replace_user_with_bot(user_id):
     """
     Replace a departing user with a new bot in all their division memberships.

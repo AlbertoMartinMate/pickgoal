@@ -557,7 +557,28 @@ def _close_single_jornada(jornada):
     if jornada.number % ROTATION_JORNADAS == 0:
         season = jornada.season
         if season and season.status == 'active':
+            vuelta = jornada.number // ROTATION_JORNADAS
             is_final = (jornada.number >= TOTAL_JORNADAS)
+
+            # Sustituir usuarios inactivos antes de calcular ascensos/descensos
+            # para que el bot herede la posición correcta en process_rotation.
+            from app.models import Duelo
+            jornada_ids_in_season = [j.id for j in season.jornadas.all()]
+            division_league_ids = {
+                d.division_league_id
+                for jid in jornada_ids_in_season
+                for d in Duelo.query.filter_by(jornada_id=jid).all()
+            }
+            from app.bots import replace_inactive_users
+            for lid in division_league_ids:
+                try:
+                    replace_inactive_users(lid, vuelta)
+                except Exception:
+                    logger.exception(
+                        '[close] replace_inactive_users falló para liga %d vuelta %d', lid, vuelta
+                    )
+                    db.session.rollback()
+
             logger.info(
                 'Jornada %d — rotación de divisiones (temporada %d, final=%s)',
                 jornada.number, season.id, is_final,
