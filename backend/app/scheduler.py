@@ -16,6 +16,7 @@ def _recalculate_finished_match(match):
     db.session.commit()
     recalculate_match_predictions(match)
     recalculate_v2_for_match(match)
+    close_completed_jornadas(match.id)
 
 
 def sync_full_calendar(app):
@@ -617,9 +618,19 @@ def _close_single_jornada(jornada):
     Asume estar dentro de un app_context.
     """
     from app import db
+    from app.models import Jornada
 
-    jornada.status = 'finished'
+    # Atomic open -> finished: if the cron, the admin and a sync job race,
+    # only one of them closes (and rotates divisions).
+    claimed = (
+        Jornada.query
+        .filter(Jornada.id == jornada.id, Jornada.status.in_(['upcoming', 'active']))
+        .update({'status': 'finished'}, synchronize_session=False)
+    )
     db.session.commit()
+    if not claimed:
+        logger.info('Jornada %d ya estaba cerrada', jornada.number)
+        return False
 
     _recalculate_all_points(jornada)
     logger.info('Jornada %d cerrada', jornada.number)
@@ -656,6 +667,42 @@ def _close_single_jornada(jornada):
                 jornada.number, season.id, is_final,
             )
             process_rotation(season.id, close_season=is_final)
+
+    return True
+
+
+def _jornada_is_complete(jornada):
+    """True when every non-cancelled match of the jornada has its final result."""
+    jms = [jm for jm in jornada.jornada_matches.all() if jm.status != 'cancelled']
+    return bool(jms) and all(
+        jm.match.status == 'finished' and jm.match.result_90 is not None for jm in jms
+    )
+
+
+def close_completed_jornadas(match_id):
+    """
+    Called whenever a match gets its result (admin or sync jobs): closes every
+    open jornada containing it once all of that jornada's matches are resolved.
+    Assumes an app_context.
+    """
+    from app import db
+    from app.models import Jornada, JornadaMatch
+
+    jornada_ids = {jm.jornada_id for jm in JornadaMatch.query.filter_by(match_id=match_id).all()}
+    if not jornada_ids:
+        return
+    open_jornadas = Jornada.query.filter(
+        Jornada.id.in_(jornada_ids), Jornada.status.in_(['upcoming', 'active'])
+    ).all()
+    for jornada in open_jornadas:
+        if not _jornada_is_complete(jornada):
+            continue
+        logger.info('Jornada %d: todos los partidos con resultado — cierre automático', jornada.number)
+        try:
+            _close_single_jornada(jornada)
+        except Exception as e:
+            logger.error('Error en cierre automático de jornada %d: %s', jornada.id, e)
+            db.session.rollback()
 
 
 def cerrar_jornada(app):

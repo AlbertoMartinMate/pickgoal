@@ -583,6 +583,14 @@ def set_jornada_match_resultado(jm_id):
 
     recalculate_v2_for_match(match)
 
+    from app.scheduler import close_completed_jornadas, _recalculate_all_points
+    jornada = jm.jornada
+    if jornada.status == 'finished':
+        # Correction on an already closed jornada: refresh duelos and division positions too
+        _recalculate_all_points(jornada)
+    else:
+        close_completed_jornadas(match.id)
+
     return jsonify({'message': 'Resultado guardado y puntos recalculados'}), 200
 
 
@@ -610,6 +618,10 @@ def cancel_jornada_match(jm_id):
     for uid in user_ids:
         calculate_jornada_points(uid, jm.jornada_id, commit=False)
     db.session.commit()
+
+    # Cancelling the last pending match also completes the jornada
+    from app.scheduler import close_completed_jornadas
+    close_completed_jornadas(jm.match_id)
 
     return jsonify({'message': f'Partido cancelado. {len(user_ids)} usuario(s) afectado(s).'}), 200
 
