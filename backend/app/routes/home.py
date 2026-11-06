@@ -84,6 +84,8 @@ def _upcoming_jornada_matches(user_id):
                 'id': m.id,
                 'home_team': m.home_team,
                 'away_team': m.away_team,
+                'home_logo': m.home_logo,
+                'away_logo': m.away_logo,
                 'match_datetime': dt_utc.isoformat(),
                 'status': m.status,
             },

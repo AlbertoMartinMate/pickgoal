@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -9,13 +10,22 @@ logger = logging.getLogger(__name__)
 scheduler = BackgroundScheduler()
 
 
+def _recalculate_finished_match(match):
+    from app import db
+    from app.utils import recalculate_match_predictions, recalculate_v2_for_match
+    db.session.commit()
+    recalculate_match_predictions(match)
+    recalculate_v2_for_match(match)
+
+
 def sync_full_calendar(app):
     logger.info('JOB sync_full_calendar — inicio')
     with app.app_context():
         from app import db
         from app.models import Match
         from app.utils import (fetch_wc_matches, map_api_phase, map_api_status,
-                               parse_match_datetime, compute_result_90, compute_match_result)
+                               parse_match_datetime, parse_api_score,
+                               apply_api_result, apply_api_crests)
         try:
             matches_data = fetch_wc_matches()
             for m in matches_data:
@@ -27,26 +37,6 @@ def sync_full_calendar(app):
                 home_team = m['homeTeam'].get('name') or 'TBD'
                 away_team = m['awayTeam'].get('name') or 'TBD'
                 dt = parse_match_datetime(m['utcDate'])
-                status = map_api_status(m['status'])
-
-                score = m.get('score', {})
-                ht_score = score.get('fullTime', {})
-                home_90 = ht_score.get('home')
-                away_90 = ht_score.get('away')
-                penalties = score.get('penalties', {})
-                home_final = penalties.get('home') if penalties.get('home') is not None else home_90
-                away_final = penalties.get('away') if penalties.get('away') is not None else away_90
-
-                # Si hay penaltis, sumar 1 gol simbólico al ganador en el marcador final
-                if penalties.get('home') is not None:
-                    if penalties['home'] > penalties['away']:
-                        home_final = (home_90 or 0) + 1
-                        away_final = away_90
-                    else:
-                        away_final = (away_90 or 0) + 1
-                        home_final = home_90
-
-                result = compute_match_result(phase, home_90, away_90, home_final, away_final) if home_90 is not None and status == 'finished' else None
 
                 if existing:
                     existing.phase = phase
@@ -58,29 +48,85 @@ def sync_full_calendar(app):
                     if away_team != 'TBD' or existing.away_team == 'TBD':
                         existing.away_team = away_team
                     existing.match_datetime = dt
-                    if not existing.is_manual:
-                        existing.status = status
-                        existing.home_score_90 = home_90
-                        existing.away_score_90 = away_90
-                        existing.home_score_final = home_final
-                        existing.away_score_final = away_final
-                        existing.result_90 = result
+                    apply_api_crests(existing, m)
+                    # Finished matches keep their stored result (points already awarded)
+                    if not existing.is_manual and existing.status != 'finished':
+                        apply_api_result(existing, m)
+                        if existing.status == 'finished':
+                            _recalculate_finished_match(existing)
                 else:
+                    status = map_api_status(m['status'])
+                    home_90, away_90, home_final, away_final, result = parse_api_score(m, phase)
                     new_match = Match(
                         api_id=api_id, phase=phase, group_name=group_name,
                         home_team=home_team, away_team=away_team,
                         match_datetime=dt, status=status,
                         home_score_90=home_90, away_score_90=away_90,
                         home_score_final=home_final, away_score_final=away_final,
-                        result_90=result,
+                        result_90=result if status == 'finished' else None,
                         is_manual=False, result_type='1X2',
                     )
+                    apply_api_crests(new_match, m)
                     db.session.add(new_match)
 
             db.session.commit()
             logger.info('Calendario sincronizado: %d partidos procesados', len(matches_data))
         except Exception as e:
             logger.error('Error sincronizando calendario: %s', e)
+            db.session.rollback()
+
+        _sync_tracked_league_matches()
+
+
+def _sync_tracked_league_matches():
+    """Refresh date, crests and result of league matches already in our DB.
+
+    Only matches imported by the admin are touched — full league calendars are
+    never imported. One API call per competition with pending matches.
+    """
+    from app import db
+    from app.models import Match, Competition
+    from app.utils import (TRACKED_COMPETITIONS, API_THROTTLE_SECONDS, fetch_competition_matches,
+                           parse_match_datetime, apply_api_result, apply_api_crests)
+
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=3)
+    calls = 0
+    for code in TRACKED_COMPETITIONS:
+        try:
+            pending = (
+                Match.query.join(Competition, Match.competition_id == Competition.id)
+                .filter(Competition.code == code,
+                        Match.api_id > 0,
+                        Match.is_manual.is_(False),
+                        Match.status != 'finished',
+                        Match.match_datetime >= since)
+                .all()
+            )
+            if not pending:
+                continue
+
+            if calls:
+                time.sleep(API_THROTTLE_SECONDS)
+            calls += 1
+            date_from = min(p.match_datetime for p in pending).date()
+            date_to = max(p.match_datetime for p in pending).date()
+            api_by_id = {m['id']: m for m in fetch_competition_matches(code, date_from, date_to)}
+
+            updated = 0
+            for match in pending:
+                m = api_by_id.get(match.api_id)
+                if not m:
+                    continue
+                match.match_datetime = parse_match_datetime(m['utcDate'])
+                apply_api_crests(match, m)
+                apply_api_result(match, m)
+                if match.status == 'finished':
+                    _recalculate_finished_match(match)
+                updated += 1
+            db.session.commit()
+            logger.info('Liga %s sincronizada: %d/%d partidos actualizados', code, updated, len(pending))
+        except Exception as e:
+            logger.error('Error sincronizando liga %s: %s', code, e)
             db.session.rollback()
 
 
@@ -90,8 +136,7 @@ def sync_live_matches(app):
         from app import db
         from app.models import Match
         from app.utils import (fetch_live_matches, fetch_match_by_api_id,
-                               map_api_status, compute_result_90, compute_match_result,
-                               KNOCKOUT_PHASES, recalculate_match_predictions)
+                               apply_api_result, apply_api_crests)
         try:
             live_data = fetch_live_matches()
             live_api_ids = {m['id'] for m in live_data}
@@ -115,30 +160,57 @@ def sync_live_matches(app):
                 if existing.is_manual:
                     continue
                 prev_status = existing.status
-                existing.status = map_api_status(m['status'])
-                score = m.get('score', {})
-                full_time = score.get('fullTime', {})
-                penalties = score.get('penalties', {})
-                existing.home_score_90 = full_time.get('home')
-                existing.away_score_90 = full_time.get('away')
-                home_final = penalties.get('home') if penalties.get('home') is not None else existing.home_score_90
-                away_final = penalties.get('away') if penalties.get('away') is not None else existing.away_score_90
-                if existing.home_score_90 is not None:
-                    existing.result_90 = compute_match_result(
-                        existing.phase, existing.home_score_90, existing.away_score_90,
-                        home_final, away_final
-                    )
+                apply_api_crests(existing, m)
+                apply_api_result(existing, m)
                 if prev_status != 'finished' and existing.status == 'finished':
-                    db.session.commit()
-                    recalculate_match_predictions(existing)
-                    from app.utils import recalculate_v2_for_match
-                    recalculate_v2_for_match(existing)
+                    _recalculate_finished_match(existing)
                     # Continue — don't return; there may be other live matches to process
 
             db.session.commit()
         except Exception as e:
             logger.error('Error actualizando partidos en vivo: %s', e)
             db.session.rollback()
+
+
+# Matches older than this are not retried (e.g. postponed with no new date)
+STUCK_LOOKBACK_DAYS = 14
+
+
+def sync_stuck_matches(app):
+    """Matches still 'scheduled' 2h after kick-off — the live job missed them."""
+    logger.info('JOB sync_stuck_matches — inicio')
+    with app.app_context():
+        from app import db
+        from app.models import Match
+        from app.utils import (API_THROTTLE_SECONDS, fetch_match_by_api_id,
+                               apply_api_result, apply_api_crests)
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        stuck = Match.query.filter(
+            Match.status == 'scheduled',
+            Match.api_id > 0,
+            Match.is_manual.is_(False),
+            Match.match_datetime < now - timedelta(hours=2),
+            Match.match_datetime >= now - timedelta(days=STUCK_LOOKBACK_DAYS),
+        ).all()
+        logger.info('Partidos colgados encontrados: %d', len(stuck))
+
+        for i, match in enumerate(stuck):
+            if i:
+                time.sleep(API_THROTTLE_SECONDS)
+            try:
+                m = fetch_match_by_api_id(match.api_id)
+                if m.get('status') not in ('FINISHED', 'AWARDED'):
+                    continue
+                apply_api_crests(match, m)
+                apply_api_result(match, m)
+                _recalculate_finished_match(match)
+                logger.info('Partido colgado actualizado: %s vs %s (api_id=%s) %s-%s',
+                            match.home_team, match.away_team, match.api_id,
+                            match.home_score_90, match.away_score_90)
+            except Exception as e:
+                logger.error('Error actualizando partido colgado api_id=%s: %s', match.api_id, e)
+                db.session.rollback()
 
 
 # FIFA ranking aproximado (menor = mejor) para los equipos del Mundial 2026
@@ -838,6 +910,13 @@ def init_scheduler(app):
         args=[app],
         trigger=IntervalTrigger(minutes=5),
         id='sync_live_matches',
+        replace_existing=True,
+    )
+    scheduler.add_job(
+        func=sync_stuck_matches,
+        args=[app],
+        trigger=IntervalTrigger(hours=6),
+        id='sync_stuck_matches',
         replace_existing=True,
     )
     scheduler.add_job(

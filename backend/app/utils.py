@@ -20,7 +20,22 @@ def fetch_wc_matches():
     return resp.json().get('matches', [])
 
 
-_LIVE_COMPETITIONS = 'PPL,PD,PL,SA,BL1,FL1,CL,WC'
+# Club competitions kept up to date automatically. Only codes covered by our
+# football-data plan: an unknown/forbidden code makes the whole /matches call fail.
+TRACKED_COMPETITIONS = ['PPL', 'PD', 'PL', 'SA', 'BL1', 'FL1', 'CL', 'DED', 'ELC']
+_LIVE_COMPETITIONS = ','.join(TRACKED_COMPETITIONS + ['WC'])
+
+# Free plan allows 10 requests/min — pause between calls inside a single job
+API_THROTTLE_SECONDS = 6.5
+
+
+def fetch_competition_matches(code, date_from, date_to):
+    url = f'{FOOTBALL_API_BASE}/competitions/{code}/matches'
+    params = {'dateFrom': date_from.isoformat(), 'dateTo': date_to.isoformat()}
+    resp = requests.get(url, params=params, headers=get_api_headers(), timeout=15)
+    resp.raise_for_status()
+    return resp.json().get('matches', [])
+
 
 def fetch_live_matches():
     # Include PAUSED (half-time) so we don't miss score updates during the break
@@ -99,6 +114,53 @@ def compute_match_result(phase: str, home_90: int, away_90: int,
             return compute_result_90(home_90, away_90)
         return '1' if hf > af else '2'
     return compute_result_90(home_90, away_90)
+
+
+def parse_api_score(m: dict, phase: str):
+    """Return (home_90, away_90, home_final, away_final, result) from a football-data match.
+
+    score.fullTime includes extra-time AND shootout goals, so the 90' score comes from
+    score.regularTime (only sent when the match went beyond 90'). The final score is
+    90' + extra time, plus 1 symbolic goal for the shootout winner.
+    """
+    score = m.get('score') or {}
+    regular = score.get('regularTime') or score.get('fullTime') or {}
+    extra = score.get('extraTime') or {}
+    penalties = score.get('penalties') or {}
+
+    home_90, away_90 = regular.get('home'), regular.get('away')
+    home_final, away_final = home_90, away_90
+    if home_90 is not None and away_90 is not None:
+        home_final = home_90 + (extra.get('home') or 0)
+        away_final = away_90 + (extra.get('away') or 0)
+        if penalties.get('home') is not None and penalties.get('away') is not None:
+            if penalties['home'] > penalties['away']:
+                home_final += 1
+            else:
+                away_final += 1
+
+    result = None
+    if home_90 is not None and away_90 is not None:
+        result = compute_match_result(phase, home_90, away_90, home_final, away_final)
+    return home_90, away_90, home_final, away_final, result
+
+
+def apply_api_result(match, m: dict):
+    """Copy status and scores from a football-data match onto our Match."""
+    match.status = map_api_status(m['status'])
+    (match.home_score_90, match.away_score_90,
+     match.home_score_final, match.away_score_final,
+     match.result_90) = parse_api_score(m, match.phase)
+
+
+def apply_api_crests(match, m: dict):
+    """Store team crests, never overwriting a known crest with an empty one."""
+    home_crest = (m.get('homeTeam') or {}).get('crest')
+    away_crest = (m.get('awayTeam') or {}).get('crest')
+    if home_crest:
+        match.home_logo = home_crest
+    if away_crest:
+        match.away_logo = away_crest
 
 
 def calculate_prediction_points(prediction, match):

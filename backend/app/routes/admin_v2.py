@@ -118,6 +118,8 @@ def _serialize_api_match(m, comp_code):
         'competition_code': comp_code,
         'home_team': m['homeTeam'].get('name') or m['homeTeam'].get('shortName') or 'TBD',
         'away_team': m['awayTeam'].get('name') or m['awayTeam'].get('shortName') or 'TBD',
+        'home_logo': m['homeTeam'].get('crest'),
+        'away_logo': m['awayTeam'].get('crest'),
         'match_datetime': m.get('utcDate'),
         'status': m.get('status', 'SCHEDULED'),
     }
@@ -501,6 +503,8 @@ def get_jornada_matches_admin(jornada_id):
             'match_id': m.id,
             'home_team': m.home_team,
             'away_team': m.away_team,
+            'home_logo': m.home_logo,
+            'away_logo': m.away_logo,
             'match_datetime': m.match_datetime.replace(tzinfo=timezone.utc).isoformat(),
             'status': m.status,
             'jm_status': jm.status,
@@ -774,6 +778,8 @@ def _upsert_jornada_matches(jornada_id, matches_payload):
                 phase='group',
                 home_team=mp.get('home_team', 'TBD'),
                 away_team=mp.get('away_team', 'TBD'),
+                home_logo=mp.get('home_logo'),
+                away_logo=mp.get('away_logo'),
                 match_datetime=dt,
                 status='scheduled',
                 competition_id=comp.id,
@@ -785,6 +791,8 @@ def _upsert_jornada_matches(jornada_id, matches_payload):
         else:
             if comp.id and match.competition_id != comp.id:
                 match.competition_id = comp.id
+            match.home_logo = match.home_logo or mp.get('home_logo')
+            match.away_logo = match.away_logo or mp.get('away_logo')
 
         if not JornadaMatch.query.filter_by(jornada_id=jornada_id, match_id=match.id).first():
             db.session.add(JornadaMatch(

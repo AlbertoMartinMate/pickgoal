@@ -61,6 +61,8 @@ def _build_duelo_matches(jornada_id, user_id, rival_id):
             'jornada_match_id': jm.id,
             'home_team': match.home_team,
             'away_team': match.away_team,
+            'home_logo': match.home_logo,
+            'away_logo': match.away_logo,
             'match_datetime': match.match_datetime.replace(tzinfo=timezone.utc).isoformat(),
             'status': match.status,
             'jm_status': jm.status,

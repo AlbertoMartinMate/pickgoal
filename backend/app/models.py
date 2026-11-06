@@ -91,6 +91,8 @@ class Match(db.Model):
     group_name = db.Column(db.String(10))
     home_team = db.Column(db.String(60), nullable=False)
     away_team = db.Column(db.String(60), nullable=False)
+    home_logo = db.Column(db.String(255))  # crest URL from football-data
+    away_logo = db.Column(db.String(255))
     match_datetime = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled', nullable=False)
     home_score_90 = db.Column(db.Integer)
@@ -119,6 +121,8 @@ class Match(db.Model):
             'group_name': self.group_name,
             'home_team': self.home_team,
             'away_team': self.away_team,
+            'home_logo': self.home_logo,
+            'away_logo': self.away_logo,
             'match_datetime': dt_iso,
             'status': self.status,
             'is_locked': self.is_locked(),
