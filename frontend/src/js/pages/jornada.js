@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { showToast, formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { showToast, formatDate, fmtPts, pointsModalHtml, attachPointsModal, teamLogoHtml } from '../ui.js';
 
 const MAX_UNITS = 20;
 const MAX_UNITS_PER_MATCH = 5;
@@ -226,7 +226,7 @@ function matchRow(m) {
         ${matchTag(m)}
       </div>
       <div class="match-card__teams">
-        <span class="team team--home">${m.home_team}</span>
+        <span class="team team--home">${m.home_team}${teamLogoHtml(m.home_logo)}</span>
         <div class="match-card__score">
           ${m.status !== 'scheduled'
             ? `<span class="score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`
@@ -234,7 +234,7 @@ function matchRow(m) {
           }
           ${matchPtsLabel(m)}
         </div>
-        <span class="team team--away">${m.away_team}</span>
+        <span class="team team--away">${teamLogoHtml(m.away_logo)}${m.away_team}</span>
       </div>
       <div class="jornada-odds">
         <span class="jornada-odds__item"><b>1</b> (${formatOdds(m.odds_1)})</span>

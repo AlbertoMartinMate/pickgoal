@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
-import { formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { formatDate, fmtPts, pointsModalHtml, attachPointsModal, teamLogoHtml } from '../ui.js';
 
 let _trackerInterval = null;
 
@@ -252,7 +252,7 @@ function buildPastDueloHtml(info, duelo, me) {
 
     return `
       <tr>
-        <td class="duelo-breakdown__teams">${m.home_team} vs ${m.away_team}</td>
+        <td class="duelo-breakdown__teams">${teamLogoHtml(m.home_logo, 'sm')}${m.home_team} vs ${teamLogoHtml(m.away_logo, 'sm')}${m.away_team}</td>
         <td class="duelo-breakdown__odds">${winOdds(m)}</td>
         <td class="duelo-breakdown__pick">${myPU}</td>
         <td class="duelo-breakdown__pick duelo-breakdown__pick--rival">${rivPU}</td>
@@ -419,14 +419,14 @@ function matchPickCard(m, rivalName) {
         <span class="match-card__date">${formatDate(m.match_datetime)}</span>
       </div>
       <div class="match-card__teams">
-        <span class="team team--home">${m.home_team}</span>
+        <span class="team team--home">${m.home_team}${teamLogoHtml(m.home_logo)}</span>
         <div class="match-card__score">
           ${m.status !== 'scheduled'
             ? `<span class="score">${m.home_score_90 ?? '?'} - ${m.away_score_90 ?? '?'}</span>`
             : '<span class="score score--dash">vs</span>'
           }
         </div>
-        <span class="team team--away">${m.away_team}</span>
+        <span class="team team--away">${teamLogoHtml(m.away_logo)}${m.away_team}</span>
       </div>
       <div class="duelo-pick-row">
         <div class="duelo-pick">

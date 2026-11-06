@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { auth } from '../auth.js';
 import { router } from '../router.js';
-import { formatDate, fmtPts, pointsModalHtml, attachPointsModal } from '../ui.js';
+import { formatDate, fmtPts, pointsModalHtml, attachPointsModal, teamLogoHtml } from '../ui.js';
 import heroImg from '../../assets/icon-512-v2.png';
 
 export async function renderHome(el) {
@@ -280,9 +280,9 @@ function upcomingSection(matches) {
         ${matches.map(({ match: m, has_prediction }) => `
           <div class="upcoming-match">
             <div class="upcoming-match__teams">
-              <span>${m.home_team}</span>
+              <span>${teamLogoHtml(m.home_logo)}${m.home_team}</span>
               <span class="upcoming-match__vs">vs</span>
-              <span>${m.away_team}</span>
+              <span>${teamLogoHtml(m.away_logo)}${m.away_team}</span>
             </div>
             <div class="upcoming-match__meta">
               <span class="upcoming-match__date">${formatDate(m.match_datetime)}</span>

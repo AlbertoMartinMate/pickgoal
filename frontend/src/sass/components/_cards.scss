@@ -86,6 +86,30 @@
   &--away { text-align: left; }
 }
 
+// Escudo junto al nombre (inline, no altera el grid de la tarjeta)
+.team-logo {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  vertical-align: middle;
+  margin-right: v.$sp-2;
+
+  .team--home & { margin: 0 0 0 v.$sp-2; }
+
+  &--empty {
+    border-radius: v.$r-full;
+    background: v.$bg-surface;
+    border: 1px solid v.$border-light;
+  }
+
+  &--sm {
+    width: 18px;
+    height: 18px;
+    margin-right: v.$sp-1;
+  }
+}
+
 .score {
   font-size: v.$fs-xl;
   font-weight: v.$fw-black;

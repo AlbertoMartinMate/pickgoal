@@ -128,3 +128,12 @@ export function formatDate(isoString) {
     minute: '2-digit',
   });
 }
+
+// Team crest from football-data; grey circle when missing or the image fails to load
+const TEAM_LOGO_EMPTY = '<span class="team-logo team-logo--empty" aria-hidden="true"></span>';
+
+export function teamLogoHtml(url, size = '') {
+  const sizeCls = size ? ` team-logo--${size}` : '';
+  if (!url) return TEAM_LOGO_EMPTY.replace('team-logo ', `team-logo${sizeCls} `);
+  return `<img class="team-logo${sizeCls}" src="${url}" alt="" loading="lazy" onerror="this.outerHTML='${TEAM_LOGO_EMPTY.replace('team-logo ', `team-logo${sizeCls} `).replace(/"/g, '&quot;')}'" />`;
+}
