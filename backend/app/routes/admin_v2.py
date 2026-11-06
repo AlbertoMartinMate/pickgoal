@@ -24,7 +24,7 @@ COMP_META = {
     'FL1': {'name': 'Ligue 1',                    'weight': 6,  'max_per_jornada': 4},
     'PPL': {'name': 'Primeira Liga',              'weight': 6,  'max_per_jornada': 4},
     'DED': {'name': 'Eredivisie',                 'weight': 6,  'max_per_jornada': 4},
-    'ELC': {'name': 'LaLiga 2',                   'weight': 5,  'max_per_jornada': 4},
+    'SD':  {'name': 'LaLiga 2',                   'weight': 5,  'max_per_jornada': 4},
     'CDR': {'name': 'Copa del Rey',                'weight': 6,  'max_per_jornada': 4},
     'UNL': {'name': 'UEFA Nations League',        'weight': 7,  'max_per_jornada': 4},
     'EC2024': {'name': 'Eliminatorias Europa',    'weight': 7,  'max_per_jornada': 4},

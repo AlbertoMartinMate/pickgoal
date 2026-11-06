@@ -20,9 +20,9 @@ def fetch_wc_matches():
     return resp.json().get('matches', [])
 
 
-# Club competitions kept up to date automatically. Only codes covered by our
-# football-data plan: an unknown/forbidden code makes the whole /matches call fail.
-TRACKED_COMPETITIONS = ['PPL', 'PD', 'PL', 'SA', 'BL1', 'FL1', 'CL', 'DED', 'ELC']
+# Club competitions kept up to date automatically. An invalid code makes the whole
+# /matches call fail (400); a code outside our plan (e.g. SD) just returns no matches.
+TRACKED_COMPETITIONS = ['PPL', 'PD', 'PL', 'SA', 'BL1', 'FL1', 'CL', 'DED', 'SD']
 _LIVE_COMPETITIONS = ','.join(TRACKED_COMPETITIONS + ['WC'])
 
 # Free plan allows 10 requests/min — pause between calls inside a single job

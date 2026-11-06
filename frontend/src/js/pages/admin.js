@@ -279,7 +279,7 @@ const COMP_LABELS = {
   FL1: '🇫🇷 Ligue 1',
   PPL: '🇵🇹 Primeira Liga',
   DED: '🇳🇱 Eredivisie',
-  ELC: '🇪🇸 LaLiga 2',
+  SD: '🇪🇸 LaLiga 2',
   CDR: '🇪🇸 Copa del Rey',
   UNL: '🌍 UEFA Nations League',
   EC2024: '🌍 Eliminatorias Europa',
@@ -291,7 +291,7 @@ const COMP_LABELS = {
 const COMP_GROUPS = [
   { key: 'principales',  label: '📌 Principales',  expandable: false, defaultChecked: true,  codes: ['PD', 'PL', 'CL'] },
   { key: 'europa',       label: '🌍 Europa',       expandable: true,  defaultChecked: false, codes: ['BL1', 'SA', 'FL1', 'PPL', 'DED'] },
-  { key: 'espana',       label: '🇪🇸 España',       expandable: true,  defaultChecked: false, codes: ['ELC', 'CDR'] },
+  { key: 'espana',       label: '🇪🇸 España',       expandable: true,  defaultChecked: false, codes: ['SD', 'CDR'] },
   { key: 'selecciones',  label: '🌎 Selecciones',  expandable: true,  defaultChecked: false, codes: ['UNL', 'EC2024', 'CLI'] },
   { key: 'otras',        label: '⚽ Otras ligas',   expandable: true,  defaultChecked: false, codes: ['BSA', 'MLS'] },
 ];
