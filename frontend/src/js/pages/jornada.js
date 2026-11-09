@@ -50,16 +50,22 @@ function renderJornadaList(el, jornadas, activeIdx) {
   lastOpenMatchId = openMatches.length === 1 ? openMatches[0].jornada_match_id : null;
 
   const isFinished = jornada.status === 'finished';
+  const hits = calcHits(currentJornadaData);
+  const hitsPageHtml = hits.with_result > 0
+    ? `<span class="hits-badge">${hits.correct}/${hits.with_result}</span>`
+    : '';
 
   const tabs = jornadas.length > 1
     ? `<div class="jornada-tabs">
         ${jornadas.map((j, i) => {
           const fin = j.jornada.status === 'finished';
           const { pts, cls } = jornadaTabPts(j);
+          const { correct, with_result } = calcHits(j);
           return `
             <button class="jornada-tab jornada-tab--stacked ${i === activeIdx ? 'jornada-tab--active' : ''} ${fin ? 'jornada-tab--finished' : ''}" data-idx="${i}">
               <span class="jornada-tab__num">J${j.jornada.number}</span>
               <span class="jornada-tab__pts jornada-tab__pts--${cls}">${fmtPts(pts)}pts</span>
+              ${with_result > 0 ? `<span class="jornada-tab__hits">${correct}/${with_result}</span>` : ''}
               ${fin ? '<span class="jornada-tab__badge">Finalizada</span>' : ''}
             </button>
           `;
@@ -70,7 +76,7 @@ function renderJornadaList(el, jornadas, activeIdx) {
   el.innerHTML = `
     <div class="container">
       <div class="page-title-row">
-        <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)}</h1>
+        <h1 class="page-title">Jornada ${jornada.number} — del ${formatDayMonth(jornada.date_start)} al ${formatDayMonth(jornada.date_end)} ${hitsPageHtml}</h1>
         <button class="btn-info" id="btnPointsInfo" aria-label="Cómo funciona">ℹ️</button>
       </div>
       ${tabs}
@@ -183,6 +189,17 @@ function calcJornadaPoints(jData) {
   const unusedUnits = Math.max(0, MAX_UNITS - totalWagered);
   const total = Math.max(0, real + pending + unusedUnits - penalty);
   return Math.round(total * 100) / 100;
+}
+
+function calcHits(jData) {
+  let correct = 0, with_result = 0;
+  for (const m of jData.matches) {
+    if (m.jm_status === 'cancelled') continue;
+    if (m.result_90 == null) continue;
+    with_result++;
+    if (m.prediction?.predicted_result === m.result_90) correct++;
+  }
+  return { correct, with_result };
 }
 
 function jornadaTabPts(jData) {
