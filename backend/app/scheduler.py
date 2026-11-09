@@ -174,11 +174,16 @@ def sync_live_matches(app):
 
 
 # Matches older than this are not retried (e.g. postponed with no new date)
-STUCK_LOOKBACK_DAYS = 14
+STUCK_LOOKBACK_DAYS = 60
+# A 'live' match whose row hasn't changed for this long is considered stuck
+STUCK_LIVE_STALE_HOURS = 3
 
 
 def sync_stuck_matches(app):
-    """Matches still 'scheduled' 2h after kick-off — the live job missed them."""
+    """
+    Matches the live job missed: still 'scheduled' 2h after kick-off, or still
+    'live' with no update for STUCK_LIVE_STALE_HOURS (e.g. Render was asleep).
+    """
     logger.info('JOB sync_stuck_matches — inicio')
     with app.app_context():
         from app import db
@@ -188,12 +193,21 @@ def sync_stuck_matches(app):
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         stuck = Match.query.filter(
-            Match.status == 'scheduled',
             Match.api_id > 0,
             Match.is_manual.is_(False),
             Match.match_datetime < now - timedelta(hours=2),
             Match.match_datetime >= now - timedelta(days=STUCK_LOOKBACK_DAYS),
-        ).all()
+            db.or_(
+                Match.status == 'scheduled',
+                db.and_(
+                    Match.status == 'live',
+                    db.or_(
+                        Match.last_updated.is_(None),
+                        Match.last_updated < now - timedelta(hours=STUCK_LIVE_STALE_HOURS),
+                    ),
+                ),
+            ),
+        ).order_by(Match.match_datetime).all()
         logger.info('Partidos colgados encontrados: %d', len(stuck))
 
         for i, match in enumerate(stuck):
@@ -962,7 +976,7 @@ def init_scheduler(app):
     scheduler.add_job(
         func=sync_stuck_matches,
         args=[app],
-        trigger=IntervalTrigger(hours=6),
+        trigger=IntervalTrigger(hours=2),
         id='sync_stuck_matches',
         replace_existing=True,
     )

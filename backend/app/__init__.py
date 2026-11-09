@@ -76,6 +76,11 @@ def create_app():
     app.register_blueprint(admin_v2_bp, url_prefix='/api/v2/admin')
     app.register_blueprint(messages_bp, url_prefix='/api/messages')
 
+    # Lightweight ping target (cron-job.org) so Render doesn't put the service to sleep
+    @app.get('/health')
+    def health():
+        return {'status': 'ok'}
+
     with app.app_context():
         db.create_all()
 
