@@ -51,6 +51,9 @@ function renderJornadaList(el, jornadas, activeIdx) {
 
   const isFinished = jornada.status === 'finished';
   const hits = calcHits(currentJornadaData);
+  console.log('[hits] jornada', jornada.number, '| matches:', matches.length);
+  console.log('[hits] result_90 values:', matches.map(m => ({ id: m.jornada_match_id, jm_status: m.jm_status, result_90: m.result_90, pred: m.prediction?.predicted_result })));
+  console.log('[hits] calcHits result:', hits);
   const hitsPageHtml = hits.with_result > 0
     ? `<span class="hits-badge">${hits.correct}/${hits.with_result}</span>`
     : '';
@@ -95,6 +98,8 @@ function renderJornadaList(el, jornadas, activeIdx) {
     </div>
   `;
 
+  console.log('[hits] .hits-badge en DOM:', el.querySelector('.hits-badge'));
+  console.log('[hits] .jornada-tab__hits en DOM:', el.querySelectorAll('.jornada-tab__hits').length, 'elementos');
   renderUnitsCounter();
   updateLastMatchWarning();
   updateSaveAllBtn();
