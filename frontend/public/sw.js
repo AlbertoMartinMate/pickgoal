@@ -1,5 +1,16 @@
 // PickGoal Service Worker — Web Push
 
+// Take control immediately on update and purge any caches left by old SW versions.
+self.addEventListener('install', () => self.skipWaiting());
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then(names => Promise.all(names.map(n => caches.delete(n))))
+      .then(() => clients.claim())
+  );
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   try {
