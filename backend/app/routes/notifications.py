@@ -89,11 +89,10 @@ def subscribe():
     if not all([endpoint, p256dh, auth]):
         return jsonify({'error': 'Datos de suscripción incompletos'}), 400
 
-    existing = PushSubscription.query.filter_by(
-        user_id=user_id, endpoint=endpoint
-    ).first()
+    existing = PushSubscription.query.filter_by(endpoint=endpoint).first()
 
     if existing:
+        existing.user_id = user_id  # re-assign if device logged in as different user
         existing.p256dh = p256dh
         existing.auth = auth
     else:

@@ -318,7 +318,7 @@ class PushSubscription(db.Model):
     auth = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    __table_args__ = (db.UniqueConstraint('user_id', 'endpoint', name='uq_push_user_endpoint'),)
+    __table_args__ = (db.UniqueConstraint('endpoint', name='uq_push_endpoint'),)
 
 
 class Season(db.Model):

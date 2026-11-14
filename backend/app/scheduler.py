@@ -405,7 +405,7 @@ def publicar_jornadas_draft(app):
                     except Exception as e:
                         logger.error('Error asignando duelos liga %d jornada %d: %s', lid, jornada.id, e)
 
-                _push_jornada_published(app, jornada)
+                _push_jornada_nueva(jornada)
                 logger.info('Jornada %d publicada (%d partidos)', jornada.number, len(jm_list))
 
         except Exception as e:
@@ -413,24 +413,24 @@ def publicar_jornadas_draft(app):
             db.session.rollback()
 
 
-def _push_jornada_published(app, jornada):
-    """Envía push a todos los usuarios notificando la nueva jornada."""
+def _push_jornada_nueva(jornada):
+    """Push lunes 08:00: nueva jornada disponible (llamado dentro de app_context)."""
     try:
         from app.models import PushSubscription
         from app.routes.notifications import send_push_notification
 
         user_ids = {uid for (uid,) in db.session.query(PushSubscription.user_id).distinct().all()}
-        title = '⚽ PickGoal League — Nueva jornada disponible'
-        body = f'La jornada {jornada.number} ya está abierta. ¡Haz tus predicciones!'
+        title = '⚽ PickGoal — Nueva jornada disponible'
+        body = f'Nueva jornada disponible — haz tus pronósticos para la jornada {jornada.number}'
         sent = 0
         for uid in user_ids:
             try:
                 sent += send_push_notification(uid, title, body)
             except Exception:
                 pass
-        logger.info('Push enviado a %d suscriptores', sent)
+        logger.info('[push] jornada_nueva: %d enviados (jornada %d)', sent, jornada.number)
     except Exception as e:
-        logger.warning('Error enviando push de jornada publicada: %s', e)
+        logger.warning('[push] jornada_nueva: error — %s', e)
 
 
 def _auto_seleccionar_jornada(app):
@@ -719,6 +719,26 @@ def close_completed_jornadas(match_id):
             db.session.rollback()
 
 
+def _push_jornada_cerrada(jornada):
+    """Push domingo 21:00: jornada cerrada, revisa clasificación (llamado dentro de app_context)."""
+    try:
+        from app.models import PushSubscription
+        from app.routes.notifications import send_push_notification
+
+        user_ids = {uid for (uid,) in db.session.query(PushSubscription.user_id).distinct().all()}
+        title = '🏁 PickGoal — Jornada cerrada'
+        body = f'¡Jornada {jornada.number} cerrada! Revisa tu clasificación y los resultados'
+        sent = 0
+        for uid in user_ids:
+            try:
+                sent += send_push_notification(uid, title, body)
+            except Exception:
+                pass
+        logger.info('[push] jornada_cerrada: %d enviados (jornada %d)', sent, jornada.number)
+    except Exception as e:
+        logger.warning('[push] jornada_cerrada: error — %s', e)
+
+
 def cerrar_jornada(app):
     logger.info('JOB cerrar_jornada — inicio')
     with app.app_context():
@@ -745,7 +765,9 @@ def cerrar_jornada(app):
 
             for jornada in pendientes:
                 try:
-                    _close_single_jornada(jornada)
+                    closed = _close_single_jornada(jornada)
+                    if closed:
+                        _push_jornada_cerrada(jornada)
                 except Exception as e:
                     logger.error('Error cerrando jornada %d: %s', jornada.id, e)
                     db.session.rollback()
@@ -886,75 +908,6 @@ def _ensure_bot_predictions_v2(app):
             _run_bot_predictions_v2(app, jornada.id)
 
 
-def notificar_jornada_disponible(app):
-    """Lunes 10:00 UTC — push a todos los usuarios: nueva jornada disponible."""
-    with app.app_context():
-        try:
-            from app import db
-            from app.models import User, Jornada
-            from app.routes.notifications import send_push_notification
-
-            jornada = (
-                Jornada.query
-                .filter(Jornada.status.in_(['active', 'upcoming']))
-                .order_by(Jornada.date_start.asc())
-                .first()
-            )
-            if not jornada:
-                logger.info('notificar_jornada_disponible: no hay jornada activa/próxima')
-                return
-
-            users = User.query.filter_by(is_bot=False).all()
-            title = '⚽ PickGoal — Nueva jornada disponible'
-            body = '¡Ya puedes hacer tus pronósticos para esta semana!'
-            total = 0
-            for user in users:
-                total += send_push_notification(user.id, title, body)
-            logger.info('notificar_jornada_disponible: %d push enviados para jornada %d', total, jornada.id)
-        except Exception as e:
-            logger.error('Error en notificar_jornada_disponible: %s', e)
-
-
-def notificar_primer_partido(app):
-    """Viernes 18:00 UTC — push si el primer partido de la jornada es hoy."""
-    with app.app_context():
-        try:
-            from app import db
-            from app.models import User, Jornada, JornadaMatch
-            from app.routes.notifications import send_push_notification
-
-            jornada = (
-                Jornada.query
-                .filter(Jornada.status.in_(['active', 'upcoming']))
-                .order_by(Jornada.date_start.asc())
-                .first()
-            )
-            if not jornada:
-                logger.info('notificar_primer_partido: no hay jornada activa/próxima')
-                return
-
-            first_match = (
-                JornadaMatch.query
-                .filter_by(jornada_id=jornada.id)
-                .filter(JornadaMatch.status == 'scheduled')
-                .order_by(JornadaMatch.match_id.asc())
-                .first()
-            )
-            if not first_match:
-                logger.info('notificar_primer_partido: no hay partidos programados')
-                return
-
-            users = User.query.filter_by(is_bot=False).all()
-            title = '🔔 PickGoal — ¡Último aviso!'
-            body = 'El primer partido de la jornada empieza hoy. Última oportunidad para predecir.'
-            total = 0
-            for user in users:
-                total += send_push_notification(user.id, title, body)
-            logger.info('notificar_primer_partido: %d push enviados para jornada %d', total, jornada.id)
-        except Exception as e:
-            logger.error('Error en notificar_primer_partido: %s', e)
-
-
 def init_scheduler(app):
     if scheduler.running:
         return
@@ -1013,30 +966,16 @@ def init_scheduler(app):
     scheduler.add_job(
         func=cerrar_jornada,
         args=[app],
-        trigger=CronTrigger(day_of_week='sun', hour=23, minute=59, timezone='UTC'),
+        trigger=CronTrigger(day_of_week='sun', hour=21, minute=0, timezone='UTC'),
         id='cerrar_jornada',
         replace_existing=True,
     )
-    # Runs 5 min after cerrar_jornada so positions are already updated
+    # check_inactive_users runs after cerrar_jornada (positions already updated)
     scheduler.add_job(
         func=check_inactive_users,
         args=[app],
-        trigger=CronTrigger(day_of_week='mon', hour=0, minute=5, timezone='UTC'),
+        trigger=CronTrigger(day_of_week='sun', hour=21, minute=30, timezone='UTC'),
         id='check_inactive_users',
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        func=notificar_jornada_disponible,
-        args=[app],
-        trigger=CronTrigger(day_of_week='mon', hour=10, minute=0, timezone='UTC'),
-        id='notificar_jornada_disponible',
-        replace_existing=True,
-    )
-    scheduler.add_job(
-        func=notificar_primer_partido,
-        args=[app],
-        trigger=CronTrigger(day_of_week='fri', hour=18, minute=0, timezone='UTC'),
-        id='notificar_primer_partido',
         replace_existing=True,
     )
 
