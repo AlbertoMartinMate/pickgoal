@@ -489,6 +489,7 @@ class DivisionMember(db.Model):
     division = db.Column(db.Integer, nullable=False, default=1)
     season_div_points = db.Column(db.Integer, default=0, nullable=False)
     season_total_points = db.Column(db.Float, default=0.0, nullable=False)
+    points_offset = db.Column(db.Integer, default=0, nullable=False)
     position = db.Column(db.Integer, nullable=True)
     joined_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -505,6 +506,7 @@ class DivisionMember(db.Model):
             'division': self.division,
             'season_div_points': self.season_div_points,
             'season_total_points': self.season_total_points,
+            'points_offset': self.points_offset,
             'position': self.position,
             'joined_at': self.joined_at.isoformat(),
         }

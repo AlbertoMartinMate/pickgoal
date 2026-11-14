@@ -813,6 +813,52 @@ def _upsert_jornada_matches(jornada_id, matches_payload):
             ))
 
 
+# ─── POST /api/v2/admin/close_fase ──────────────────────────────────────────
+
+@admin_v2_bp.route('/close_fase', methods=['POST'])
+@jwt_required()
+def close_fase():
+    """
+    Manual fase-close (run once, e.g. 23N).
+
+    1. Validates no open jornadas exist.
+    2. Computes standings for Primera (Liga div=1) and Segunda (Liga div=2).
+    3. Applies 50% carry-over (points_offset), promotes/relegates, adds bots.
+    4. Clears all Duelos and DueloCalendar for both leagues.
+    5. Returns a full summary — does NOT auto-execute; caller must confirm.
+
+    Idempotency note: running it twice would double-halve points, so guard
+    with the open-jornada check and human review before confirming.
+    """
+    user, err, code = _require_admin()
+    if err:
+        return err, code
+
+    # Guard: no open jornadas
+    from app.models import Jornada
+    open_jornadas = Jornada.query.filter(
+        Jornada.status.in_(['upcoming', 'active'])
+    ).all()
+    if open_jornadas:
+        numbers = [str(j.number) for j in open_jornadas]
+        return jsonify({
+            'error': f'Hay jornadas abiertas: {", ".join(numbers)}. Ciérralas antes de ejecutar el cierre de fase.',
+        }), 409
+
+    from app.divisions import process_fase_close
+
+    try:
+        summary = process_fase_close()
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        logger.exception('[close_fase] fallo')
+        return jsonify({'error': str(e)}), 500
+
+    logger.info('[close_fase] completado. Resumen: %s', summary)
+    return jsonify({'message': 'Cierre de fase ejecutado correctamente', 'summary': summary}), 200
+
+
 # ─── POST /api/v2/admin/fix-orphan-duelos ────────────────────────────────────
 
 @admin_v2_bp.route('/fix-orphan-duelos', methods=['POST'])

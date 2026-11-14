@@ -208,6 +208,7 @@ def displace_bot(league_id, new_user_id=None):
     inherited_position = best_bot.position
     inherited_div_points = best_bot.season_div_points
     inherited_total_points = best_bot.season_total_points
+    inherited_points_offset = best_bot.points_offset
 
     db.session.delete(best_bot)
 
@@ -225,6 +226,7 @@ def displace_bot(league_id, new_user_id=None):
                 position=inherited_position,
                 season_div_points=inherited_div_points,
                 season_total_points=inherited_total_points,
+                points_offset=inherited_points_offset,
             )
             db.session.add(dm)
 
@@ -405,6 +407,7 @@ def replace_user_with_bot(user_id):
             position=dm.position,
             season_div_points=dm.season_div_points,
             season_total_points=dm.season_total_points,
+            points_offset=dm.points_offset,
         )
         db.session.add(new_dm)
 

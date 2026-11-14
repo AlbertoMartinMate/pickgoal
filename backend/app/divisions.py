@@ -9,6 +9,11 @@ ROTATION_JORNADAS = 15   # ascensos/descensos cada N jornadas (1 vuelta)
 TOTAL_JORNADAS = 45      # temporada completa (3 vueltas)
 LEAGUE_SIZE = 16         # jugadores por liga
 
+FASE_PRIMERA_RELEGATION = 4   # bottom N of Primera descend to Segunda
+FASE_SEGUNDA_PROMOTION = 2    # top N of Segunda ascend to Primera
+FASE_SEGUNDA_ELIMINATION = 2  # bottom N of Segunda removed (prefer bots)
+FASE_PRIMERA_BOTS = 2         # bots added to Primera to fill freed spots
+
 
 def get_division_standings(league_id):
     """
@@ -68,6 +73,8 @@ def get_division_standings(league_id):
                 else: p += 1
                 pts_div += dp
                 pts_total += d.points_player2 or 0
+
+        pts_div += dm.points_offset  # carry-over from previous fase
 
         standings.append({
             'user_id': dm.user_id,
@@ -157,3 +164,251 @@ def process_rotation(season_id, close_season=False):
 def process_season_end(season_id):
     """Alias for final rotation that closes the season."""
     process_rotation(season_id, close_season=True)
+
+
+# ---------------------------------------------------------------------------
+# Fase-close logic (manual, executed once per fase from admin)
+# ---------------------------------------------------------------------------
+
+def _standings_with_tiebreaker(league_id):
+    """
+    Like get_division_standings but sorted by:
+    pts_division DESC → g (wins) DESC → User.total_points_all_time DESC.
+    Also injects 'total_points_all_time' into each row.
+    """
+    from app.models import User
+
+    rows = get_division_standings(league_id)
+    for row in rows:
+        u = User.query.get(row['user_id'])
+        row['total_points_all_time'] = u.total_points_all_time if u else 0
+
+    rows.sort(key=lambda x: (
+        -x['pts_division'],
+        -x['g'],
+        -x['total_points_all_time'],
+    ))
+    for i, row in enumerate(rows):
+        row['pos'] = i + 1
+
+    return rows
+
+
+def _find_bots_for_league(target_league_id, count, exclude_user_ids):
+    """
+    Return up to `count` bot User objects not in exclude_user_ids.
+    Creates new bots inline if the pool is exhausted.
+    """
+    from app import db
+    from app.models import User
+    from werkzeug.security import generate_password_hash
+    import os, random, string
+
+    bots = User.query.filter_by(is_bot=True).filter(
+        ~User.id.in_(exclude_user_ids or [0])
+    ).all()
+
+    result = bots[:count]
+
+    while len(result) < count:
+        suffix = ''.join(random.choices(string.digits, k=4))
+        name = f'Bot_{suffix}.'
+        while User.query.filter_by(username=name).first():
+            suffix = ''.join(random.choices(string.digits, k=4))
+            name = f'Bot_{suffix}.'
+        bot = User(
+            username=name,
+            email=f'{name.lower().rstrip(".")}@bots.pickgoal.es',
+            password_hash=generate_password_hash(os.urandom(24).hex()),
+            is_bot=True,
+        )
+        db.session.add(bot)
+        db.session.flush()
+        result.append(bot)
+
+    return result
+
+
+def process_fase_close():
+    """
+    End-of-fase handler (manual, run once from admin on 23N or similar):
+
+    1. Find Primera (division=1) and Segunda (division=2) leagues.
+    2. Compute standings with tiebreaker: pts_division → g → total_points_all_time.
+    3. Primera: top 2 symbolic ascent (stay), positions 3-12 stay, bottom 4 relegate.
+    4. Segunda: top 2 promote to Primera, positions 3-14 stay, bottom 2 eliminated
+       (prefer bots/inactives first).
+    5. Apply 50% carry-over to all staying/moving DivisionMembers via points_offset.
+    6. Add 2 bots to Primera to fill freed spots.
+    7. Delete all Duelos and DueloCalendar for both leagues (fresh start).
+    8. Update User.current_division and current_league_id for moved players.
+
+    Returns a summary dict for the admin response.
+    Does NOT commit — caller is responsible.
+    """
+    from app import db
+    from app.models import DivisionMember, User, Duelo, DueloCalendar
+
+    # --- 1. Locate leagues ---
+    primera_lid = (
+        db.session.query(DivisionMember.league_id)
+        .filter(DivisionMember.division == 1)
+        .group_by(DivisionMember.league_id)
+        .scalar()
+    )
+    segunda_lid = (
+        db.session.query(DivisionMember.league_id)
+        .filter(DivisionMember.division == 2)
+        .group_by(DivisionMember.league_id)
+        .scalar()
+    )
+    if not primera_lid or not segunda_lid:
+        raise ValueError('No se encontraron ligas de Primera (division=1) o Segunda (division=2)')
+
+    # --- 2. Standings ---
+    primera_rows = _standings_with_tiebreaker(primera_lid)
+    segunda_rows = _standings_with_tiebreaker(segunda_lid)
+
+    n1 = len(primera_rows)
+    n2 = len(segunda_rows)
+
+    primera_pts = {r['user_id']: r['pts_division'] for r in primera_rows}
+    segunda_pts = {r['user_id']: r['pts_division'] for r in segunda_rows}
+
+    # --- 3. Determine Primera movements ---
+    sym_ids = {r['user_id'] for r in primera_rows[:min(FASE_PRIMERA_RELEGATION - 2, n1)]}
+    # Symbolic: top 2 (positions 1-2)
+    sym_ids = {r['user_id'] for r in primera_rows[:2]}
+    # Relegated: bottom 4 (positions 13-16 in a 16-player league)
+    relegate_start = max(0, n1 - FASE_PRIMERA_RELEGATION)
+    relegated_ids = {r['user_id'] for r in primera_rows[relegate_start:]}
+    primera_stay_ids = {r['user_id'] for r in primera_rows} - relegated_ids
+
+    # --- 4. Determine Segunda movements ---
+    # Top 2 promote
+    promoted_ids = {r['user_id'] for r in segunda_rows[:FASE_SEGUNDA_PROMOTION]}
+
+    # Bottom 2 eliminated — prefer bots first, then worst rank (highest pos number)
+    dm_segunda = {dm.user_id: dm for dm in DivisionMember.query.filter_by(league_id=segunda_lid).all()}
+    elimination_sorted = sorted(
+        segunda_rows,
+        key=lambda x: (
+            not dm_segunda[x['user_id']].is_bot,  # bots first (0=bot, 1=real)
+            -x['pos'],  # higher pos = worse rank = eliminated first
+        ),
+    )
+    to_eliminate_ids = {r['user_id'] for r in elimination_sorted[:FASE_SEGUNDA_ELIMINATION]}
+    segunda_stay_ids = {r['user_id'] for r in segunda_rows} - promoted_ids - to_eliminate_ids
+
+    # --- 5. Apply changes ---
+
+    def _apply_offset(league_id, uid, pts_map):
+        dm = DivisionMember.query.filter_by(league_id=league_id, user_id=uid).first()
+        if dm:
+            dm.points_offset = round(pts_map.get(uid, 0) * 0.5)
+            dm.season_div_points = 0
+            dm.season_total_points = 0.0
+
+    def _move_member(src_lid, dst_lid, uid, pts_map, division_num):
+        dm_old = DivisionMember.query.filter_by(league_id=src_lid, user_id=uid).first()
+        old_pts = pts_map.get(uid, 0)
+        is_bot_flag = dm_old.is_bot if dm_old else False
+        if dm_old:
+            db.session.delete(dm_old)
+            db.session.flush()
+        dm_new = DivisionMember(
+            league_id=dst_lid,
+            user_id=uid,
+            is_bot=is_bot_flag,
+            division=division_num,
+            points_offset=round(old_pts * 0.5),
+            season_div_points=0,
+            season_total_points=0.0,
+        )
+        db.session.add(dm_new)
+        u = db.session.get(User, uid)
+        if u:
+            u.current_division = division_num
+            u.current_league_id = dst_lid
+
+    # Primera players who stay (including symbolic promotions)
+    for uid in primera_stay_ids:
+        _apply_offset(primera_lid, uid, primera_pts)
+
+    # Relegated: Primera → Segunda
+    for uid in relegated_ids:
+        _move_member(primera_lid, segunda_lid, uid, primera_pts, division_num=2)
+
+    # Promoted: Segunda → Primera
+    for uid in promoted_ids:
+        _move_member(segunda_lid, primera_lid, uid, segunda_pts, division_num=1)
+
+    # Eliminated from Segunda
+    for uid in to_eliminate_ids:
+        dm = DivisionMember.query.filter_by(league_id=segunda_lid, user_id=uid).first()
+        if dm:
+            db.session.delete(dm)
+        u = db.session.get(User, uid)
+        if u and not u.is_bot:
+            u.current_league_id = None
+
+    # Segunda players who stay
+    for uid in segunda_stay_ids:
+        _apply_offset(segunda_lid, uid, segunda_pts)
+
+    db.session.flush()
+
+    # --- 6. Add bots to Primera ---
+    already_in_primera = {dm.user_id for dm in DivisionMember.query.filter_by(league_id=primera_lid).all()}
+    new_bots = _find_bots_for_league(primera_lid, FASE_PRIMERA_BOTS, already_in_primera)
+    bots_added = []
+    for bot in new_bots:
+        dm = DivisionMember(
+            league_id=primera_lid,
+            user_id=bot.id,
+            is_bot=True,
+            division=1,
+            points_offset=0,
+            season_div_points=0,
+            season_total_points=0.0,
+        )
+        db.session.add(dm)
+        bots_added.append({'user_id': bot.id, 'username': bot.username})
+
+    # --- 7. Clear Duelos and DueloCalendar ---
+    Duelo.query.filter(
+        Duelo.division_league_id.in_([primera_lid, segunda_lid])
+    ).delete(synchronize_session=False)
+    DueloCalendar.query.filter(
+        DueloCalendar.league_id.in_([primera_lid, segunda_lid])
+    ).delete(synchronize_session=False)
+
+    logger.info(
+        'process_fase_close: liga %d (Primera) y %d (Segunda) procesadas. '
+        'Relegados=%d, Promovidos=%d, Eliminados=%d, Bots añadidos=%d',
+        primera_lid, segunda_lid,
+        len(relegated_ids), len(promoted_ids), len(to_eliminate_ids), len(bots_added),
+    )
+
+    # --- Build summary (snapshot before commit) ---
+    _id_to_row1 = {r['user_id']: r for r in primera_rows}
+    _id_to_row2 = {r['user_id']: r for r in segunda_rows}
+
+    return {
+        'primera': {
+            'league_id': primera_lid,
+            'symbolic_promotions': [_id_to_row1[uid] for uid in sym_ids if uid in _id_to_row1],
+            'stayed': [_id_to_row1[uid] for uid in primera_stay_ids - sym_ids if uid in _id_to_row1],
+            'relegated': [_id_to_row1[uid] for uid in relegated_ids if uid in _id_to_row1],
+            'incoming_from_segunda': [_id_to_row2[uid] for uid in promoted_ids if uid in _id_to_row2],
+            'bots_added': bots_added,
+        },
+        'segunda': {
+            'league_id': segunda_lid,
+            'promoted_to_primera': [_id_to_row2[uid] for uid in promoted_ids if uid in _id_to_row2],
+            'stayed': [_id_to_row2[uid] for uid in segunda_stay_ids if uid in _id_to_row2],
+            'eliminated': [_id_to_row2[uid] for uid in to_eliminate_ids if uid in _id_to_row2],
+            'incoming_from_primera': [_id_to_row1[uid] for uid in relegated_ids if uid in _id_to_row1],
+        },
+        'total_members_halved': len(primera_stay_ids) + len(relegated_ids) + len(segunda_stay_ids) + len(promoted_ids),
+    }
