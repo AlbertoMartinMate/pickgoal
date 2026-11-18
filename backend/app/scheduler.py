@@ -624,6 +624,16 @@ def _recalculate_all_points(jornada):
     db.session.commit()
     _update_division_positions(jornada.id)
 
+    # Historial persistente (stats/logros). Solo jornadas finalizadas; un fallo
+    # aquí no debe bloquear el cierre ni el recálculo de puntos.
+    if jornada.status == 'finished':
+        from app.history import record_jornada_stats
+        try:
+            record_jornada_stats(jornada)
+        except Exception:
+            logger.exception('[history] fallo registrando jornada %d', jornada.id)
+            db.session.rollback()
+
 
 def _close_single_jornada(jornada):
     """

@@ -265,9 +265,19 @@ def process_fase_close():
     if not primera_lid or not segunda_lid:
         raise ValueError('No se encontraron ligas de Primera (division=1) o Segunda (division=2)')
 
+    # Fase actual (lanza ValueError si esta fase ya se cerró → evita doble halving)
+    from app.history import current_fase_context, record_fase_results
+    season_id, fase, last_jornada_number = current_fase_context()
+
     # --- 2. Standings ---
     primera_rows = _standings_with_tiebreaker(primera_lid)
     segunda_rows = _standings_with_tiebreaker(segunda_lid)
+
+    # Snapshot de la clasificación final antes de mover a nadie ni borrar duelos
+    record_fase_results(season_id, fase, last_jornada_number, [
+        (primera_lid, 1, primera_rows),
+        (segunda_lid, 2, segunda_rows),
+    ])
 
     n1 = len(primera_rows)
     n2 = len(segunda_rows)

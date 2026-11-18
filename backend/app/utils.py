@@ -496,16 +496,16 @@ def calculate_v2_points(prediction, match) -> float:
     return round(prediction.units_wagered * odds, 2)
 
 
-def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True) -> float:
+def compute_jornada_score(user_id: int, jornada_id: int) -> dict:
     """
-    Calculates and persists total points for a user in a jornada:
-      - Sum of points_earned across all non-cancelled PredictionV2 rows
+    Pure computation (no writes) of a user's jornada score:
+      - Sum of points earned across all non-cancelled PredictionV2 rows
       - Plus unused units (20 - sum of units_wagered on non-cancelled matches)
       - Penalty: -1 per finished non-cancelled match without prediction (min 0)
       - Bonus: +2/+5/+10 for 8/9/10 correct predictions
-    Updates Duelo if one exists. Returns total points.
+    Returns {'total', 'hits', 'matches_counted', 'earned': [(prediction, points)]}.
     """
-    from app.models import JornadaMatch, PredictionV2, Duelo
+    from app.models import JornadaMatch, PredictionV2
 
     MAX_UNITS = 20
 
@@ -522,15 +522,16 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
     points_from_bets = 0.0
     correct_count = 0
     pred_jm_ids = set()
+    earned_list = []
 
     for pred in preds:
         if pred.jornada_match_id in cancelled_jm_ids:
-            pred.points_earned = 0.0
+            earned_list.append((pred, 0.0))
             continue
         pred_jm_ids.add(pred.jornada_match_id)
         match = pred.jornada_match.match
         earned = calculate_v2_points(pred, match)
-        pred.points_earned = earned
+        earned_list.append((pred, earned))
         points_from_bets += earned
         if match.result_90 is not None and pred.predicted_result == match.result_90:
             correct_count += 1
@@ -557,6 +558,26 @@ def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True)
     else:
         bonus = 0
     total = round(total + bonus, 2)
+
+    return {
+        'total': total,
+        'hits': correct_count,
+        'matches_counted': sum(1 for jm in jm_list if jm.status != 'cancelled'),
+        'earned': earned_list,
+    }
+
+
+def calculate_jornada_points(user_id: int, jornada_id: int, commit: bool = True) -> float:
+    """
+    Calculates (see compute_jornada_score) and persists total points for a user
+    in a jornada. Updates Duelo if one exists. Returns total points.
+    """
+    from app.models import Duelo
+
+    score = compute_jornada_score(user_id, jornada_id)
+    for pred, earned in score['earned']:
+        pred.points_earned = earned
+    total = score['total']
 
     # Update duelo live points
     from app import db

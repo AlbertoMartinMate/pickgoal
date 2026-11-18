@@ -531,3 +531,96 @@ class DueloCalendar(db.Model):
         db.UniqueConstraint('league_id', 'vuelta', 'round_number', 'player1_id',
                             name='uq_duelo_calendar'),
     )
+
+
+# ---------------------------------------------------------------------------
+# Historial y logros
+# ---------------------------------------------------------------------------
+
+class UserJornadaStats(db.Model):
+    """Foto de un usuario en una jornada cerrada (se reescribe si la jornada se recalcula).
+
+    duel_result: 'W' / 'D' / 'L', 'B' = descanso (bye), NULL = sin duelo.
+    Sobrevive al cierre de fase, que borra los Duelo.
+    """
+    __tablename__ = 'user_jornada_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    jornada_id = db.Column(db.Integer, db.ForeignKey('jornadas.id', ondelete='CASCADE'), nullable=False, index=True)
+    season_id = db.Column(db.Integer, db.ForeignKey('seasons.id'), nullable=False)
+    fase = db.Column(db.Integer, nullable=False)
+    points = db.Column(db.Float, nullable=False, default=0.0)
+    hits = db.Column(db.Integer, nullable=False, default=0)
+    matches_counted = db.Column(db.Integer, nullable=False, default=0)  # partidos no cancelados
+    duel_result = db.Column(db.String(1), nullable=True)
+    duel_opponent_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    division_league_id = db.Column(db.Integer, db.ForeignKey('leagues.id', ondelete='SET NULL'), nullable=True)
+    division = db.Column(db.Integer, nullable=True)
+    is_bot = db.Column(db.Boolean, nullable=False, default=False)
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'jornada_id', name='uq_user_jornada_stats'),
+        db.Index('ix_user_jornada_stats_points', 'points'),
+    )
+
+
+class FaseResult(db.Model):
+    """Clasificación final de cada división en un cierre de fase (snapshot previo al borrado de duelos)."""
+    __tablename__ = 'fase_results'
+
+    id = db.Column(db.Integer, primary_key=True)
+    season_id = db.Column(db.Integer, db.ForeignKey('seasons.id'), nullable=False)
+    fase = db.Column(db.Integer, nullable=False)
+    last_jornada_number = db.Column(db.Integer, nullable=False)  # última jornada cerrada de la fase
+    league_id = db.Column(db.Integer, db.ForeignKey('leagues.id', ondelete='SET NULL'), nullable=True)
+    division = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    is_bot = db.Column(db.Boolean, nullable=False, default=False)
+    position = db.Column(db.Integer, nullable=False)
+    pts_division = db.Column(db.Integer, nullable=False, default=0)  # incluye carry-over
+    pj = db.Column(db.Integer, nullable=False, default=0)
+    g = db.Column(db.Integer, nullable=False, default=0)
+    e = db.Column(db.Integer, nullable=False, default=0)
+    p = db.Column(db.Integer, nullable=False, default=0)
+    fase_points = db.Column(db.Float, nullable=False, default=0.0)  # suma de puntos de jornada en duelos
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        db.UniqueConstraint('season_id', 'fase', 'user_id', name='uq_fase_result'),
+    )
+
+
+class Achievement(db.Model):
+    __tablename__ = 'achievements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(60), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    category = db.Column(db.String(20), nullable=False)  # trofeos/duelos/puntuacion/clasificacion
+    icon = db.Column(db.String(16), nullable=True)
+    threshold = db.Column(db.Integer, nullable=True)
+    is_repeatable = db.Column(db.Boolean, nullable=False, default=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+
+
+class UserAchievement(db.Model):
+    __tablename__ = 'user_achievements'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    achievement_id = db.Column(db.Integer, db.ForeignKey('achievements.id', ondelete='CASCADE'), nullable=False)
+    earned_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    last_earned_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    count = db.Column(db.Integer, nullable=False, default=1)
+    context = db.Column(db.JSON, nullable=True)
+
+    achievement = db.relationship('Achievement')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'achievement_id', name='uq_user_achievement'),
+    )
