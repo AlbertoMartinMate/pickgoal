@@ -36,20 +36,30 @@ def fase_for_jornada(season_id, jornada_number):
 
 
 def _duel_result(duelo, user_id):
+    """
+    Resultado a partir de div_points (posicional, igual que la clasificación
+    de división). No se usa winner_id: cuando un usuario sustituye a un bot se
+    cambia player1/2_id pero winner_id puede seguir apuntando al bot.
+    """
     if duelo.player1_id == duelo.player2_id:
         return 'B'
-    if duelo.winner_id == user_id:
-        return 'W'
-    if duelo.winner_id is not None:
-        return 'L'
-    resolved = (duelo.div_points_p1 or 0) + (duelo.div_points_p2 or 0) > 0
-    return 'D' if resolved else None
+    dp1, dp2 = duelo.div_points_p1 or 0, duelo.div_points_p2 or 0
+    if dp1 + dp2 == 0:
+        return None  # no resuelto
+    mine = dp1 if duelo.player1_id == user_id else dp2
+    return {3: 'W', 1: 'D'}.get(mine, 'L')
 
 
-def build_jornada_stats(jornada):
+def build_jornada_stats(jornada, prefer_duel_points=False):
     """
     Calcula (sin escribir) las filas de user_jornada_stats de una jornada.
     Devuelve lista de dicts. Participantes = usuarios con predicción o duelo.
+
+    prefer_duel_points: si el usuario tuvo duelo, usa los puntos guardados en
+    Duelo en lugar del recálculo. Para el backfill: el recálculo aplica las
+    reglas actuales (penalización/bonus) a jornadas antiguas y datos que han
+    cambiado después (pronósticos borrados o generados a posteriori), mientras
+    que Duelo refleja lo que realmente decidió el duelo y la clasificación.
     """
     from app import db
     from app.models import JornadaMatch, PredictionV2, Duelo, DivisionMember, User
@@ -91,12 +101,16 @@ def build_jornada_stats(jornada):
         opponent = None
         if d and d.player1_id != d.player2_id:
             opponent = d.player2_id if d.player1_id == uid else d.player1_id
+        stored = (d.points_player1 if d.player1_id == uid else d.points_player2) if d else None
+        points = score['total']
+        if prefer_duel_points and stored is not None:
+            points = round(stored, 2)
         rows.append({
             'user_id': uid,
             'jornada_id': jornada.id,
             'season_id': jornada.season_id,
             'fase': fase,
-            'points': score['total'],
+            'points': points,
             'hits': score['hits'],
             'matches_counted': score['matches_counted'],
             'duel_result': _duel_result(d, uid) if d else None,
@@ -104,10 +118,9 @@ def build_jornada_stats(jornada):
             'division_league_id': d.division_league_id if d else None,
             'division': _division_of(d.division_league_id) if d else None,
             'is_bot': bool(users[uid].is_bot),
-            # Solo para verificación en el backfill (no se persiste)
-            '_duel_stored_points': (
-                (d.points_player1 if d.player1_id == uid else d.points_player2) if d else None
-            ),
+            # Solo para verificación en el backfill (no se persisten)
+            '_duel_stored_points': stored,
+            '_recalc_points': score['total'],
         })
     return rows
 

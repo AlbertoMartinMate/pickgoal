@@ -1,12 +1,14 @@
 """Backfill de user_jornada_stats para todas las jornadas finalizadas.
 
-Recalcula la puntuación de cada participante con compute_jornada_score (función
-pura: NO modifica PredictionV2 ni Duelo) y la escribe en user_jornada_stats.
+Puntos: si el usuario tuvo duelo se usan los puntos guardados en Duelo (lo que
+realmente decidió el duelo y la clasificación); si no, el recálculo con
+compute_jornada_score (función pura: NO modifica PredictionV2 ni Duelo).
 Los resultados de duelo solo se pueden reconstruir para jornadas cuyos Duelo
 siguen existiendo (el cierre de fase los borra).
 
 Verificación: compara el total recalculado con el guardado en Duelo y lista
-las discrepancias (p. ej. cuotas o resultados editados a posteriori).
+las discrepancias (reglas añadidas después, pronósticos borrados o generados
+a posteriori). Los aciertos (hits) siempre salen de los pronósticos actuales.
 
 Idempotente (upsert por user_id + jornada_id). Por defecto es dry-run.
 
@@ -44,7 +46,7 @@ with app.app_context():
     mismatches = []
 
     for j in jornadas:
-        rows = build_jornada_stats(j)
+        rows = build_jornada_stats(j, prefer_duel_points=True)
         res = Counter(r['duel_result'] for r in rows if r['duel_result'])
         humans = sum(1 for r in rows if not r['is_bot'])
         with_duel = sum(1 for r in rows if r['duel_result'])
@@ -53,9 +55,9 @@ with app.app_context():
         n_mis = 0
         for r in rows:
             stored = r['_duel_stored_points']
-            if stored is not None and abs((stored or 0) - r['points']) > 0.01:
+            if stored is not None and abs((stored or 0) - r['_recalc_points']) > 0.01:
                 n_mis += 1
-                mismatches.append((j.number, r['user_id'], stored, r['points']))
+                mismatches.append((j.number, r['user_id'], stored, r['_recalc_points']))
 
         wdlb = f"{res['W']}/{res['D']}/{res['L']}/{res['B']}"
         fase = rows[0]['fase'] if rows else '-'
@@ -72,7 +74,7 @@ with app.app_context():
 
     if mismatches:
         print(f'\n⚠️  {len(mismatches)} discrepancias entre Duelo guardado y recalculado '
-              '(se escribe el recalculado):')
+              '(se escribe el del duelo):')
         for num, uid, stored, new in mismatches[:50]:
             print(f'   J{num} user {uid}: duelo={stored} recalculado={new}')
 
