@@ -73,6 +73,14 @@ export async function renderAdmin(el) {
         </section>
 
         <section class="section admin-section">
+          <h2 class="admin-section__title">Cerrar fase</h2>
+          <p class="admin-section__desc">Ascensos y descensos, puntos al 50%, bots nuevos en Primera y duelos regenerados. Solo se puede hacer una vez por fase y no hay vuelta atrás.</p>
+          <button class="btn btn--danger" id="btnCloseFase">Cerrar fase</button>
+          <span id="closeFaseResult" style="margin-left:12px;font-size:13px;"></span>
+          <div id="closeFaseSummary" style="margin-top:12px;font-size:13px;"></div>
+        </section>
+
+        <section class="section admin-section">
           <h2 class="admin-section__title">Cerrar temporada</h2>
           <p class="admin-section__desc">Marca la temporada actual como finalizada. Esta acción es irreversible.</p>
           <button class="btn btn--danger" id="btnCloseSeason">Cerrar temporada</button>
@@ -163,6 +171,37 @@ function attachEvents(el) {
     } catch (err) {
       resultEl.textContent = `Error: ${err.message}`;
       showToast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('btnCloseFase')?.addEventListener('click', async () => {
+    if (!confirm('¿Cerrar la fase actual? Se aplicarán ascensos/descensos, los puntos se reducirán al 50% y se regenerarán los duelos. Esta acción es irreversible.')) return;
+    const btn = document.getElementById('btnCloseFase');
+    const msg = document.getElementById('closeFaseResult');
+    const box = document.getElementById('closeFaseSummary');
+    btn.disabled = true;
+    msg.textContent = 'Cerrando fase…';
+    box.innerHTML = '';
+    try {
+      const { message, summary } = await api.post('/v2/admin/close_fase');
+      msg.textContent = `✓ ${message || 'Fase cerrada'}`;
+      showToast('Fase cerrada');
+      if (summary) {
+        const names = (rows) => (rows || []).map((r) => esc(r.username)).join(', ') || '—';
+        const p = summary.primera || {};
+        const s = summary.segunda || {};
+        box.innerHTML = `
+          <p><strong>Ascienden a Primera:</strong> ${names(s.promoted_to_primera)}</p>
+          <p><strong>Descienden a Segunda:</strong> ${names(p.relegated)}</p>
+          <p><strong>Eliminados de Segunda:</strong> ${names(s.eliminated)}</p>
+          <p><strong>Bots añadidos a Primera:</strong> ${names(p.bots_added)}</p>
+          <p><strong>Miembros con puntos al 50%:</strong> ${summary.total_members_halved ?? '—'}</p>
+          <p><strong>Duelos regenerados:</strong> ${(summary.duelos_reassigned || []).map((d) => `J${d.jornada} (liga ${d.league_id})`).join(', ') || '—'}</p>`;
+      }
+    } catch (err) {
+      msg.textContent = `Error: ${err.message}`;
+      showToast(err.message, 'error');
+      btn.disabled = false;
     }
   });
 
@@ -992,4 +1031,8 @@ async function reloadResultsPanel(jornadaId) {
   } catch (err) {
     showToast(`Error recargando: ${err.message}`, 'error');
   }
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
