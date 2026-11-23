@@ -140,5 +140,7 @@ export const api = {
     division: (leagueId) => request(`/v2/clasificacion/division${leagueId ? `?league_id=${leagueId}` : ''}`),
     general: () => request('/v2/clasificacion/general'),
     allDivisions: () => request('/v2/clasificacion/all-divisions'),
+    jornadas: () => request('/v2/clasificacion/jornadas'),
+    jornadaStandings: (jornadaId) => request(`/v2/clasificacion/jornada/${jornadaId}`),
   },
 };

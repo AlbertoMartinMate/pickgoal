@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func
 from app import db
 from app.models import User, DivisionMember, League, Jornada, get_user_status
+from app.utils import compute_jornada_score
 
 clasificacion_bp = Blueprint('clasificacion_v2', __name__)
 
@@ -79,6 +80,52 @@ def general_standings():
         })
 
     return jsonify({'standings': standings}), 200
+
+
+@clasificacion_bp.route('/jornadas', methods=['GET'])
+def list_jornadas_public():
+    """Public list of all jornadas for navigation (id, number, status)."""
+    jornadas = Jornada.query.order_by(Jornada.number.asc()).all()
+    return jsonify({'jornadas': [
+        {'id': j.id, 'number': j.number, 'status': j.status}
+        for j in jornadas
+    ]}), 200
+
+
+@clasificacion_bp.route('/jornada/<int:jornada_id>', methods=['GET'])
+def jornada_standings(jornada_id):
+    """Per-user standings for a specific jornada, calculated from predictions."""
+    jornada = db.session.get(Jornada, jornada_id)
+    if not jornada:
+        return jsonify({'error': 'Jornada not found'}), 404
+
+    user_ids = [row[0] for row in
+                db.session.query(DivisionMember.user_id).distinct().all()]
+
+    standings = []
+    for uid in user_ids:
+        user = db.session.get(User, uid)
+        if not user or user.is_bot:
+            continue
+        score = compute_jornada_score(uid, jornada_id)
+        standings.append({
+            'user_id': user.id,
+            'username': user.username,
+            'pts': score['total'],
+            'is_bot': user.is_bot,
+            'status': get_user_status(user.total_points_all_time or 0),
+        })
+
+    standings.sort(key=lambda x: x['pts'], reverse=True)
+    for i, s in enumerate(standings):
+        s['pos'] = i + 1
+
+    return jsonify({
+        'jornada_id': jornada_id,
+        'jornada_number': jornada.number,
+        'jornada_status': jornada.status,
+        'standings': standings,
+    }), 200
 
 
 @clasificacion_bp.route('/all-divisions', methods=['GET'])

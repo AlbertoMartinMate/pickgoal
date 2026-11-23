@@ -10,6 +10,10 @@ export async function renderTablaV2(el, { query = {} } = {}) {
     const { standings } = await api.clasificacion.general();
     const me = auth.getUser();
 
+    // Tuesday = show Total by default; otherwise show Jornada
+    const isTuesday = new Date().getDay() === 2;
+    const defaultSubTab = isTuesday ? 'total' : 'jornada';
+
     el.innerHTML = `
       <div class="container">
         <div class="page-title-row">
@@ -27,39 +31,50 @@ export async function renderTablaV2(el, { query = {} } = {}) {
         </div>
 
         <section id="panelGeneral">
-          ${standings.length === 0
-            ? '<p class="empty">Todavía no hay clasificación disponible.</p>'
-            : `
-              <div class="ranking-table-wrapper">
-                <table class="ranking-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Usuario</th>
-                      <th>Pts jornada</th>
-                      <th>Pts total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${standings.map(u => `
-                      <tr class="${me && u.user_id === me.id ? 'ranking-table__row--me' : ''}">
-                        <td class="ranking-table__pos" data-pos="${u.pos}">${u.pos}</td>
-                        <td>
-                          <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>
-                          ${u.is_bot || (me && u.user_id === me.id)
-                            ? escapeHtml(u.username)
-                            : `<button class="user-link" data-user-id="${u.user_id}">${escapeHtml(u.username)}</button>`
-                          }
-                        </td>
-                        <td class="ranking-table__stat">${fmtPts(u.pts_jornada_actual)}</td>
-                        <td class="ranking-table__pts">${fmtPts(u.pts_general)}</td>
+          <div class="ranking-subtabs">
+            <button class="ranking-subtab ${defaultSubTab === 'total' ? 'ranking-subtab--active' : ''}" data-subtab="total">Total</button>
+            <button class="ranking-subtab ${defaultSubTab === 'jornada' ? 'ranking-subtab--active' : ''}" data-subtab="jornada" id="subtabJornada">Jornada</button>
+          </div>
+
+          <div id="subpanelTotal" class="${defaultSubTab === 'total' ? '' : 'hidden'}">
+            ${standings.length === 0
+              ? '<p class="empty">Todavía no hay clasificación disponible.</p>'
+              : `
+                <div class="ranking-table-wrapper">
+                  <table class="ranking-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Usuario</th>
+                        <th title="Puntos de la jornada actual">Pts J.</th>
+                        <th title="Puntos acumulados totales">Total</th>
                       </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            `
-          }
+                    </thead>
+                    <tbody>
+                      ${standings.map(u => `
+                        <tr class="${me && u.user_id === me.id ? 'ranking-table__row--me' : ''}">
+                          <td class="ranking-table__pos" data-pos="${u.pos}">${u.pos}</td>
+                          <td class="ranking-table__user-cell">
+                            <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>
+                            ${u.is_bot || (me && u.user_id === me.id)
+                              ? `<span class="ranking-table__username">${escapeHtml(u.username)}</span>`
+                              : `<button class="user-link ranking-table__username" data-user-id="${u.user_id}">${escapeHtml(u.username)}</button>`
+                            }
+                          </td>
+                          <td class="ranking-table__stat">${fmtPts(u.pts_jornada_actual)}</td>
+                          <td class="ranking-table__pts">${fmtPts(u.pts_general)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `
+            }
+          </div>
+
+          <div id="subpanelJornada" class="${defaultSubTab === 'jornada' ? '' : 'hidden'}">
+            <div class="loading"><div class="loading__spinner"></div></div>
+          </div>
         </section>
 
         <section id="panelMiDivision" class="hidden">
@@ -81,10 +96,127 @@ export async function renderTablaV2(el, { query = {} } = {}) {
     attachPointsModal(el);
     checkTablonGeneralUnread();
     setupUserContextMenu(el, me);
+    setupGeneralSubTabs(el, me, defaultSubTab);
 
   } catch (err) {
     el.innerHTML = `<div class="container"><p class="form__error">Error cargando la clasificación: ${err.message}</p></div>`;
   }
+}
+
+function setupGeneralSubTabs(el, me, defaultSubTab) {
+  let jornadaList = null;
+  let currentJornadaIdx = -1;
+  let jornadaLoaded = false;
+
+  const subtabTotal = el.querySelector('[data-subtab="total"]');
+  const subtabJornada = el.querySelector('[data-subtab="jornada"]');
+  const subpanelTotal = el.querySelector('#subpanelTotal');
+  const subpanelJornada = el.querySelector('#subpanelJornada');
+
+  function activateSubTab(view) {
+    subtabTotal.classList.toggle('ranking-subtab--active', view === 'total');
+    subtabJornada.classList.toggle('ranking-subtab--active', view === 'jornada');
+    subpanelTotal.classList.toggle('hidden', view !== 'total');
+    subpanelJornada.classList.toggle('hidden', view !== 'jornada');
+    if (view === 'jornada' && !jornadaLoaded) {
+      jornadaLoaded = true;
+      loadJornadaView();
+    }
+  }
+
+  async function loadJornadaView() {
+    try {
+      const { jornadas } = await api.clasificacion.jornadas();
+      jornadaList = jornadas.sort((a, b) => a.number - b.number);
+
+      const activeIdx = jornadaList.findIndex(j => j.status === 'active');
+      if (activeIdx >= 0) {
+        currentJornadaIdx = activeIdx;
+      } else {
+        for (let i = jornadaList.length - 1; i >= 0; i--) {
+          if (jornadaList[i].status === 'finished') { currentJornadaIdx = i; break; }
+        }
+        if (currentJornadaIdx < 0) currentJornadaIdx = jornadaList.length - 1;
+      }
+
+      await renderJornadaStandings();
+    } catch (err) {
+      subpanelJornada.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
+    }
+  }
+
+  async function renderJornadaStandings() {
+    if (!jornadaList || currentJornadaIdx < 0) return;
+    const jornada = jornadaList[currentJornadaIdx];
+
+    subpanelJornada.innerHTML = `<div class="loading"><div class="loading__spinner"></div></div>`;
+
+    try {
+      const { standings, jornada_number, jornada_status } =
+        await api.clasificacion.jornadaStandings(jornada.id);
+
+      const hasPrev = currentJornadaIdx > 0;
+      const hasNext = currentJornadaIdx < jornadaList.length - 1;
+
+      subtabJornada.textContent = `J${jornada_number}`;
+
+      subpanelJornada.innerHTML = `
+        <div class="jornada-rank-nav">
+          <button class="jornada-rank-nav__btn" id="jrNavPrev" ${!hasPrev ? 'disabled' : ''}>
+            ← ${hasPrev ? `J${jornadaList[currentJornadaIdx - 1].number}` : ''}
+          </button>
+          <span class="jornada-rank-nav__title">
+            J${jornada_number}${jornada_status === 'active' ? ' · en curso' : ''}
+          </span>
+          <button class="jornada-rank-nav__btn" id="jrNavNext" ${!hasNext ? 'disabled' : ''}>
+            ${hasNext ? `J${jornadaList[currentJornadaIdx + 1].number}` : ''} →
+          </button>
+        </div>
+        <div class="ranking-table-wrapper">
+          <table class="ranking-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Usuario</th>
+                <th title="Puntos conseguidos en esta jornada">Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${standings.map(u => `
+                <tr class="${me && u.user_id === me.id ? 'ranking-table__row--me' : ''}">
+                  <td class="ranking-table__pos" data-pos="${u.pos}">${u.pos}</td>
+                  <td class="ranking-table__user-cell">
+                    <span class="status-emoji" title="${u.status?.name || ''}">${u.status?.emoji || ''}</span>
+                    ${u.is_bot || (me && u.user_id === me.id)
+                      ? `<span class="ranking-table__username">${escapeHtml(u.username)}</span>`
+                      : `<button class="user-link ranking-table__username" data-user-id="${u.user_id}">${escapeHtml(u.username)}</button>`
+                    }
+                  </td>
+                  <td class="ranking-table__pts">${fmtPts(u.pts)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      subpanelJornada.querySelector('#jrNavPrev')?.addEventListener('click', () => {
+        if (currentJornadaIdx > 0) { currentJornadaIdx--; renderJornadaStandings(); }
+      });
+      subpanelJornada.querySelector('#jrNavNext')?.addEventListener('click', () => {
+        if (currentJornadaIdx < jornadaList.length - 1) { currentJornadaIdx++; renderJornadaStandings(); }
+      });
+
+      setupUserContextMenu(subpanelJornada, me);
+    } catch (err) {
+      subpanelJornada.innerHTML = `<p class="form__error">Error: ${err.message}</p>`;
+    }
+  }
+
+  subtabTotal.addEventListener('click', () => activateSubTab('total'));
+  subtabJornada.addEventListener('click', () => activateSubTab('jornada'));
+
+  activateSubTab(defaultSubTab);
 }
 
 async function checkTablonGeneralUnread() {
@@ -95,10 +227,8 @@ async function checkTablonGeneralUnread() {
   const since = localStorage.getItem('tablon_general_last_read') || new Date(0).toISOString();
   try {
     const { count } = await api.board.unread(null, since);
-    console.log('[tablonDot] count:', count, 'since:', since);
     dot.classList.toggle('hidden', count === 0);
   } catch (e) {
-    console.warn('[tablonDot] error:', e);
     dot.classList.add('hidden');
   }
 }
@@ -149,7 +279,6 @@ function attachTabHandlers(me, initialTab) {
 
   tabs.tablon.btn.addEventListener('click', activateTablon);
 
-  // Auto-activate tab from query param (?tab=tablon)
   if (initialTab === 'tablon') {
     activateTablon();
   }
@@ -171,7 +300,7 @@ async function renderMiDivision(me) {
       <div class="ranking-table-wrapper">
         <table class="ranking-table">
           <thead>
-            <tr><th>#</th><th>Usuario</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts div</th></tr>
+            <tr><th>#</th><th>Usuario</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts</th></tr>
           </thead>
           <tbody>
             ${standings.map(row => divisionRow(row, me)).join('')}
@@ -198,7 +327,6 @@ async function renderDivisiones(me) {
 
     panel.innerHTML = divisions.map(div => divisionAccordion(div, me)).join('');
 
-    // Accordion expand/collapse
     panel.querySelectorAll('.div-accordion__header').forEach(header => {
       header.addEventListener('click', () => {
         const body = header.nextElementSibling;
@@ -225,7 +353,7 @@ function divisionAccordion(div, me) {
         <div class="ranking-table-wrapper">
           <table class="ranking-table">
             <thead>
-              <tr><th>#</th><th>Usuario</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts div</th></tr>
+              <tr><th>#</th><th>Usuario</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Pts</th></tr>
             </thead>
             <tbody>
               ${div.standings.map(row => divisionRow(row, me)).join('')}
@@ -246,7 +374,6 @@ function escapeHtml(str) {
 }
 
 function setupUserContextMenu(container, me) {
-  // Singleton floating menu
   let menu = document.getElementById('userCtxMenu');
   if (!menu) {
     menu = document.createElement('div');
@@ -280,7 +407,6 @@ function setupUserContextMenu(container, me) {
     };
 
     menu.classList.remove('hidden');
-    // Position below the button, clamp to viewport
     const menuW = 180;
     let left = rect.left;
     if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
@@ -307,9 +433,9 @@ function divisionRow(row, me) {
     ${separatorBefore}
     <tr class="${isMe ? 'ranking-table__row--me' : ''}" style="${zoneStyle}">
       <td class="ranking-table__pos" data-pos="${row.pos}">${row.pos}</td>
-      <td>${isMe || row.is_bot
-        ? escapeHtml(row.username)
-        : `<button class="user-link" data-user-id="${row.user_id}">${escapeHtml(row.username)}</button>`
+      <td class="ranking-table__user-cell">${isMe || row.is_bot
+        ? `<span class="ranking-table__username">${escapeHtml(row.username)}</span>`
+        : `<button class="user-link ranking-table__username" data-user-id="${row.user_id}">${escapeHtml(row.username)}</button>`
       }</td>
       <td class="ranking-table__stat">${row.pj}</td>
       <td class="ranking-table__stat">${row.g}</td>

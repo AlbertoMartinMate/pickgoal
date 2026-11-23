@@ -49,6 +49,72 @@
   }
 }
 
+.ranking-subtabs {
+  display: flex;
+  gap: v.$sp-2;
+  margin: v.$sp-4 0 v.$sp-3;
+}
+
+.ranking-subtab {
+  padding: 5px 16px;
+  background: transparent;
+  border: 1px solid v.$border;
+  border-radius: v.$r-full;
+  color: v.$text-muted;
+  cursor: pointer;
+  font-size: v.$fs-sm;
+  font-weight: v.$fw-semi;
+  transition: color v.$t-fast, border-color v.$t-fast, background v.$t-fast;
+
+  &--active {
+    background: v.$accent-dim;
+    border-color: v.$accent-dark;
+    color: v.$accent;
+  }
+
+  &:not(&--active):hover {
+    color: v.$text;
+    border-color: v.$text-muted;
+  }
+}
+
+.jornada-rank-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$sp-2;
+  margin-bottom: v.$sp-3;
+
+  &__title {
+    font-weight: v.$fw-semi;
+    font-size: v.$fs-sm;
+    color: v.$text;
+  }
+
+  &__btn {
+    padding: 4px 10px;
+    min-width: 60px;
+    background: transparent;
+    border: 1px solid v.$border;
+    border-radius: v.$r-sm;
+    color: v.$text-muted;
+    cursor: pointer;
+    font-size: v.$fs-sm;
+    white-space: nowrap;
+    transition: color v.$t-fast, border-color v.$t-fast;
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    &:not(:disabled):hover {
+      color: v.$text;
+      border-color: v.$text-muted;
+    }
+  }
+}
+
 .ranking-table-wrapper {
   overflow-x: auto;
   border-radius: v.$r-lg;
@@ -140,6 +206,46 @@
   &__status {
     font-size: v.$fs-xs;
     color: v.$text-muted;
+  }
+
+  &__user-cell {
+    overflow: hidden;
+    max-width: 200px;
+  }
+
+  &__username {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+}
+
+// ─── Mobile fix: table fits without horizontal scroll ────────────────────────
+@media (max-width: #{v.$bp-sm - 1}) {
+  .ranking-table-wrapper {
+    overflow-x: hidden;
+  }
+
+  .ranking-table {
+    th, td {
+      padding: v.$sp-2 v.$sp-1;
+      font-size: v.$fs-xs;
+    }
+
+    &__pts {
+      font-size: v.$fs-sm;
+    }
+
+    &__user-cell {
+      max-width: 120px;
+    }
+
+    &__username {
+      max-width: 100px;
+    }
   }
 }
 
