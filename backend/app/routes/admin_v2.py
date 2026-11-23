@@ -821,28 +821,27 @@ def close_fase():
     """
     Manual fase-close (run once, e.g. 23N).
 
-    1. Validates no open jornadas exist.
+    1. Validates no jornada is in play ('active'). 'upcoming' is allowed: its
+       duelos are regenerated with the new league composition after the close.
     2. Computes standings for Primera (Liga div=1) and Segunda (Liga div=2).
     3. Applies 50% carry-over (points_offset), promotes/relegates, adds bots.
-    4. Clears all Duelos and DueloCalendar for both leagues.
-    5. Returns a full summary — does NOT auto-execute; caller must confirm.
+    4. Clears all Duelos and DueloCalendar for both leagues, then reassigns
+       duelos for any 'upcoming' jornada.
+    5. Commits immediately and returns the summary (there is no confirm step).
 
-    Idempotency note: running it twice would double-halve points, so guard
-    with the open-jornada check and human review before confirming.
+    Idempotency: current_fase_context() refuses to close the same fase twice.
     """
     user, err, code = _require_admin()
     if err:
         return err, code
 
-    # Guard: no open jornadas
+    # Guard: no jornada in play. 'upcoming' is allowed (duelos reassigned below).
     from app.models import Jornada
-    open_jornadas = Jornada.query.filter(
-        Jornada.status.in_(['upcoming', 'active'])
-    ).all()
-    if open_jornadas:
-        numbers = [str(j.number) for j in open_jornadas]
+    active_jornadas = Jornada.query.filter(Jornada.status == 'active').all()
+    if active_jornadas:
+        numbers = [str(j.number) for j in active_jornadas]
         return jsonify({
-            'error': f'Hay jornadas abiertas: {", ".join(numbers)}. Ciérralas antes de ejecutar el cierre de fase.',
+            'error': f'Hay jornadas en juego: {", ".join(numbers)}. Espera a que terminen antes de ejecutar el cierre de fase.',
         }), 409
 
     from app.divisions import process_fase_close
@@ -854,6 +853,21 @@ def close_fase():
         db.session.rollback()
         logger.exception('[close_fase] fallo')
         return jsonify({'error': str(e)}), 500
+
+    # The close deleted every Duelo/DueloCalendar of both leagues, including
+    # those of already-published jornadas: reassign them with the new members.
+    from app.routes.duelos import assign_duelos
+    league_ids = [summary['primera']['league_id'], summary['segunda']['league_id']]
+    reassigned = []
+    for j in Jornada.query.filter_by(status='upcoming').order_by(Jornada.number).all():
+        for lid in league_ids:
+            try:
+                assign_duelos(j.id, lid)
+                reassigned.append({'jornada': j.number, 'league_id': lid})
+            except Exception:
+                db.session.rollback()
+                logger.exception('[close_fase] fallo reasignando duelos jornada %s liga %s', j.number, lid)
+    summary['duelos_reassigned'] = reassigned
 
     logger.info('[close_fase] completado. Resumen: %s', summary)
     return jsonify({'message': 'Cierre de fase ejecutado correctamente', 'summary': summary}), 200

@@ -1,4 +1,5 @@
 import logging
+import math
 from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
@@ -196,17 +197,21 @@ def _standings_with_tiebreaker(league_id):
 
 def _find_bots_for_league(target_league_id, count, exclude_user_ids):
     """
-    Return up to `count` bot User objects not in exclude_user_ids.
-    Creates new bots inline if the pool is exhausted.
+    Return up to `count` bot User objects that are not a member of any league
+    (no DivisionMember row) and not in exclude_user_ids (e.g. bots eliminated
+    in this same fase close). Creates new bots inline if the pool is exhausted.
     """
     from app import db
-    from app.models import User
+    from app.models import User, DivisionMember
     from werkzeug.security import generate_password_hash
     import os, random, string
 
+    in_any_league = {uid for (uid,) in db.session.query(DivisionMember.user_id).all()}
+    excluded = in_any_league | set(exclude_user_ids or ())
+
     bots = User.query.filter_by(is_bot=True).filter(
-        ~User.id.in_(exclude_user_ids or [0])
-    ).all()
+        ~User.id.in_(excluded or {0})
+    ).order_by(User.id).all()
 
     result = bots[:count]
 
@@ -315,7 +320,7 @@ def process_fase_close():
     def _apply_offset(league_id, uid, pts_map):
         dm = DivisionMember.query.filter_by(league_id=league_id, user_id=uid).first()
         if dm:
-            dm.points_offset = round(pts_map.get(uid, 0) * 0.5)
+            dm.points_offset = math.floor(pts_map.get(uid, 0) * 0.5)
             dm.season_div_points = 0
             dm.season_total_points = 0.0
 
@@ -331,7 +336,7 @@ def process_fase_close():
             user_id=uid,
             is_bot=is_bot_flag,
             division=division_num,
-            points_offset=round(old_pts * 0.5),
+            points_offset=math.floor(old_pts * 0.5),
             season_div_points=0,
             season_total_points=0.0,
         )
@@ -369,8 +374,8 @@ def process_fase_close():
     db.session.flush()
 
     # --- 6. Add bots to Primera ---
-    already_in_primera = {dm.user_id for dm in DivisionMember.query.filter_by(league_id=primera_lid).all()}
-    new_bots = _find_bots_for_league(primera_lid, FASE_PRIMERA_BOTS, already_in_primera)
+    # Solo bots fuera de cualquier liga; nunca los recién eliminados de Segunda
+    new_bots = _find_bots_for_league(primera_lid, FASE_PRIMERA_BOTS, to_eliminate_ids)
     bots_added = []
     for bot in new_bots:
         dm = DivisionMember(
