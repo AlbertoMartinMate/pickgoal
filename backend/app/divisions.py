@@ -76,6 +76,7 @@ def get_division_standings(league_id):
                 pts_total += d.points_player2 or 0
 
         pts_div += dm.points_offset  # carry-over from previous fase
+        pts_total += dm.total_points_offset or 0.0  # 50% de los puntos generales de la fase anterior
 
         standings.append({
             'user_id': dm.user_id,
@@ -234,6 +235,11 @@ def _find_bots_for_league(target_league_id, count, exclude_user_ids):
     return result
 
 
+def _half_general(pts):
+    """50% de los puntos generales, redondeado hacia abajo al céntimo."""
+    return math.floor(round((pts or 0) * 100) / 2) / 100
+
+
 def process_fase_close():
     """
     End-of-fase handler (manual, run once from admin on 23N or similar):
@@ -243,7 +249,8 @@ def process_fase_close():
     3. Primera: top 2 symbolic ascent (stay), positions 3-12 stay, bottom 4 relegate.
     4. Segunda: top 2 promote to Primera, positions 3-14 stay, bottom 2 eliminated
        (prefer bots/inactives first).
-    5. Apply 50% carry-over to all staying/moving DivisionMembers via points_offset.
+    5. Reset division points to 0 (points_offset=0) and carry over 50% of the
+       general points (floored to the cent) via total_points_offset.
     6. Add 2 bots to Primera to fill freed spots.
     7. Delete all Duelos and DueloCalendar for both leagues (fresh start).
     8. Update User.current_division and current_league_id for moved players.
@@ -287,8 +294,9 @@ def process_fase_close():
     n1 = len(primera_rows)
     n2 = len(segunda_rows)
 
-    primera_pts = {r['user_id']: r['pts_division'] for r in primera_rows}
-    segunda_pts = {r['user_id']: r['pts_division'] for r in segunda_rows}
+    # Carry-over: los puntos GENERALES pasan al 50%; los de división se resetean
+    primera_pts = {r['user_id']: r['pts_general'] for r in primera_rows}
+    segunda_pts = {r['user_id']: r['pts_general'] for r in segunda_rows}
 
     # --- 3. Determine Primera movements ---
     sym_ids = {r['user_id'] for r in primera_rows[:min(FASE_PRIMERA_RELEGATION - 2, n1)]}
@@ -320,9 +328,11 @@ def process_fase_close():
     def _apply_offset(league_id, uid, pts_map):
         dm = DivisionMember.query.filter_by(league_id=league_id, user_id=uid).first()
         if dm:
-            dm.points_offset = math.floor(pts_map.get(uid, 0) * 0.5)
+            half = _half_general(pts_map.get(uid, 0))
+            dm.points_offset = 0
+            dm.total_points_offset = half
             dm.season_div_points = 0
-            dm.season_total_points = 0.0
+            dm.season_total_points = half
 
     def _move_member(src_lid, dst_lid, uid, pts_map, division_num):
         dm_old = DivisionMember.query.filter_by(league_id=src_lid, user_id=uid).first()
@@ -336,9 +346,10 @@ def process_fase_close():
             user_id=uid,
             is_bot=is_bot_flag,
             division=division_num,
-            points_offset=math.floor(old_pts * 0.5),
+            points_offset=0,
+            total_points_offset=_half_general(old_pts),
             season_div_points=0,
-            season_total_points=0.0,
+            season_total_points=_half_general(old_pts),
         )
         db.session.add(dm_new)
         u = db.session.get(User, uid)
